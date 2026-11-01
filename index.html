@@ -1552,7 +1552,7 @@ function updatePlayer(dt){
     PH.g.rotation.y=aimPose?angDiff(HORSE.yaw,Math.atan2(f.x,f.z)):0;
     if(!aimPose){PH.armR.rotation.set(-0.6,0,0);PH.armL.rotation.set(-0.6,0,0);}
   }else{
-    const sprint=K.ShiftLeft&&P.stamina>1&&has&&!P.aiming,spd=P.aiming?2.6:sprint?7.5:3.8;if(sprint)P.stamina-=16*dt;
+    const sprint=K.ShiftLeft&&P.stamina>1&&has&&!P.aiming,spd=P.aiming?2.6:sprint?10.5:4.2;if(sprint)P.stamina-=9*dt;
     P.speed=lerp(P.speed,has?spd:0,1-Math.exp(-10*dt));if(has)P.moveDir.copy(move);
     tryMove(P.pos,P.moveDir.x*P.speed*dt,P.moveDir.z*P.speed*dt,0.4,1.4);
     if(K.Space&&P.jumpY===0&&!busy){P.vy=5.5;P.jumpY=0.001;}
