@@ -1,0 +1,268 @@
+{
+  "exhaustion_outlaw": {
+    "k": 58,
+    "n": 60,
+    "pct": 96.7,
+    "ci": [
+      88.6,
+      99.1
+    ],
+    "recovered": 55,
+    "onsetMedianMin": 7.2
+  },
+  "exhaustion_other": {
+    "k": 59,
+    "n": 240,
+    "pct": 24.6,
+    "ci": [
+      19.6,
+      30.4
+    ],
+    "recovered": 4,
+    "onsetMedianMin": 6.7
+  },
+  "exhaustion_unrecovered_by_persona": {
+    "storyteller": {
+      "k": 23,
+      "n": 60,
+      "pct": 38.3,
+      "ci": [
+        27.1,
+        51
+      ]
+    },
+    "empire": {
+      "k": 9,
+      "n": 60,
+      "pct": 15,
+      "ci": [
+        8.1,
+        26.1
+      ]
+    },
+    "explorer": {
+      "k": 6,
+      "n": 60,
+      "pct": 10,
+      "ci": [
+        4.7,
+        20.1
+      ]
+    },
+    "settler": {
+      "k": 17,
+      "n": 60,
+      "pct": 28.3,
+      "ci": [
+        18.5,
+        40.8
+      ]
+    }
+  },
+  "outlaw_chases": {
+    "k": 836,
+    "n": 883,
+    "pct": 94.7,
+    "ci": [
+      93,
+      96
+    ],
+    "bountiesPaid": 0
+  },
+  "first_mission": {
+    "completed": {
+      "k": 184,
+      "n": 300,
+      "pct": 61.3,
+      "ci": [
+        55.7,
+        66.7
+      ]
+    },
+    "medianAmongCompleters": 3.3,
+    "kmMedianAll": 14.2,
+    "kmMedianStorytellers": 2.5,
+    "bySkill": {
+      "novice": {
+        "k": 45,
+        "n": 100,
+        "pct": 45,
+        "ci": [
+          35.6,
+          54.8
+        ]
+      },
+      "average": {
+        "k": 63,
+        "n": 100,
+        "pct": 63,
+        "ci": [
+          53.2,
+          71.8
+        ]
+      },
+      "expert": {
+        "k": 76,
+        "n": 100,
+        "pct": 76,
+        "ci": [
+          66.8,
+          83.3
+        ]
+      }
+    }
+  },
+  "stuck": {
+    "events": 3434,
+    "episodes": 2118,
+    "episodesPerHour": 10.6,
+    "explorerEpisodesPerHour": 19.8,
+    "topCells": [
+      {
+        "cell": "-20,-40",
+        "sessions": 87
+      },
+      {
+        "cell": "-200,0",
+        "sessions": 56
+      },
+      {
+        "cell": "-240,0",
+        "sessions": 54
+      },
+      {
+        "cell": "-180,20",
+        "sessions": 43
+      },
+      {
+        "cell": "-20,20",
+        "sessions": 37
+      },
+      {
+        "cell": "140,160",
+        "sessions": 33
+      },
+      {
+        "cell": "-20,-20",
+        "sessions": 33
+      },
+      {
+        "cell": "-40,-20",
+        "sessions": 31
+      }
+    ]
+  },
+  "income_from_events": {
+    "explorer": {
+      "loot": 1056,
+      "robbery": 0
+    },
+    "outlaw": {
+      "loot": 1266,
+      "robbery": 19291
+    },
+    "storyteller": {
+      "loot": 2828,
+      "robbery": 0
+    },
+    "settler": {
+      "loot": 5176,
+      "robbery": 0
+    },
+    "empire": {
+      "loot": 28151,
+      "robbery": 0
+    }
+  },
+  "would_quit": {
+    "storyteller": {
+      "k": 21,
+      "n": 60,
+      "pct": 35,
+      "ci": [
+        24.2,
+        47.6
+      ]
+    },
+    "outlaw": {
+      "k": 58,
+      "n": 60,
+      "pct": 96.7,
+      "ci": [
+        88.6,
+        99.1
+      ]
+    },
+    "empire": {
+      "k": 12,
+      "n": 60,
+      "pct": 20,
+      "ci": [
+        11.8,
+        31.8
+      ]
+    },
+    "explorer": {
+      "k": 53,
+      "n": 60,
+      "pct": 88.3,
+      "ci": [
+        77.8,
+        94.2
+      ]
+    },
+    "settler": {
+      "k": 10,
+      "n": 60,
+      "pct": 16.7,
+      "ci": [
+        9.3,
+        28
+      ]
+    }
+  },
+  "empire_don": {
+    "all": {
+      "k": 24,
+      "n": 60,
+      "pct": 40,
+      "ci": [
+        28.6,
+        52.6
+      ]
+    },
+    "medianMinToDon": 12.5
+  },
+  "fast_travel_duplicates": 50,
+  "quit_sensitivity": {
+    "base": {
+      "storyteller": 35,
+      "outlaw": 96.7,
+      "empire": 20,
+      "explorer": 88.3,
+      "settler": 16.7
+    },
+    "baseOverall": 51.3,
+    "joint200": {
+      "p5": 17.3,
+      "median": 55.7,
+      "p95": 85,
+      "worstIsOutlawOrExplorer": 199,
+      "bestIsSettlerOrEmpire": 200
+    },
+    "ablation_noStuck": {
+      "storyteller": 10,
+      "outlaw": 86.7,
+      "empire": 1.7,
+      "explorer": 3.3,
+      "settler": 3.3
+    },
+    "ablation_noIdle": {
+      "storyteller": 16.7,
+      "outlaw": 68.3,
+      "empire": 5,
+      "explorer": 36.7,
+      "settler": 3.3
+    }
+  }
+}

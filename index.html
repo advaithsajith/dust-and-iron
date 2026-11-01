@@ -1,0 +1,1949 @@
+<meta charset="utf-8">
+<title>Dust &amp; Iron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sancreek&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: full-bleed 3D canvas; HUD pinned to the four corners like a frontier ledger */
+:root{
+  --ink:#1a120c; --panel:rgba(24,16,10,.78); --paper:#efe2c4; --paper-dim:#b9a684;
+  --rust:#c0612f; --gold:#e3b14f; --blood:#b8321f; --sage:#9fae7a; --sky:#7fb2d9;
+  --display:'Sancreek','Rockwell',Georgia,serif; --body:'Alegreya Sans','Trebuchet MS',sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:#120c08;color:var(--paper);font-family:var(--body);user-select:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+#hud{position:fixed;inset:0;pointer-events:none;font-size:15px}
+.k{display:inline-block;min-width:1.4em;padding:0 .35em;border:1px solid var(--paper-dim);border-bottom-width:2px;border-radius:4px;font-family:var(--mono);font-size:.82em;text-align:center;color:var(--paper);background:rgba(0,0,0,.35)}
+#stats{position:absolute;left:max(18px,env(safe-area-inset-left,0px));top:calc(18px + env(safe-area-inset-top,0px));display:grid;gap:6px;width:200px}
+.money{font-family:var(--display);font-size:28px;color:var(--gold);text-shadow:0 2px 0 #000}
+.bar{position:relative;height:9px;background:rgba(0,0,0,.55);border:1px solid rgba(239,226,196,.35);border-radius:2px;overflow:hidden}
+.bar label{position:absolute;right:4px;top:-1px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(239,226,196,.7);z-index:1;line-height:11px}
+.bar i{position:absolute;inset:0;transform-origin:left;background:var(--blood)}
+.bar.stam i{background:var(--sage)}.bar.focus i{background:var(--gold)}.bar.horse i{background:var(--rust)}
+#clock{font-family:var(--mono);font-size:12px;color:var(--paper-dim);margin-top:2px}
+#objective{position:absolute;right:max(18px,env(safe-area-inset-right,0px));top:calc(18px + env(safe-area-inset-top,0px));max-width:min(330px,60vw);text-align:right;background:linear-gradient(to left,var(--panel),transparent);padding:8px 12px 10px 40px;border-right:3px solid var(--gold)}
+.qtitle{font-family:var(--display);font-size:19px;color:var(--gold);line-height:1.1}
+.qobj{font-size:15px;line-height:1.3;margin-top:3px}
+.qhint{font-size:12px;color:var(--paper-dim);margin-top:4px}
+#compass{position:absolute;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(420px,50vw);height:26px;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);mask:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent)}
+#compass span{position:absolute;top:3px;transform:translateX(-50%);font-family:var(--mono);font-size:12px;color:var(--paper-dim)}
+#compass span.c{font-family:var(--display);font-size:16px;top:1px;color:var(--paper)}
+#compass span.t{color:rgba(239,226,196,.35)}
+#compass span.obj{color:var(--gold);font-size:16px;top:2px}
+#compass .tick{position:absolute;left:50%;bottom:0;width:2px;height:6px;background:var(--gold);transform:translateX(-50%)}
+#minimap{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:180px;height:180px;border-radius:50%;box-shadow:0 0 0 3px #2b1d12,0 0 0 5px var(--paper-dim),0 6px 18px rgba(0,0,0,.6)}
+#weapon{position:absolute;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));text-align:right}
+#wName{font-family:var(--display);font-size:18px;color:var(--paper)}
+#wAmmo{font-family:var(--mono);font-size:26px;color:var(--gold)}
+#wAmmo small{font-size:14px;color:var(--paper-dim)}
+#inv{font-size:13px;color:var(--paper-dim);margin-top:2px}
+#cross{position:absolute;left:50%;top:50%;width:0;height:0;--g:6px}
+#cross span{position:absolute;left:-2px;top:-2px;width:4px;height:4px;border-radius:50%;background:var(--paper);box-shadow:0 0 2px #000}
+#cross i{position:absolute;background:var(--paper);box-shadow:0 0 2px #000;opacity:0;transition:opacity .12s}
+#cross.aim i{opacity:1}
+#cross .n{left:-1px;top:calc(-1 * var(--g) - 7px);width:2px;height:7px}
+#cross .s{left:-1px;top:var(--g);width:2px;height:7px}
+#cross .w{top:-1px;left:calc(-1 * var(--g) - 7px);width:7px;height:2px}
+#cross .e{top:-1px;left:var(--g);width:7px;height:2px}
+#cross.target i,#cross.target span{background:#ff5a3c}
+#cross.npc i,#cross.npc span{background:var(--gold)}
+#wanted{font-family:var(--display);font-size:17px;color:#ff5a3c;text-shadow:0 1px 0 #000;margin-top:2px}
+#wanted.cold{color:var(--paper-dim);font-family:var(--body);font-size:13px;text-shadow:none}
+#honor{font-size:12px;color:var(--paper-dim)}
+#rank{font-family:var(--display);font-size:15px;color:var(--gold)}
+#slots{display:flex;gap:8px;justify-content:flex-end;font-size:12px;color:var(--paper-dim);margin-bottom:2px}
+#slots b{color:var(--gold)}
+#reloadBar{height:3px;background:var(--gold);transform-origin:right;transform:scaleX(0);margin-top:3px}
+#banner.wanted b{color:#ff5a3c}
+.settings{display:grid;gap:10px;max-width:380px;margin:18px auto 6px;text-align:left;font-size:16px}
+.settings input[type=range]{width:100%;accent-color:var(--gold)}
+.settings .chk{display:flex;gap:10px;align-items:center;cursor:pointer}
+.settings input[type=checkbox]{accent-color:var(--gold);width:18px;height:18px}
+.settings select{font:inherit;padding:6px 8px;background:#2a1a10;color:var(--paper);border:1px solid var(--paper-dim);border-radius:2px}
+.settings output{font-family:var(--mono);color:var(--gold);margin-left:6px}
+#focusHint{position:absolute;left:50%;top:calc(50% + 44px);transform:translateX(-50%);font-size:14px;color:var(--gold);text-shadow:0 1px 2px #000;white-space:nowrap}
+#hitmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:30px;color:#fff;opacity:0;text-shadow:0 0 4px #000;transition:opacity .2s}
+#hitmark.on{opacity:1;transition:none}#hitmark.kill{color:var(--blood)}
+#prompt{position:absolute;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel);padding:7px 14px;border-radius:3px;font-size:15px;white-space:nowrap}
+#toasts{position:absolute;left:50%;top:70px;transform:translateX(-50%);display:grid;gap:6px;justify-items:center;width:min(480px,90vw)}
+.toast{background:var(--panel);border-left:3px solid var(--rust);padding:7px 14px;font-size:14px;animation:tin .25s ease-out}
+.toast b{color:var(--gold);font-weight:700;margin-right:6px}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}}
+#banner{position:absolute;left:0;right:0;top:28%;text-align:center;display:grid;gap:4px;padding:18px;background:linear-gradient(90deg,transparent,rgba(16,10,6,.85) 25%,rgba(16,10,6,.85) 75%,transparent)}
+#banner small{letter-spacing:.35em;font-size:13px;color:var(--paper-dim)}
+#banner b{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,48px);color:var(--gold);text-wrap:balance}
+#banner.loc b{color:var(--paper);font-size:clamp(24px,4vw,38px)}
+#dialog{position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(680px,92vw);background:var(--panel);border-top:2px solid var(--gold);padding:14px 20px 16px;box-sizing:border-box}
+#dialog .who{font-family:var(--display);color:var(--gold);font-size:18px}
+#dialog .line{font-size:18px;line-height:1.45;margin-top:4px;max-width:62ch}
+#dialog .next{position:absolute;right:14px;bottom:8px;font-size:12px;color:var(--paper-dim)}
+#menu{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:var(--panel);border:1px solid rgba(239,226,196,.25);padding:18px 20px;box-sizing:border-box}
+#menu h3{font-family:var(--display);font-weight:400;color:var(--gold);margin:0 0 10px;font-size:24px}
+#menu .row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed rgba(239,226,196,.18);font-size:16px}
+#menu .row.off{opacity:.4}
+#menu .row span:last-child{font-family:var(--mono);color:var(--gold)}
+#menu .foot{margin-top:10px;font-size:13px;color:var(--paper-dim)}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(150,10,0,.85));opacity:0}
+#focusFx{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,200,120,.05) 30%,rgba(120,70,20,.55));mix-blend-mode:multiply;opacity:0;transition:opacity .25s}
+#fade{position:fixed;inset:0;pointer-events:none;background:#000;opacity:0;transition:opacity .6s;display:grid;place-items:center;font-family:var(--display);font-size:clamp(28px,6vw,56px);color:var(--blood)}
+.screen{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,rgba(60,30,15,.55),rgba(10,6,4,.92));padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;overflow:auto}
+.card{max-width:640px;width:100%;text-align:center}
+.eyebrow{letter-spacing:.4em;font-size:12px;color:var(--paper-dim);text-transform:uppercase}
+.card h1{font-family:var(--display);font-weight:400;font-size:clamp(52px,12vw,104px);line-height:.95;margin:.15em 0;color:var(--paper);text-shadow:0 4px 0 #5a2a12,0 10px 30px rgba(0,0,0,.6)}
+.card h1 em{font-style:normal;color:var(--rust)}
+.card h2{font-family:var(--display);font-weight:400;font-size:clamp(32px,7vw,54px);margin:.2em 0;color:var(--gold)}
+.card p{font-size:17px;line-height:1.5;color:var(--paper);max-width:52ch;margin:10px auto}
+.btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0}
+button{font-family:var(--display);font-size:20px;padding:10px 26px;border:2px solid var(--gold);background:#3a1f10;color:var(--paper);cursor:pointer;border-radius:2px}
+button:hover,button:focus-visible{background:var(--rust);outline:none}
+button.ghost{background:transparent;border-color:var(--paper-dim)}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px 18px;text-align:left;font-size:14px;color:var(--paper-dim);margin-top:14px;padding-top:14px;border-top:1px dashed rgba(239,226,196,.25)}
+.controls div{display:flex;gap:8px;align-items:center}
+.note{font-size:13px;color:var(--paper-dim)}
+.modal{position:fixed;inset:0;background:rgba(10,6,4,.82);display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px));box-sizing:border-box}
+.sheetwrap .sheet{width:min(620px,100%);max-height:85vh;overflow:auto;background:#e6d6b2;color:#2b1d12;padding:24px 28px;box-sizing:border-box;box-shadow:0 10px 40px #000;font-size:16px}
+.sheetwrap h2{font-family:var(--display);font-weight:400;margin:0 0 12px;font-size:32px;color:#6b2a14}
+.sheetwrap .q{padding:10px 0;border-bottom:1px solid rgba(43,29,18,.2)}
+.sheetwrap .q b{font-family:var(--display);font-weight:400;font-size:19px}
+.sheetwrap .tag{font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-left:8px;color:#7a5a3a}
+.sheetwrap .done{opacity:.55;text-decoration:line-through}
+#bigmapCanvas{max-width:100%;box-shadow:0 10px 40px #000;cursor:crosshair;border:2px solid #5a3a22;touch-action:none}
+.mapwrap{display:grid;gap:8px;justify-items:center;max-width:100%}
+#mapInfo{min-height:1.4em;max-width:min(900px,94vw);text-align:center;font-size:15px;color:var(--paper);background:rgba(26,18,12,.8);padding:6px 14px}
+#mapInfo b{font-family:var(--display);font-weight:400;color:var(--gold)}
+.maphelp{font-size:13px;color:var(--paper-dim);text-align:center;max-width:94vw}
+@media (max-width:600px){#stats{width:150px}#minimap{width:120px;height:120px}#objective{max-width:55vw}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
+
+<canvas id="game" tabindex="0"></canvas>
+<div id="hud" hidden>
+  <div id="compass"><div class="tick"></div></div>
+  <div id="stats">
+    <div class="money">$<span id="money">0</span></div>
+    <div class="bar"><label>Health</label><i id="hpBar"></i></div>
+    <div class="bar stam"><label>Stamina</label><i id="stBar"></i></div>
+    <div class="bar focus"><label>Focus</label><i id="fcBar"></i></div>
+    <div class="bar horse" id="hsWrap"><label>Horse</label><i id="hsBar"></i></div>
+    <div id="clock"></div>
+    <div id="honor"></div>
+    <div id="rank" hidden></div>
+    <div id="wanted" hidden></div>
+  </div>
+  <div id="objective"><div class="qtitle" id="qTitle"></div><div class="qobj" id="qObj"></div><div class="qhint" id="qHint"></div></div>
+  <canvas id="minimap" width="360" height="360"></canvas>
+  <div id="weapon"><div id="slots"></div><div id="wName"></div><div id="wAmmo"></div><div id="reloadBar"></div><div id="inv"></div></div>
+  <div id="cross"><span></span><i class="n"></i><i class="s"></i><i class="w"></i><i class="e"></i></div>
+  <div id="hitmark">✕</div>
+  <div id="focusHint" hidden></div>
+  <div id="prompt" hidden></div>
+  <div id="toasts"></div>
+  <div id="banner" hidden><small id="bannerSmall"></small><b id="bannerBig"></b></div>
+  <div id="dialog" hidden><div class="who" id="dlgWho"></div><div class="line" id="dlgLine"></div><div class="next"><span class="k">E</span> continue</div></div>
+  <div id="menu" hidden></div>
+</div>
+<div id="vignette"></div><div id="focusFx"></div><div id="fade"></div>
+<div id="journal" class="modal sheetwrap" hidden><div class="sheet" id="journalSheet"></div></div>
+<div id="empire" class="modal sheetwrap" hidden><div class="sheet" id="empireSheet"></div></div>
+<div id="bigmap" class="modal" hidden><div class="mapwrap">
+  <canvas id="bigmapCanvas" width="900" height="900"></canvas>
+  <div id="mapInfo"></div>
+  <div class="maphelp">Scroll to zoom · drag to pan · click to set a waypoint · right-click clears it · <span class="k">F</span> or double-click a place to fast travel · <span class="k">M</span> closes</div>
+</div></div>
+
+<div id="title" class="screen">
+  <div class="card">
+    <div class="eyebrow">Arroyo Territory · 1889</div>
+    <h1>Dust <em>&amp;</em> Iron</h1>
+    <p>A drifter rides into Coppervale, a copper town bled dry by the Crane gang. Take work from the sheriff, hunt the plains, and ride west to Iron Hollow.</p>
+    <div class="btns"><button id="btnNew">Ride Out</button><button id="btnCont" class="ghost" hidden>Continue</button></div>
+    <div class="note" id="loadNote">Surveying the territory…</div>
+    <div class="controls">
+      <div><span class="k">W A S D</span> move · on horse <span class="k">A</span><span class="k">D</span> steer</div>
+      <div><span class="k">Shift</span> sprint / gallop</div>
+      <div><span class="k">Mouse</span> look</div>
+      <div><span class="k">RMB</span> aim · <span class="k">LMB</span> fire</div>
+      <div><span class="k">F</span> mount / dismount</div>
+      <div><span class="k">H</span> whistle horse</div>
+      <div><span class="k">E</span> talk · loot · skin</div>
+      <div><span class="k">Q</span> focus: click to mark, <span class="k">Q</span> to fire</div>
+      <div><span class="k">R</span> reload · <span class="k">1</span><span class="k">2</span><span class="k">3</span> / wheel guns</div>
+      <div><span class="k">V</span> punch</div>
+      <div><span class="k">RMB</span> + <span class="k">E</span> rob someone</div>
+      <div><span class="k">T</span> aim assist on/off</div>
+      <div><span class="k">B</span> pitch a camp in the desert</div>
+      <div><span class="k">G</span> gang: follow / hold</div>
+      <div><span class="k">K</span> your empire</div>
+      <div><span class="k">C</span> first / third person</div>
+      <div><span class="k">X</span> drink tonic</div>
+      <div><span class="k">J</span> journal · <span class="k">M</span> map, waypoints, fast travel</div>
+      <div><span class="k">Space</span> jump</div>
+    </div>
+    <p class="note">Built for keyboard and mouse.</p>
+  </div>
+</div>
+<div id="pause" class="screen" hidden>
+  <div class="card"><h2>Paused</h2>
+    <div class="settings">
+      <label for="optSens">Mouse sensitivity <output id="optSensVal"></output></label>
+      <input type="range" id="optSens" min="1" max="20" step="1">
+      <label class="chk" for="optInvert"><input type="checkbox" id="optInvert"> Invert vertical look</label>
+      <label class="chk" for="optAssist"><input type="checkbox" id="optAssist"> Aim assist (snaps onto a target when you aim)</label>
+      <label class="chk" for="optFP"><input type="checkbox" id="optFP"> First-person view (or press C)</label>
+      <label for="optQuality">Graphics quality <output id="optFps"></output></label>
+      <select id="optQuality"><option value="auto">Auto (adjusts resolution to keep it smooth)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (no shadows, shorter view)</option></select>
+    </div>
+    <p class="note">Tip: <span class="k">[</span> and <span class="k">]</span> change sensitivity while you play.</p>
+    <div class="btns"><button id="btnResume">Resume</button><button id="btnSave" class="ghost">Save game</button></div>
+    <p class="note" id="saveNote"></p></div>
+</div>
+<div id="ending" class="screen" hidden>
+  <div class="card">
+    <div class="eyebrow">The Crane gang is finished</div>
+    <h2>Coppervale Breathes Again</h2>
+    <p id="endStats"></p>
+    <p>The territory is still wide open. Hunt, explore, and spend your bounty.</p>
+    <div class="btns"><button id="btnKeep">Keep Riding</button></div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const V3=THREE.Vector3, $=id=>document.getElementById(id);
+const rand=(a=0,b=1)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+const TAU=Math.PI*2, angDiff=(a,b)=>((b-a+Math.PI)%TAU+TAU)%TAU-Math.PI, angLerp=(a,b,t)=>a+angDiff(a,b)*t;
+const d2=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+let _seed=20261031; const srand=()=>(_seed=(_seed*16807)%2147483647,(_seed-1)/2147483646), sr=(a,b)=>a+srand()*(b-a);
+
+// ---------------- noise ----------------
+function hash(x,y){let h=(Math.imul(x,374761393)+Math.imul(y,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
+function fbm(x,y,o=5){let s=0,a=0.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f,y*f);f*=2.03;a*=0.5;}return s;}
+
+// ---------------- world layout ----------------
+const SIZE=1600,HALF=800,N=256,CELL=SIZE/N,ROW=N+1;
+const SITES={
+  town:{x:0,z:0,r:95,name:'Coppervale'},
+  ranch:{x:270,z:150,r:45,name:'Delgado Ranch'},
+  creek:{x:-290,z:230,r:35,name:'Dry Creek'},
+  wreck:{x:170,z:-330,r:24,name:'Coach Road Wreck'},
+  ridge:{x:-120,z:-400,r:40,name:'Gray Ridge'},
+  hollow:{x:-470,z:-250,r:45,name:'Iron Hollow'},
+};
+const SITE_LIST=Object.values(SITES);
+const MESAS=[{x:-200,z:60,r:45,h:38},{x:120,z:200,r:35,h:30},{x:420,z:-200,r:70,h:50},{x:-380,z:-420,r:60,h:55},{x:-560,z:-140,r:55,h:52},
+  {x:-420,z:-110,r:40,h:44},{x:330,z:420,r:50,h:40},{x:-50,z:-210,r:30,h:26},{x:-420,z:430,r:60,h:46},{x:560,z:150,r:45,h:42},{x:30,z:420,r:35,h:32},{x:-600,z:-330,r:45,h:60}];
+const POND={x:330,z:215,r:30};
+const ROADS=[
+  {w:16,pts:[[-100,0],[100,0]]},
+  {w:6,pts:[[100,0],[160,40],[230,110],[262,140]]},
+  {w:6,pts:[[-100,0],[-130,50],[-140,130],[-230,200],[-280,225]]},
+  {w:6,pts:[[100,0],[120,-80],[150,-200],[165,-320]]},
+  {w:6,pts:[[-100,0],[-160,-60],[-260,-130],[-380,-200],[-455,-243]]},
+  {w:5,pts:[[-260,-130],[-200,-260],[-130,-385]]},
+];
+const DEER_ZONES=[{x:220,z:330},{x:380,z:-40},{x:-120,z:320},{x:100,z:-150},{x:-330,z:20}];
+
+function rawHeight(x,z){
+  let h=(fbm(x*0.0022+10,z*0.0022+3)-0.45)*50;
+  h+=Math.pow(fbm(x*0.006+50,z*0.006-20,3),3)*40;
+  const e=Math.max(Math.abs(x),Math.abs(z));
+  if(e>560)h+=Math.pow((e-560)/240,2)*170*(0.6+0.8*fbm(x*0.012,z*0.012,3));
+  return h;
+}
+for(const m of MESAS)m.top=rawHeight(m.x,m.z)+m.h;
+function baseHeight(x,z){
+  let h=rawHeight(x,z);
+  for(const m of MESAS){const d=Math.hypot(x-m.x,z-m.z);if(d>m.r*1.3+12)continue;
+    const rr=m.r*(0.8+0.45*fbm(x*0.02+m.x,z*0.02+m.z,3));const t=smooth(rr+7,rr-3,d);
+    const top=m.top+(vnoise(x*0.05,z*0.05)-0.5)*2;h=Math.max(h,lerp(h,top,t));}
+  return h;
+}
+for(const s of SITE_LIST)s.h=baseHeight(s.x,s.z);
+POND.y=baseHeight(POND.x,POND.z)-1.8;
+function fullHeight(x,z){
+  let h=baseHeight(x,z);
+  for(const s of SITE_LIST){const d=Math.hypot(x-s.x,z-s.z);if(d<s.r+40)h=lerp(h,s.h,smooth(s.r+40,s.r,d));}
+  const pd=Math.hypot(x-POND.x,z-POND.z);if(pd<POND.r+15)h-=6*smooth(POND.r+15,POND.r*0.3,pd);
+  return h;
+}
+const H=new Float32Array(ROW*ROW);
+for(let iz=0;iz<ROW;iz++)for(let ix=0;ix<ROW;ix++)H[iz*ROW+ix]=fullHeight(-HALF+ix*CELL,-HALF+iz*CELL);
+function groundY(x,z){
+  const gx=clamp((x+HALF)/CELL,0,N-1e-4),gz=clamp((z+HALF)/CELL,0,N-1e-4),ix=Math.floor(gx),iz=Math.floor(gz),fx=gx-ix,fz=gz-iz;
+  const a=H[iz*ROW+ix],b=H[(iz+1)*ROW+ix],c=H[(iz+1)*ROW+ix+1],d=H[iz*ROW+ix+1];
+  return fx+fz<=1?a+(d-a)*fx+(b-a)*fz:c+(b-c)*(1-fx)+(d-c)*(1-fz);
+}
+const slopeAt=(x,z)=>Math.hypot(groundY(x+1.5,z)-groundY(x-1.5,z),groundY(x,z+1.5)-groundY(x,z-1.5))/3;
+const moist=(x,z)=>fbm(x*0.004+77,z*0.004-31,3);
+function segDist(px,pz,ax,az,bx,bz){const vx=bx-ax,vz=bz-az,t=clamp(((px-ax)*vx+(pz-az)*vz)/(vx*vx+vz*vz),0,1);return Math.hypot(px-ax-vx*t,pz-az-vz*t);}
+function roadDist(x,z){let m=1e9;for(const r of ROADS)for(let i=0;i<r.pts.length-1;i++){const a=r.pts[i],b=r.pts[i+1];m=Math.min(m,segDist(x,z,a[0],a[1],b[0],b[1])-r.w/2);}return m;}
+
+// ---------------- renderer ----------------
+const canvas=$('game');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+const _shadowC=new THREE.Vector3(1e9,0,1e9);let shadowDirty=true;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0xd9c9a8,140,900);
+const camera=new THREE.PerspectiveCamera(62,1,0.1,3000);
+function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+const hemi=new THREE.HemisphereLight(0xcfe0ff,0x8a6a48,1.0);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,2.6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.layers.enable(1);
+Object.assign(sun.shadow.camera,{left:-80,right:80,top:80,bottom:-80,near:1,far:600});sun.shadow.bias=-0.0004;sun.shadow.normalBias=0.05;
+scene.add(sun,sun.target);
+const muzzleLight=new THREE.PointLight(0xffc070,0,18,2);scene.add(muzzleLight);
+const FIRE_LIGHTS=[0,1].map(()=>{const L=new THREE.PointLight(0xff8a3a,0,30,2);scene.add(L);return L;});
+const _fireUp=new THREE.Vector3(0,1.4,0);let fireLightT=0;
+// quality: auto scales resolution to hold the frame rate; the presets trade resolution, shadows and view distance
+const QUAL={high:{pr:1.5,shadow:2048,view:950,terrainShadow:true},medium:{pr:1.0,shadow:1024,view:720,terrainShadow:false},low:{pr:0.75,shadow:0,view:520,terrainShadow:false}};
+let quality='auto',dynPR=Math.min(devicePixelRatio,1.5),frameEMA=1/60,qualT=0,VIEW=950,TERRAIN=null,shadowEvery=2,frameNo=0;
+function applyQuality(){const q=QUAL[quality==='auto'?'high':quality];
+  renderer.setPixelRatio(quality==='auto'?dynPR:Math.min(devicePixelRatio,q.pr));resize();
+  sun.castShadow=q.shadow>0;if(q.shadow&&sun.shadow.mapSize.x!==q.shadow){sun.shadow.mapSize.set(q.shadow,q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+  if(terrainShadow)terrainShadow.visible=q.terrainShadow;VIEW=q.view;shadowEvery=quality==='high'?1:2;camera.far=VIEW+700;camera.updateProjectionMatrix();}
+function autoQuality(rdt){frameEMA=lerp(frameEMA,rdt,0.05);qualT-=rdt;if(quality!=='auto'||qualT>0)return;qualT=1.5;
+  const max=Math.min(devicePixelRatio,1.5);
+  if(frameEMA>1/42&&dynPR>0.6){dynPR=Math.max(0.6,dynPR-0.1);renderer.setPixelRatio(dynPR);resize();}
+  else if(frameEMA<1/57&&dynPR<max){dynPR=Math.min(max,dynPR+0.05);renderer.setPixelRatio(dynPR);resize();}}
+
+// sky
+const skyU={top:{value:new THREE.Color()},hor:{value:new THREE.Color()},sunDir:{value:new V3(0,1,0)},sunCol:{value:new THREE.Color()},moonA:{value:0}};
+const sky=new THREE.Mesh(new THREE.SphereGeometry(1500,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:skyU,
+  vertexShader:`varying vec3 vDir;void main(){vDir=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform vec3 top,hor,sunCol,sunDir;uniform float moonA;varying vec3 vDir;
+  void main(){vec3 d=normalize(vDir);float h=d.y;vec3 c=mix(hor,top,pow(clamp(h,0.,1.),0.55));c=mix(c,hor*0.55,clamp(-h*5.,0.,1.));
+  float s=max(dot(d,sunDir),0.);c+=sunCol*(smoothstep(0.9994,0.9998,s)*6.+pow(s,24.)*0.45+pow(s,4.)*0.08);
+  float m=max(dot(d,-sunDir),0.);c+=vec3(0.8,0.85,1.)*moonA*(smoothstep(0.9993,0.9996,m)*1.5+pow(m,60.)*0.1);
+  gl_FragColor=vec4(c,1.);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+  }`}));
+sky.renderOrder=-1;scene.add(sky);
+const starGeo=new THREE.BufferGeometry();{const p=[];for(let i=0;i<1500;i++){const u=Math.random(),v=Math.random()*0.95,th=u*TAU,ph=Math.acos(1-v);p.push(Math.sin(ph)*Math.cos(th)*1400,Math.cos(ph)*1400,Math.sin(ph)*Math.sin(th)*1400);}starGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));}
+const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false}));scene.add(stars);
+
+// ---------------- helpers ----------------
+const BOXG=new THREE.BoxGeometry(1,1,1);
+const matCache=new Map();
+function mat(c){let m=matCache.get(c);if(!m){m=new THREE.MeshLambertMaterial({color:c});matCache.set(c,m);}return m;}
+function bx(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(BOXG,typeof c==='string'?mat(c):c);m.scale.set(w,h,d);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;if(p)p.add(m);return m;}
+const geoCache=new Map();
+function cylG(rt,rb,h,s=8){const k=`${rt},${rb},${h},${s}`;let g=geoCache.get(k);if(!g){g=new THREE.CylinderGeometry(rt,rb,h,s);geoCache.set(k,g);}return g;}
+function mesh(g,c,x,y,z,p){const m=new THREE.Mesh(g,typeof c==='string'?mat(c):c);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;if(p)p.add(m);return m;}
+function signTex(text,bg='#2b1d12',fg='#ecd29c'){
+  const c=document.createElement('canvas');c.width=512;c.height=128;const x=c.getContext('2d');
+  x.fillStyle=bg;x.fillRect(0,0,512,128);x.strokeStyle=fg;x.lineWidth=5;x.strokeRect(10,10,492,108);
+  x.fillStyle=fg;x.textAlign='center';x.textBaseline='middle';let fs=64;x.font=`${fs}px Sancreek, Georgia, serif`;
+  while(x.measureText(text).width>460&&fs>24){fs-=4;x.font=`${fs}px Sancreek, Georgia, serif`;}
+  x.fillText(text,256,70);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
+}
+function markerSprite(ch,col){
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+  x.font='bold 54px Georgia, serif';x.textAlign='center';x.textBaseline='middle';x.lineWidth=6;x.strokeStyle='#1a120c';x.strokeText(ch,32,34);x.fillStyle=col;x.fillText(ch,32,34);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,fog:false}));s.scale.set(0.7,0.7,0.7);s.renderOrder=10;return s;
+}
+
+// ---------------- terrain ----------------
+const COL={sand:new THREE.Color('#c99c64'),sand2:new THREE.Color('#b8875a'),grass:new THREE.Color('#8d904b'),grass2:new THREE.Color('#6b7838'),
+  rock:new THREE.Color('#a8573a'),rock2:new THREE.Color('#7a3d2a'),mtn:new THREE.Color('#7d6150'),wet:new THREE.Color('#5f6e3a')};
+const _tc=new THREE.Color();
+function groundColor(x,z,h,slope,out){
+  out.copy(COL.sand).lerp(COL.sand2,vnoise(x*0.05,z*0.05)*0.8);
+  const g=smooth(0.47,0.62,moist(x,z));if(g>0){out.lerp(COL.grass,g*0.85);out.lerp(COL.grass2,g*vnoise(x*0.08+5,z*0.08)*0.6);}
+  const pd=Math.hypot(x-POND.x,z-POND.z);if(pd<POND.r+25)out.lerp(COL.wet,smooth(POND.r+25,POND.r,pd)*0.8);
+  const e=Math.max(Math.abs(x),Math.abs(z));if(e>560)out.lerp(COL.mtn,smooth(560,720,e)*0.7);
+  const st=smooth(0.45,0.95,slope);
+  if(st>0){_tc.copy(COL.rock).lerp(COL.rock2,0.5+0.5*Math.sin(h*0.6+vnoise(x*0.02,z*0.02)*3));out.lerp(_tc,st);}
+  return out;
+}
+const VCOL=new Float32Array(ROW*ROW*3);
+function buildTerrain(){
+  const pos=new Float32Array(ROW*ROW*3),tc=new THREE.Color();
+  for(let iz=0;iz<ROW;iz++)for(let ix=0;ix<ROW;ix++){
+    const i=iz*ROW+ix,x=-HALF+ix*CELL,z=-HALF+iz*CELL,h=H[i];pos[i*3]=x;pos[i*3+1]=h;pos[i*3+2]=z;
+    const hx=H[iz*ROW+Math.min(ix+1,N)]-H[iz*ROW+Math.max(ix-1,0)],hz=H[Math.min(iz+1,N)*ROW+ix]-H[Math.max(iz-1,0)*ROW+ix];
+    groundColor(x,z,h,Math.hypot(hx,hz)/(2*CELL),tc);VCOL[i*3]=tc.r;VCOL[i*3+1]=tc.g;VCOL[i*3+2]=tc.b;
+  }
+  const idx=new Uint32Array(N*N*6);let k=0;
+  for(let iz=0;iz<N;iz++)for(let ix=0;ix<N;ix++){const a=iz*ROW+ix,b=(iz+1)*ROW+ix,c=b+1,d=a+1;idx[k++]=a;idx[k++]=b;idx[k++]=d;idx[k++]=b;idx[k++]=c;idx[k++]=d;}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(VCOL,3));
+  geo.setIndex(new THREE.BufferAttribute(idx,1));geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true}));m.receiveShadow=true;m.castShadow=false;m.matrixAutoUpdate=false;scene.add(m);TERRAIN=m;
+  const water=new THREE.Mesh(new THREE.CircleGeometry(POND.r+2,40),new THREE.MeshLambertMaterial({color:'#3f6f84',transparent:true,opacity:0.85}));
+  water.rotation.x=-Math.PI/2;water.position.set(POND.x,POND.y,POND.z);scene.add(water);
+}
+function buildRoads(){
+  const roadMat=new THREE.MeshLambertMaterial({color:'#93704c',polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  for(const r of ROADS){
+    const samples=[];
+    for(let i=0;i<r.pts.length-1;i++){const [ax,az]=r.pts[i],[bx_,bz]=r.pts[i+1],L=Math.hypot(bx_-ax,bz-az),n=Math.ceil(L/2.5);
+      for(let j=(i?1:0);j<=n;j++)samples.push([lerp(ax,bx_,j/n),lerp(az,bz,j/n)]);}
+    const pos=[],idx=[];
+    samples.forEach((s,i)=>{const a=samples[Math.max(i-1,0)],b=samples[Math.min(i+1,samples.length-1)];let tx=b[0]-a[0],tz=b[1]-a[1];const l=Math.hypot(tx,tz)||1;tx/=l;tz/=l;
+      for(const sd of [-1,1]){const x=s[0]-tz*sd*r.w/2,z=s[1]+tx*sd*r.w/2;pos.push(x,groundY(x,z)+0.12,z);}
+      if(i){const k=i*2;idx.push(k-2,k,k-1,k-1,k,k+1);}});
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();
+    const m=new THREE.Mesh(g,roadMat);m.receiveShadow=true;scene.add(m);
+  }
+}
+
+// ---------------- colliders ----------------
+const boxes=[],colGrid=new Map(),CG=16;
+function addBox(minX,maxX,minZ,maxZ,y0,y1){boxes.push({minX,maxX,minZ,maxZ,box3:new THREE.Box3(new V3(minX,y0,minZ),new V3(maxX,y1,maxZ))});}
+function addCol(x,z,r){const k=Math.floor(x/CG)+','+Math.floor(z/CG);let a=colGrid.get(k);if(!a)colGrid.set(k,a=[]);a.push({x,z,r});}
+function resolve(pos,r){
+  for(const b of boxes){if(pos.x<b.minX-r||pos.x>b.maxX+r||pos.z<b.minZ-r||pos.z>b.maxZ+r)continue;
+    const cx=clamp(pos.x,b.minX,b.maxX),cz=clamp(pos.z,b.minZ,b.maxZ),dx=pos.x-cx,dz=pos.z-cz,d=Math.hypot(dx,dz);
+    if(d<r){if(d>1e-4){pos.x=cx+dx/d*r;pos.z=cz+dz/d*r;}else{const l=pos.x-b.minX,rr=b.maxX-pos.x,t=pos.z-b.minZ,bt=b.maxZ-pos.z,mn=Math.min(l,rr,t,bt);
+      if(mn===l)pos.x=b.minX-r;else if(mn===rr)pos.x=b.maxX+r;else if(mn===t)pos.z=b.minZ-r;else pos.z=b.maxZ+r;}}}
+  const gx=Math.floor(pos.x/CG),gz=Math.floor(pos.z/CG);
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const a=colGrid.get((gx+i)+','+(gz+j));if(!a)continue;
+    for(const c of a){const dx=pos.x-c.x,dz=pos.z-c.z,d=Math.hypot(dx,dz),m=r+c.r;if(d<m&&d>1e-4){pos.x=c.x+dx/d*m;pos.z=c.z+dz/d*m;}}}
+  pos.x=clamp(pos.x,-HALF+40,HALF-40);pos.z=clamp(pos.z,-HALF+40,HALF-40);
+}
+function tryMove(pos,dx,dz,r,maxSlope){
+  const h0=groundY(pos.x,pos.z),run=Math.hypot(dx,dz);if(run<1e-6)return true;
+  const ok=(x,z)=>(groundY(x,z)-h0)/Math.hypot(x-pos.x,z-pos.z)<=maxSlope;
+  let moved=true;
+  if(ok(pos.x+dx,pos.z+dz)){pos.x+=dx;pos.z+=dz;}
+  else if(Math.abs(dx)>1e-4&&ok(pos.x+dx,pos.z)){pos.x+=dx;moved=false;}
+  else if(Math.abs(dz)>1e-4&&ok(pos.x,pos.z+dz)){pos.z+=dz;moved=false;}
+  else moved=false;
+  resolve(pos,r);return moved;
+}
+
+// ---------------- buildings ----------------
+const SIGNS={};
+const windowMat=new THREE.MeshLambertMaterial({color:0x2a2018,emissive:0x000000});
+const windmills=[],fires=[],flags=[];
+function building(o){
+  const {x,z,w,d,h}=o,rot=o.rot||0,g=new THREE.Group(),wall=o.color||'#8a6a4a',trim=o.trim||'#4a3424';
+  bx(w,h,d,wall,0,h/2,0,g);
+  for(const sx of [-1,1])for(const sz of [-1,1])bx(0.25,h,0.25,trim,sx*w/2,h/2,sz*d/2,g);
+  if(o.gable){const rh=o.roofH||3,sh=new THREE.Shape();sh.moveTo(-d/2-0.5,0);sh.lineTo(d/2+0.5,0);sh.lineTo(0,rh);sh.closePath();
+    const rg=new THREE.ExtrudeGeometry(sh,{depth:w+0.5,bevelEnabled:false});rg.translate(0,0,-(w+0.5)/2);rg.rotateY(Math.PI/2);
+    mesh(rg,o.roofC||'#5a3d2a',0,h,0,g);}
+  else bx(w+0.4,0.3,d+0.4,trim,0,h+0.15,0,g);
+  let fz=d/2;
+  if(o.front){const fh=h+(o.frontH||2.2);bx(w+0.3,fh,0.3,wall,0,fh/2,d/2+0.15,g);bx(w+0.7,0.3,0.5,trim,0,fh+0.1,d/2+0.22,g);fz=d/2+0.3;}
+  const porch=o.porch!==false,py=porch?0.25:0;
+  bx(1.4,2.4,0.12,'#3b2617',0,py+1.2,fz+0.03,g);
+  const wins=o.wins??2;
+  for(let i=0;i<wins;i++){const wx=(i%2?1:-1)*Math.min(w*0.3,3.2);bx(1.4,1.5,0.08,trim,wx,py+1.75,fz+0.02,g);bx(1.1,1.2,0.1,windowMat,wx,py+1.75,fz+0.04,g);}
+  if(h>=7&&wins)for(const wx of [-w*0.3,0,w*0.3]){bx(1.3,1.4,0.08,trim,wx,h-2.2,fz+0.02,g);bx(1,1.1,0.1,windowMat,wx,h-2.2,fz+0.04,g);}
+  if(porch){bx(w+0.2,0.25,3,'#6b4f35',0,0.125,fz+1.5,g);const aw=bx(w+0.2,0.12,3.3,trim,0,3.3,fz+1.6,g);aw.rotation.x=0.08;
+    const np=w>12?3:2;for(let i=0;i<np;i++){const px=lerp(-(w/2-0.15),w/2-0.15,i/(np-1));bx(0.18,3.2,0.18,trim,px,1.6,fz+3.05,g);}}
+  if(o.sign){const sw=Math.min(w*0.82,11),s=new THREE.Mesh(new THREE.PlaneGeometry(sw,sw/4),new THREE.MeshLambertMaterial({map:signTex(o.sign,o.signBg,o.signFg)}));SIGNS[o.sign]=s;
+    s.position.set(0,o.front?h+(o.frontH||2.2)/2+0.05:Math.min(h-0.6,4.4),fz+0.04);s.receiveShadow=true;g.add(s);}
+  const y0=groundY(x,z);g.position.set(x,y0,z);g.rotation.y=rot;scene.add(g);
+  const sw_=Math.abs(Math.sin(rot))>0.5,hw=(sw_?d:w)/2,hd=(sw_?w:d)/2;addBox(x-hw,x+hw,z-hd,z+hd,y0-2,y0+h+(o.gable?o.roofH||3:2.5));
+  return g;
+}
+function prop(kind,x,z,rot=0){
+  const g=new THREE.Group(),y=groundY(x,z);g.position.set(x,y,z);g.rotation.y=rot;scene.add(g);
+  if(kind==='barrel'){mesh(cylG(0.4,0.4,1,10),'#6b4a2c',0,0.5,0,g);mesh(cylG(0.41,0.41,0.06,10),'#333',0,0.75,0,g);mesh(cylG(0.41,0.41,0.06,10),'#333',0,0.25,0,g);addCol(x,z,0.45);}
+  else if(kind==='crate'){const s=rand(0.8,1.1);bx(s,s,s,'#8a6a42',0,s/2,0,g).rotation.y=rand(0,1);addCol(x,z,s*0.6);}
+  else if(kind==='rail'){bx(0.15,1.1,0.15,'#4a3424',-1.4,0.55,0,g);bx(0.15,1.1,0.15,'#4a3424',1.4,0.55,0,g);bx(3,0.12,0.12,'#5a4030',0,1,0,g);}
+  else if(kind==='trough'){bx(2.4,0.6,0.8,'#5a4030',0,0.3,0,g);bx(2.2,0.05,0.6,'#3f6f84',0,0.55,0,g);addCol(x,z,1);}
+  else if(kind==='pole'){bx(0.25,7,0.25,'#5a4535',0,3.5,0,g);bx(1.8,0.15,0.15,'#5a4535',0,6.4,0,g);}
+  else if(kind==='wagon'){bx(2,0.6,3.8,'#7a5634',0,1.1,0,g);bx(2,0.6,0.1,'#6a4a2c',0,1.6,1.9,g);
+    for(const sx of [-1.05,1.05])for(const sz of [-1.3,1.3]){const w=mesh(cylG(0.55,0.55,0.1,12),'#4a3424',sx,0.55,sz,g);w.rotation.z=Math.PI/2;}
+    const cover=mesh(new THREE.CylinderGeometry(1.1,1.1,3.4,12,1,true,0,Math.PI),'#e4d8bc',0,1.4,0,g);cover.rotation.x=Math.PI/2;cover.rotation.y=Math.PI/2;cover.material.side=THREE.DoubleSide;
+    addCol(x,z,1.6);}
+  else if(kind==='tent'){const t=mesh(new THREE.ConeGeometry(2.4,2.8,4),'#cdbd98',0,1.4,0,g);t.rotation.y=Math.PI/4;addCol(x,z,1.8);}
+  else if(kind==='fire'){for(let i=0;i<3;i++){const l=bx(0.18,0.18,1.4,'#3a2414',0,0.1,0,g);l.rotation.y=i*1.05;}
+    const ring=8;for(let i=0;i<ring;i++)bx(0.3,0.25,0.3,'#777',Math.cos(i/ring*TAU)*0.85,0.12,Math.sin(i/ring*TAU)*0.85,g);
+    const f=new THREE.Mesh(new THREE.ConeGeometry(0.45,1.1,6),new THREE.MeshBasicMaterial({color:0xffa040}));f.position.y=0.6;g.add(f);
+    fires.push({f,g});}
+  return g;
+}
+function waterTower(x,z){const g=new THREE.Group(),y=groundY(x,z);g.position.set(x,y,z);scene.add(g);
+  for(const sx of [-1.6,1.6])for(const sz of [-1.6,1.6])bx(0.3,7,0.3,'#5a4030',sx,3.5,sz,g);
+  mesh(cylG(2.4,2.4,3.6,14),'#7a5634',0,8.8,0,g);mesh(new THREE.ConeGeometry(2.7,1.6,14),'#4a3424',0,11.4,0,g);addCol(x,z,2.4);}
+function windmill(x,z){const g=new THREE.Group(),y=groundY(x,z);g.position.set(x,y,z);scene.add(g);
+  mesh(new THREE.CylinderGeometry(0.25,1.4,11,4),'#6a5a4a',0,5.5,0,g);const rotor=new THREE.Group();rotor.position.set(0,11,0.6);g.add(rotor);
+  for(let i=0;i<12;i++){const b=bx(0.35,2.6,0.05,'#b8b0a0',0,1.5,0,null);const p=new THREE.Group();p.rotation.z=i/12*TAU;p.add(b);rotor.add(p);}
+  bx(0.2,0.2,2.2,'#6a5a4a',0,11,-0.6,g);bx(0.05,1.2,1.4,'#b8b0a0',0,11,-1.8,g);windmills.push(rotor);addCol(x,z,1.3);}
+function fenceRect(cx,cz,w,d){const pts=[[cx-w/2,cz-d/2],[cx+w/2,cz-d/2],[cx+w/2,cz+d/2],[cx-w/2,cz+d/2],[cx-w/2,cz-d/2]];
+  for(let i=0;i<4;i++){const [ax,az]=pts[i],[bx_,bz]=pts[i+1],L=Math.hypot(bx_-ax,bz-az),n=Math.ceil(L/3);
+    for(let j=0;j<n;j++){if(i===2&&j===Math.floor(n/2))continue;const x=lerp(ax,bx_,j/n),z=lerp(az,bz,j/n),x2=lerp(ax,bx_,(j+1)/n),z2=lerp(az,bz,(j+1)/n),y=groundY(x,z);
+      bx(0.18,1.4,0.18,'#5a4030',x,y+0.7,z);const mx=(x+x2)/2,mz=(z+z2)/2,my=groundY(mx,mz),a=Math.atan2(x2-x,z2-z);
+      for(const hh of [0.6,1.15]){const r=bx(0.08,0.12,L/n,'#6b4f35',mx,my+hh,mz);r.rotation.y=a;}}}}
+
+function buildTown(){
+  const north=[{x:-58,w:10,d:12,h:5,color:'#8c6b4a',sign:'SHERIFF'},{x:-34,w:16,d:16,h:8.5,color:'#7a4b33',sign:'RUSTY SPUR SALOON',frontH:2.6},
+    {x:-10,w:13,d:14,h:6,color:'#a08a66',sign:'MERCANTILE'},{x:14,w:12,d:14,h:7,color:'#8e4a38',sign:'COPPERVALE BANK',trim:'#3a2a20'},{x:40,w:15,d:14,h:9,color:'#6d5a45',sign:'GRAND HOTEL'}];
+  for(const b of north)building({...b,front:true,z:-11-b.d/2,rot:0});
+  const south=[{x:-52,w:16,d:14,h:6,color:'#7b3b2b',sign:'LIVERY',gable:true,roofH:4},{x:-28,w:10,d:12,h:5,color:'#9a8a70',sign:'DOCTOR',front:true},
+    {x:-8,w:9,d:11,h:5,color:'#4a4038',sign:'UNDERTAKER',front:true},{x:12,w:10,d:10,h:5,color:'#7e6a52',sign:'TELEGRAPH',front:true},{x:34,w:10,d:10,h:5,color:'#8a5e3c',sign:'BARBER',front:true}];
+  for(const b of south)building({...b,z:11+b.d/2,rot:Math.PI});
+  const ch=building({x:74,z:-32,w:10,d:16,h:6,color:'#d8cfbd',trim:'#8a7a66',gable:true,roofH:4,roofC:'#6a5040',porch:false,wins:0});
+  bx(3.2,7,3.2,'#d8cfbd',0,9,6.5,ch);const sp=mesh(new THREE.ConeGeometry(2.4,5,4),'#6a5040',0,15,6.5,ch);sp.rotation.y=Math.PI/4;
+  bx(0.2,1.6,0.2,'#3a2a20',0,18.2,6.5,ch);bx(0.9,0.2,0.2,'#3a2a20',0,18.5,6.5,ch);bx(1.4,2.4,0.1,'#4a3020',0,1.2,8.05,ch);
+  waterTower(-78,24);prop('wagon',22,5,0.3);prop('wagon',-70,-4,1.4);
+  for(const x of [-38,-30,-62])prop('rail',x,-6.5);prop('trough',-34,-5.2);prop('trough',-52,6);
+  for(const [x,z] of [[-47,-9.5],[-21,-9.5],[3,-9],[26,-9.4],[-41,9.6],[-17,9.6],[22,9.2],[44,9.4],[-65,9]])prop(Math.random()<0.6?'barrel':'crate',x,z);
+  for(let i=0;i<6;i++)prop('crate',-76+rand(-3,3),30+rand(-3,3));
+  // townsfolk's horses tied at the rails: free to take, if you don't mind a bounty
+  makeHorse(-62,-3.4,Math.PI,['#5a3a22','#1a0f08'],'Hitched horse',false);makeHorse(-38,-3.4,Math.PI,['#d8cfc0','#6a6056'],'Hitched horse',false);
+  makeHorse(-30,-3.4,Math.PI,['#3a2a20','#120a06'],'Hitched horse',false);
+}
+function buildRanch(){const s=SITES.ranch;
+  building({x:s.x,z:s.z-6,w:12,d:10,h:4.5,color:'#a07850',gable:true,roofH:3,roofC:'#4d3a2a',sign:'DELGADO',signBg:'#e0cfa8',signFg:'#5a2a14'});
+  building({x:s.x+26,z:s.z-12,w:12,d:16,h:6,color:'#8b3a2a',gable:true,roofH:4.5,rot:-Math.PI/2,porch:false,wins:0});
+  fenceRect(s.x-20,s.z+16,24,16);windmill(s.x+14,s.z+14);prop('trough',s.x-20,s.z+16);prop('wagon',s.x+12,s.z-2,1.1);
+  for(let i=0;i<4;i++)prop('barrel',s.x+6+i*0.9,s.z+2.2);
+}
+function buildCamp(s,big){
+  const tents=big?6:4;for(let i=0;i<tents;i++){const a=i/tents*TAU+0.3;prop('tent',s.x+Math.cos(a)*12,s.z+Math.sin(a)*12,a);}
+  prop('fire',s.x,s.z);for(let i=0;i<(big?10:5);i++){const a=rand(0,TAU),r=rand(5,16);prop(Math.random()<0.5?'crate':'barrel',s.x+Math.cos(a)*r,s.z+Math.sin(a)*r);}
+  if(big){building({x:s.x-20,z:s.z-14,w:9,d:8,h:4,color:'#5d4a3a',gable:true,roofH:2.5,roofC:'#3d2d20',porch:false,wins:1,rot:0.4});
+    const g=new THREE.Group(),tx=s.x+18,tz=s.z-12;g.position.set(tx,groundY(tx,tz),tz);scene.add(g);
+    for(const a of [-1.3,1.3])for(const b of [-1.3,1.3])bx(0.25,7,0.25,'#4a3424',a,3.5,b,g);bx(3.4,0.2,3.4,'#5a4030',0,6,0,g);bx(3.4,0.9,0.1,'#5a4030',0,6.5,1.7,g);bx(3.4,0.9,0.1,'#5a4030',0,6.5,-1.7,g);
+    const roof=mesh(new THREE.ConeGeometry(2.6,1.6,4),'#3d2d20',0,8.2,0,g);roof.rotation.y=Math.PI/4;addCol(tx,tz,1.8);
+    prop('wagon',s.x+8,s.z+18,0.8);prop('fire',s.x-8,s.z+6);}
+}
+const pickups=[];
+function buildWreck(){const s=SITES.wreck,g=new THREE.Group();g.position.set(s.x,groundY(s.x,s.z),s.z);g.rotation.y=0.6;scene.add(g);
+  const body=bx(2.2,2,4.2,'#4a2c1c',0,1.05,0,g);body.rotation.z=1.4;body.position.x=0.4;bx(2.3,0.2,4.4,'#c79a3a',1.4,0.2,0,g).rotation.z=1.4;
+  for(const [x,z,r] of [[-1.5,2.2,0.3],[2.5,-2.6,1.2],[-2.8,-1,0.2]]){const w=mesh(cylG(0.8,0.8,0.12,14),'#3a2414',x,0.08,z,g);w.rotation.set(0,r,0);}
+  const w2=mesh(cylG(0.8,0.8,0.12,14),'#3a2414',1.8,0.85,1.9,g);w2.rotation.x=Math.PI/2;
+  addCol(s.x,s.z,2.6);for(let i=0;i<5;i++)prop('crate',s.x+rand(-7,7),s.z+rand(-7,7));
+  const sb=new THREE.Group();bx(0.8,0.55,0.55,'#3b2a1a',0,0.28,0,sb);bx(0.82,0.08,0.57,'#c9a24a',0,0.5,0,sb);bx(0.1,0.15,0.58,'#c9a24a',0,0.3,0,sb);
+  const px=s.x+4,pz=s.z+3;sb.position.set(px,groundY(px,pz),pz);sb.visible=false;scene.add(sb);
+  pickups.push({id:'strongbox',label:'the strongbox',mesh:sb,pos:new V3(px,0,pz),active:false});
+}
+
+// ---------------- scatter ----------------
+const _m=new THREE.Matrix4(),_m2=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_sv=new V3(),_pv=new V3();
+function partM(base,lx,ly,lz,sx,sy,sz,rz=0,rx=0,ry=0){_e.set(rx,ry,rz);_q.setFromEuler(_e);_pv.set(lx,ly,lz);_sv.set(sx,sy,sz);_m2.compose(_pv,_q,_sv);return _m.multiplyMatrices(base,_m2);}
+// Scenery is one instanced mesh per part for the whole map. Shadows only reach ~80 m from the player, so instead of
+// drawing every instance into the shadow map each frame, a small stand-in mesh holds just the nearby ones. It lives on
+// layer 1, which only the sun's shadow camera renders.
+const SHADOW_PROXIES=[],SHADOW_LAYER=1,PROXY_R=110;
+function inst(geo,material,list,fn,shadow=true){if(!list.length)return;const m=new THREE.InstancedMesh(geo,material,list.length);const base=new THREE.Matrix4();
+  const mats=shadow?new Float32Array(list.length*16):null;
+  list.forEach((it,i)=>{base.makeRotationY(it.ry);base.setPosition(it.x,it.y,it.z);const pm=fn(base,it);m.setMatrixAt(i,pm);if(mats)pm.toArray(mats,i*16);});
+  m.castShadow=false;m.receiveShadow=true;m.matrixAutoUpdate=false;scene.add(m);
+  if(shadow){const px=new THREE.InstancedMesh(geo,material,Math.min(list.length,600));px.count=0;px.castShadow=true;px.frustumCulled=false;px.layers.set(SHADOW_LAYER);
+    px.matrixAutoUpdate=false;scene.add(px);SHADOW_PROXIES.push({px,list,mats});}}
+let proxyAt=null;
+function updateShadowProxies(force){const p=P.pos;if(!force&&proxyAt&&Math.hypot(p.x-proxyAt.x,p.z-proxyAt.z)<25)return;proxyAt={x:p.x,z:p.z};
+  const r2=PROXY_R*PROXY_R;
+  for(const sp of SHADOW_PROXIES){const arr=sp.px.instanceMatrix.array,cap=sp.px.instanceMatrix.count;let n=0;
+    for(let i=0;i<sp.list.length&&n<cap;i++){const it=sp.list[i],dx=it.x-p.x,dz=it.z-p.z;if(dx*dx+dz*dz>r2)continue;arr.set(sp.mats.subarray(i*16,i*16+16),n*16);n++;}
+    sp.px.count=n;sp.px.instanceMatrix.needsUpdate=true;}
+  updateTerrainShadow(p);}
+// Every plank, post and barrel was its own draw call. After the world is built, static meshes that share a material
+// are baked into one mesh in world space, so each colour costs one draw call. Animated, textured and see-through
+// meshes stay as they are.
+function mergeStatic(){const skip=new Set();for(const f of fires)skip.add(f.f);for(const w of windmills)w.traverse(o=>skip.add(o));for(const p of pickups)p.mesh.traverse(o=>skip.add(o));
+  const groups=new Map(),victims=[];scene.updateMatrixWorld(true);
+  for(const root of [...scene.children]){if(root.matrixAutoUpdate)continue;
+    root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||skip.has(o)||o===TERRAIN||Array.isArray(o.material)||o.material.map||o.material.transparent||o.layers.mask!==1)return;
+      const key=o.material.uuid+(o.castShadow?'|s':'');let g=groups.get(key);if(!g)groups.set(key,g={mat:o.material,cast:o.castShadow,list:[]});g.list.push(o);victims.push(o);});}
+  for(const g of groups.values()){const m=new THREE.Mesh(mergeList(g.list),g.mat);m.castShadow=g.cast;m.receiveShadow=true;m.matrixAutoUpdate=false;scene.add(m);}
+  for(const v of victims)v.parent.remove(v);return {meshes:victims.length,calls:groups.size};}
+function mergeList(list){let vc=0,ic=0;for(const o of list){const g=o.geometry;vc+=g.attributes.position.count;ic+=g.index?g.index.count:g.attributes.position.count;}
+  const pos=new Float32Array(vc*3),nor=new Float32Array(vc*3),idx=new Uint32Array(ic),v=new V3(),nm=new THREE.Matrix3();let vo=0,io=0;
+  for(const o of list){const g=o.geometry,p=g.attributes.position,n=g.attributes.normal;nm.getNormalMatrix(o.matrixWorld);
+    for(let i=0;i<p.count;i++){const k=(vo+i)*3;v.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);pos[k]=v.x;pos[k+1]=v.y;pos[k+2]=v.z;
+      v.fromBufferAttribute(n,i).applyMatrix3(nm).normalize();nor[k]=v.x;nor[k+1]=v.y;nor[k+2]=v.z;}
+    if(g.index){for(let i=0;i<g.index.count;i++)idx[io+i]=g.index.getX(i)+vo;io+=g.index.count;}else{for(let i=0;i<p.count;i++)idx[io+i]=vo+i;io+=p.count;}
+    vo+=p.count;}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));
+  geo.setIndex(new THREE.BufferAttribute(idx,1));geo.computeBoundingSphere();return geo;}
+// A character is ~20 meshes; past 230 m they are a few pixels tall behind haze, so skip drawing them.
+let cullT=0;
+function cullFar(){cullT-=1;if(cullT>0)return;cullT=10;const lim2=Math.min(170,VIEW*0.4)**2,cp=camera.position;
+  const vis=(g,p)=>{const dx=p.x-cp.x,dz=p.z-cp.z;g.visible=dx*dx+dz*dz<lim2;};
+  for(const n of npcs)vis(n.h.g,n.pos);for(const e of outlaws){vis(e.h.g,e.pos);if(e.hq)vis(e.hq.g,e.hq.g.position);}
+  for(const a of animals)vis(a.q.g,a.pos);for(const a of EMP.gang){vis(a.h.g,a.pos);vis(a.hq.g,a.hq.g.position);}
+  for(const k of family)vis(k.h.g,k.pos);for(const h of horses)if(h!==HORSE)vis(h.q.g,h.pos);}
+// Buildings, props and scenery never move, so compute their transforms once and stop the per-frame update for them.
+// Fire flames and windmill rotors animate inside frozen parents, so they keep updating.
+function freezeStatic(){const live=new Set([sky,stars,beacon,flash,PH.g,sun.target,...horses.map(h=>h.q.g),...tumbleweeds.map(t=>t.m),...clouds]);
+  let n=0;for(const o of scene.children){if(live.has(o)||o.isLight)continue;o.updateMatrixWorld(true);o.traverse(c=>{c.matrixAutoUpdate=false;n++;});}
+  for(const f of fires)f.f.matrixAutoUpdate=true;for(const w of windmills)w.matrixAutoUpdate=true;return n;}
+// terrain shadows come from a 200 m patch around the player that reuses the exact terrain heights
+const TS_N=40;let terrainShadow=null;
+function updateTerrainShadow(p){
+  if(!terrainShadow){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array((TS_N+1)*(TS_N+1)*3),3));
+    const idx=[];for(let z=0;z<TS_N;z++)for(let x=0;x<TS_N;x++){const a=z*(TS_N+1)+x,b=a+TS_N+1;idx.push(a,b,a+1,b,b+1,a+1);}g.setIndex(idx);
+    terrainShadow=new THREE.Mesh(g,new THREE.MeshBasicMaterial());terrainShadow.castShadow=true;terrainShadow.frustumCulled=false;terrainShadow.layers.set(SHADOW_LAYER);scene.add(terrainShadow);}
+  const ix0=clamp(Math.round((p.x+HALF)/CELL)-TS_N/2,0,N-TS_N),iz0=clamp(Math.round((p.z+HALF)/CELL)-TS_N/2,0,N-TS_N),pos=terrainShadow.geometry.attributes.position.array;
+  let k=0;for(let z=0;z<=TS_N;z++)for(let x=0;x<=TS_N;x++){const ix=ix0+x,iz=iz0+z;pos[k++]=-HALF+ix*CELL;pos[k++]=H[iz*ROW+ix];pos[k++]=-HALF+iz*CELL;}
+  terrainShadow.geometry.attributes.position.needsUpdate=true;terrainShadow.geometry.computeBoundingSphere();}
+function scatter(){
+  const cact=[],jun=[],pine=[],rock=[],bush=[];
+  const ok=(x,z,pad)=>{for(const s of SITE_LIST)if(Math.hypot(x-s.x,z-s.z)<s.r+pad)return false;if(roadDist(x,z)<4)return false;if(Math.hypot(x-POND.x,z-POND.z)<POND.r+3)return false;return true;};
+  for(let i=0;i<17000;i++){const x=sr(-HALF+30,HALF-30),z=sr(-HALF+30,HALF-30);if(!ok(x,z,10))continue;
+    const y=groundY(x,z),sl=slopeAt(x,z),m=moist(x,z),e=Math.max(Math.abs(x),Math.abs(z)),r=srand(),it={x,y,z,ry:sr(0,TAU),s:sr(0.7,1.4)};
+    if(sl>0.8){if(r<0.06)rock.push(it);continue;}
+    if(e>590){if(r<0.22)pine.push(it);else if(r<0.27)rock.push(it);continue;}
+    if(m>0.53){if(r<0.04)jun.push(it);else if(r<0.055)pine.push(it);else if(r<0.2)bush.push(it);}
+    else{if(r<0.045){it.h=sr(2.5,5.5);it.a1=srand()<0.8;it.a2=srand()<0.6;cact.push(it);}else if(r<0.065)rock.push(it);else if(r<0.16)bush.push(it);}
+  }
+  for(const mz of MESAS)for(let i=0;i<14;i++){const a=sr(0,TAU),rr=mz.r*1.15+sr(2,16),x=mz.x+Math.cos(a)*rr,z=mz.z+Math.sin(a)*rr;if(ok(x,z,6))rock.push({x,y:groundY(x,z),z,ry:sr(0,TAU),s:sr(1.2,3)});}
+  for(const s of [SITES.creek,SITES.hollow,SITES.ridge])for(let i=0;i<14;i++){const a=sr(0,TAU),rr=s.r+sr(4,20),x=s.x+Math.cos(a)*rr,z=s.z+Math.sin(a)*rr;rock.push({x,y:groundY(x,z),z,ry:sr(0,TAU),s:sr(1,2.5)});}
+  const cG=new THREE.CylinderGeometry(0.32,0.38,1,7);cG.translate(0,0.5,0);const cM=new THREE.MeshLambertMaterial({color:'#5d7a3a',flatShading:true});
+  inst(cG,cM,cact,(b,it)=>partM(b,0,-0.2,0,1,it.h,1));
+  inst(cG,cM,cact.filter(c=>c.a1),(b,it)=>partM(b,-0.25,it.h*0.45,0,0.7,0.75,0.7,Math.PI/2));
+  inst(cG,cM,cact.filter(c=>c.a1),(b,it)=>partM(b,-0.95,it.h*0.45-0.15,0,0.65,1.3,0.65));
+  inst(cG,cM,cact.filter(c=>c.a2),(b,it)=>partM(b,0.25,it.h*0.6,0,0.7,0.7,0.7,-Math.PI/2));
+  inst(cG,cM,cact.filter(c=>c.a2),(b,it)=>partM(b,0.9,it.h*0.6-0.15,0,0.6,1.1,0.6));
+  cact.forEach(c=>addCol(c.x,c.z,0.5));
+  const trunk=new THREE.CylinderGeometry(0.2,0.3,1,6);trunk.translate(0,0.5,0);const trunkM=mat('#5a4030');
+  inst(trunk,trunkM,jun,(b,it)=>partM(b,0,0,0,it.s,2.2*it.s,it.s));
+  inst(new THREE.IcosahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:'#4f5f30',flatShading:true}),jun,(b,it)=>partM(b,0,2.6*it.s,0,2.2*it.s,1.7*it.s,2.2*it.s,0,0.3,0.4));
+  inst(trunk,trunkM,pine,(b,it)=>partM(b,0,0,0,it.s,3*it.s,it.s));
+  const cone=new THREE.ConeGeometry(1,1,7);const pM=new THREE.MeshLambertMaterial({color:'#3d5230',flatShading:true});
+  inst(cone,pM,pine,(b,it)=>partM(b,0,4*it.s,0,2.6*it.s,4.2*it.s,2.6*it.s));
+  inst(cone,pM,pine,(b,it)=>partM(b,0,6.4*it.s,0,1.8*it.s,3.2*it.s,1.8*it.s));
+  [...jun,...pine].forEach(t=>addCol(t.x,t.z,0.45*t.s));
+  inst(new THREE.DodecahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:'#9a6048',flatShading:true}),rock,(b,it)=>partM(b,0,0.2*it.s,0,it.s*1.3,it.s*0.8,it.s,0,it.ry,0));
+  rock.forEach(r=>{if(r.s>0.9)addCol(r.x,r.z,r.s*1.05);});
+  inst(new THREE.IcosahedronGeometry(0.6,0),new THREE.MeshLambertMaterial({color:'#7f8656',flatShading:true}),bush,(b,it)=>partM(b,0,0.25,0,it.s,it.s*0.7,it.s),false);
+  // telegraph poles along the east and north roads
+  for(const ri of [1,3]){const pts=ROADS[ri].pts;for(let i=0;i<pts.length-1;i++){const [ax,az]=pts[i],[bx_,bz]=pts[i+1],L=Math.hypot(bx_-ax,bz-az),n=Math.floor(L/35),nx=-(bz-az)/L,nz=(bx_-ax)/L;
+    for(let j=0;j<n;j++){const x=lerp(ax,bx_,j/n)+nx*6,z=lerp(az,bz,j/n)+nz*6;prop('pole',x,z,Math.atan2(bx_-ax,bz-az));addCol(x,z,0.3);}}}
+}
+let tumbleweeds=[],clouds=[];
+function buildAmbient(){
+  const tg=new THREE.IcosahedronGeometry(0.7,1),tm=new THREE.MeshLambertMaterial({color:'#9a7a4a',wireframe:true});
+  for(let i=0;i<8;i++){const m=new THREE.Mesh(tg,tm);m.castShadow=true;scene.add(m);tumbleweeds.push({m,x:rand(-120,120),z:rand(-120,120),sp:rand(3,6)});}
+  const cg=new THREE.IcosahedronGeometry(1,1),cm=new THREE.MeshLambertMaterial({color:'#ffffff',emissive:'#8a8a8a',flatShading:true});
+  for(let i=0;i<34;i++){const g=new THREE.Group();const n=3+Math.floor(rand(0,4));for(let j=0;j<n;j++){const p=new THREE.Mesh(cg,cm);p.position.set(rand(-25,25),rand(-3,4),rand(-10,10));p.scale.set(rand(14,24),rand(6,10),rand(10,16));g.add(p);}
+    g.position.set(rand(-900,900),rand(230,300),rand(-900,900));scene.add(g);clouds.push(g);}
+}
+
+// ---------------- characters ----------------
+function makeHuman(o={}){
+  const g=new THREE.Group(),skin=o.skin||'#c08a68',shirt=o.shirt||'#8a6b4a',pants=o.pants||'#3d3a35',hatC=o.hat||'#3a2a1e';
+  const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-0.12,0.92,0);legR.position.set(0.12,0.92,0);g.add(legL,legR);
+  for(const L of [legL,legR]){bx(0.17,0.78,0.2,pants,0,-0.4,0,L);bx(0.19,0.16,0.3,'#2a1c12',0,-0.84,0.04,L);}
+  const torso=new THREE.Group();torso.position.y=0.92;g.add(torso);
+  bx(0.46,0.62,0.26,shirt,0,0.33,0,torso);
+  if(o.coat){bx(0.5,0.84,0.3,o.coat,0,0.21,-0.012,torso);bx(0.18,0.55,0.02,shirt,0,0.36,0.152,torso);}
+  if(o.vest)bx(0.48,0.42,0.28,o.vest,0,0.42,0,torso);
+  if(o.dress)bx(0.56,0.9,0.4,o.dress,0,-0.35,0,torso);
+  bx(0.5,0.07,0.3,'#2b1d12',0,0.04,0,torso);
+  const head=new THREE.Group();head.position.set(0,0.66,0);torso.add(head);
+  bx(0.25,0.28,0.25,skin,0,0.14,0,head);bx(0.2,0.04,0.02,'#2a1a10',0,0.18,0.126,head);
+  if(o.beard)bx(0.26,0.12,0.06,o.beard,0,0.04,0.12,head);
+  if(o.bandana)bx(0.27,0.13,0.27,o.bandana,0,0.05,0.006,head);
+  if(o.hair)bx(0.27,0.34,0.1,o.hair,0,0.1,-0.11,head);
+  if(o.bowler){mesh(cylG(0.2,0.2,0.03,12),hatC,0,0.3,0,head);mesh(new THREE.SphereGeometry(0.15,10,6,0,TAU,0,Math.PI/2),hatC,0,0.3,0,head);}
+  else{mesh(cylG(0.3,0.3,0.03,12),hatC,0,0.3,0,head);mesh(cylG(0.14,0.17,0.17,10),hatC,0,0.39,0,head);}
+  const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-0.3,0.58,0);armR.position.set(0.3,0.58,0);torso.add(armL,armR);
+  for(const A of [armL,armR]){bx(0.13,0.58,0.14,o.coat||shirt,0,-0.27,0,A);bx(0.11,0.11,0.12,skin,0,-0.6,0,A);}
+  const gun=new THREE.Group();gun.position.set(0,-0.62,0.02);armR.add(gun);
+  bx(0.05,0.13,0.08,'#2a2a2a',0,-0.02,0.04,gun);bx(0.04,0.22,0.045,'#3c3c3c',0,-0.17,0.05,gun);bx(0.05,0.12,0.06,'#5a3a22',0,0.05,-0.02,gun);
+  const gunTip=new THREE.Object3D();gunTip.position.set(0,-0.3,0.05);gun.add(gunTip);gun.visible=false;
+  const rifle=new THREE.Group();rifle.position.set(0,-0.62,0.02);armR.add(rifle);
+  bx(0.06,0.5,0.08,'#5a3a22',0,0.12,0.02,rifle);bx(0.05,0.6,0.06,'#6b4a2a',0,-0.38,0.06,rifle);bx(0.035,0.55,0.035,'#333',0,-0.82,0.09,rifle);
+  const rifleTip=new THREE.Object3D();rifleTip.position.set(0,-1.1,0.09);rifle.add(rifleTip);rifle.visible=false;
+  const shotgun=new THREE.Group();shotgun.position.set(0,-0.62,0.02);armR.add(shotgun);
+  bx(0.07,0.42,0.09,'#4a2e18',0,0.1,0.02,shotgun);bx(0.04,0.62,0.04,'#2e2e2e',-0.022,-0.42,0.08,shotgun);bx(0.04,0.62,0.04,'#2e2e2e',0.022,-0.42,0.08,shotgun);
+  const shotTip=new THREE.Object3D();shotTip.position.set(0,-0.76,0.08);shotgun.add(shotTip);shotgun.visible=false;
+  if(o.badge)bx(0.07,0.07,0.02,'#e3b14f',-0.12,0.48,0.155,torso);
+  if(o.scale)g.scale.setScalar(o.scale);
+  return {g,legL,legR,armL,armR,torso,head,gun,gunTip,rifle,rifleTip,shotgun,shotTip,phase:Math.random()*6};
+}
+function animHuman(h,speed,dt,aim){
+  h.phase+=dt*(speed*2.4+0.5);const a=Math.min(speed/4,1)*0.75,s=Math.sin(h.phase)*a;
+  h.legL.rotation.x=s;h.legR.rotation.x=-s;h.legL.rotation.z=h.legR.rotation.z=0;
+  h.armL.rotation.set(-s*0.8,0,0);if(!aim)h.armR.rotation.set(s*0.8,0,0);
+  h.torso.position.y=0.92+Math.abs(Math.cos(h.phase))*0.04*a;h.torso.rotation.x=speed>6?0.12:0;
+}
+function makeQuad(o){
+  const s=o.scale||1,g=new THREE.Group(),c=o.color,dk=o.dark,body=new THREE.Group();g.add(body);
+  bx(0.85*s,0.85*s,2.1*s,c,0,1.45*s,0,body);if(o.belly)bx(0.7*s,0.2*s,1.6*s,o.belly,0,1.06*s,0,body);
+  const neck=new THREE.Group();neck.position.set(0,1.65*s,0.85*s);neck.rotation.x=o.neckTilt??0.55;body.add(neck);
+  bx(0.4*s,1.0*s,0.48*s,c,0,0.42*s,0,neck);if(o.mane)bx(0.12*s,0.95*s,0.16*s,o.mane,0,0.45*s,-0.25*s,neck);
+  const head=new THREE.Group();head.position.set(0,0.9*s,0.1*s);head.rotation.x=o.headTilt??0.35;neck.add(head);
+  bx(0.34*s,0.36*s,0.78*s,c,0,0,0.25*s,head);bx(0.3*s,0.3*s,0.2*s,dk,0,-0.04*s,0.62*s,head);
+  bx(0.08*s,0.22*s,0.08*s,o.ear||c,-0.12*s,0.26*s,-0.05*s,head);bx(0.08*s,0.22*s,0.08*s,o.ear||c,0.12*s,0.26*s,-0.05*s,head);
+  if(o.antlers)for(const sx of [-1,1]){const a=bx(0.05*s,0.8*s,0.05*s,'#d8c8a8',sx*0.2*s,0.55*s,-0.05*s,head);a.rotation.z=-sx*0.5;const b=bx(0.05*s,0.45*s,0.05*s,'#d8c8a8',sx*0.4*s,0.75*s,0.1*s,head);b.rotation.x=0.6;}
+  const legs=[];for(const [lx,lz] of [[-0.28,0.8],[0.28,0.8],[-0.28,-0.8],[0.28,-0.8]]){const L=new THREE.Group();L.position.set(lx*s,1.12*s,lz*s);body.add(L);
+    bx(0.18*s,1.08*s,0.2*s,c,0,-0.54*s,0,L);bx(0.2*s,0.14*s,0.22*s,dk,0,-1.05*s,0,L);legs.push(L);}
+  const tail=new THREE.Group();tail.position.set(0,1.75*s,-1.05*s);tail.rotation.x=o.tailTilt??0.35;body.add(tail);const tl=(o.tailLen||1)*s;
+  bx(0.15*s,tl,0.15*s,o.tailC||dk,0,-tl/2,0,tail);
+  if(o.saddle){bx(0.95,0.14,0.8,'#4a2a16',0,1.93,0.05,body);bx(1.0,0.06,1.0,'#8a3a22',0,1.88,0.05,body);bx(0.12,0.18,0.12,'#4a2a16',0,2.06,0.42,body);
+    for(const sx of [-1,1])bx(0.05,0.55,0.12,'#3a2414',sx*0.5,1.65,0.1,body);bx(0.6,0.5,0.35,'#5a3a22',0,1.75,-0.65,body);}
+  return {g,body,neck,head,legs,tail,s,phase:0,neckBase:o.neckTilt??0.55};
+}
+function animQuad(q,speed,dt,graze){
+  q.phase+=dt*(speed*0.9/q.s+(speed>0.2?2:0));const amp=Math.min(speed/(6*q.s),1)*0.75,p=q.phase;
+  if(speed>12*q.s){q.legs[0].rotation.x=Math.sin(p)*amp;q.legs[1].rotation.x=Math.sin(p+0.5)*amp;q.legs[2].rotation.x=Math.sin(p+Math.PI)*amp;q.legs[3].rotation.x=Math.sin(p+Math.PI+0.5)*amp;
+    q.body.position.y=Math.abs(Math.sin(p))*0.14*q.s;q.body.rotation.x=Math.sin(p)*0.05;}
+  else{const a=Math.sin(p)*amp;q.legs[0].rotation.x=q.legs[3].rotation.x=a;q.legs[1].rotation.x=q.legs[2].rotation.x=-a;q.body.position.y=amp>0.1?Math.abs(Math.sin(p))*0.05*q.s:0;q.body.rotation.x=0;}
+  q.neck.rotation.x=lerp(q.neck.rotation.x,graze&&speed<0.3?q.neckBase+1.1:q.neckBase,1-Math.exp(-3*dt));
+  q.tail.rotation.z=Math.sin(performance.now()*0.003+q.phase)*0.15;
+}
+
+// ---------------- audio ----------------
+const AU={};
+function initAudio(){if(AU.ctx)return;try{const c=new (window.AudioContext||window.webkitAudioContext)();AU.ctx=c;AU.master=c.createGain();AU.master.gain.value=0.7;AU.master.connect(c.destination);
+  const len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;AU.noise=b;
+  const w=c.createBufferSource();w.buffer=b;w.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=420;f.Q.value=0.7;const g=c.createGain();g.gain.value=0.03;
+  w.connect(f).connect(g).connect(AU.master);w.start();AU.wind=g;}catch(e){}}
+function nz(dur,freq,vol,type='lowpass',delay=0){if(!AU.ctx)return;const c=AU.ctx,t=c.currentTime+delay,s=c.createBufferSource();s.buffer=AU.noise;
+  const f=c.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=c.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f).connect(g).connect(AU.master);s.start(t,Math.random()*1.5);s.stop(t+dur+0.05);}
+function tone(freq,dur,vol,type='sine',to,delay=0){if(!AU.ctx)return;const c=AU.ctx,t=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);
+  if(to)o.frequency.exponentialRampToValueAtTime(to,t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g).connect(AU.master);o.start(t);o.stop(t+dur+0.05);}
+const sfx={
+  gun(dist=0,kind=0){const v=clamp(1-dist/260,0.04,1);nz(kind===2?0.6:0.45,dist>50?900:kind===2?1400:kind?2000:2800,(kind===2?1.1:0.9)*v);tone(kind?58:75,0.3,0.55*v,'sine',30);nz(1.4,500,0.12*v,'bandpass',0.25);},
+  punch(){nz(0.06,500,0.3);tone(90,0.12,0.35,'sine',50);},
+  hoof(){nz(0.07,260,0.22);},step(){nz(0.05,700,0.035);},click(){nz(0.03,3500,0.2);},
+  reload(){for(let i=0;i<4;i++)nz(0.03,3000,0.15,'highpass',i*0.22);},
+  hurt(){nz(0.18,1400,0.35);tone(140,0.2,0.2,'sawtooth',80);},
+  coin(){tone(1320,0.12,0.15,'triangle');tone(1760,0.25,0.15,'triangle',null,0.08);},
+  ping(){tone(880,0.3,0.12,'triangle');},
+  howl(){tone(420,1.6,0.06,'sine',650);tone(650,1.2,0.05,'sine',380,1.5);},
+  whistle(){tone(1800,0.15,0.12,'sine',2400);tone(2400,0.3,0.12,'sine',1700,0.18);},
+  sting(){[220,277,330,440,392,440].forEach((f,i)=>{tone(f,1.2,0.12,'triangle',null,i*0.14);tone(f*2,0.6,0.03,'sine',null,i*0.14);});},
+};
+
+// ---------------- state ----------------
+const NPC={},npcs=[],outlaws=[],animals=[],fx=[];
+const P={pos:new V3(70,0,3),yaw:-Math.PI/2,hp:100,stamina:100,focus:100,money:12,mounted:false,aiming:false,alive:true,speed:0,moveDir:new V3(0,0,-1),
+  honor:0,bounty:0,recoil:0,bloom:0,punchT:0,assist:null,crates:0,gifts:{flowers:0,locket:0,ring:0},
+  vy:0,jumpY:0,lastHurt:-99,fireCd:0,fireHold:0,reloadT:0,weapon:0,tonics:1,pelts:0,day:1,stats:{kills:0,heads:0,earned:0},stepT:0};
+const WEAPONS=[{name:'Six-Shooter',mag:6,ammo:6,reserve:36,dmg:45,rate:0.28,reload:1.6,spread:0.008,recoil:0.03,owned:true},
+  {name:'Lever-Action Rifle',mag:12,ammo:12,reserve:24,dmg:80,rate:0.7,reload:2.4,spread:0.003,recoil:0.045,owned:false},
+  {name:'Double-Barrel Shotgun',mag:2,ammo:2,reserve:12,dmg:17,pellets:8,rate:0.35,reload:2.2,spread:0.045,recoil:0.075,range:45,owned:false}];
+const horses=[];
+function makeHorse(x,z,yaw,c,name,owned){const q=makeQuad({scale:1,color:c[0],dark:c[1],mane:c[1],tailC:c[1],tailLen:1.1,saddle:true});scene.add(q.g);
+  const h={pos:new V3(x,groundY(x,z),z),yaw,speed:0,stamina:100,called:false,stepT:0,name,owned,q};q.g.position.copy(h.pos);q.g.rotation.y=yaw;horses.push(h);return h;}
+let HORSE=makeHorse(73,7,-Math.PI/2,['#8a5a34','#2a1a10'],'Biscuit',true);
+const cam={yaw:Math.PI/2,pitch:0.22,dist:4.6,fov:62,shake:0};
+let gameHour=9,timeScale=1,focusOn=false,running=false,paused=false,modal=null,dlg=null,menu=null,tracked=null,visited=new Set();
+const K={},mouse={left:false,right:false};
+let aimedNPC=null,hostileAimed=false,aimAssist=false,lastGunfireCrime=-99,civT=10;
+let sens=0.0035,invertY=false,lastClientX=-1,lastMouseT=0;
+const SETTINGS_KEY='dust-iron-settings';
+let savedFP=false;
+function loadSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(s){sens=s.sens??sens;invertY=!!s.invertY;aimAssist=!!s.aimAssist;quality=s.quality||'auto';savedFP=!!s.firstPerson;}}catch(e){}}
+function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({sens,invertY,aimAssist,quality,firstPerson}));}catch(e){}}
+loadSettings();
+
+// ---------------- spawning ----------------
+const SKINS=['#c08a68','#a8714f','#8a5a3c','#d9a585','#6e4630'];
+const AMBIENT=['Hot one today. The kind that cracks the well rope.','Don\'t ride near Iron Hollow, friend. Folks go in and stay in.','Saloon stew is the best in the territory. Also the only stew.',
+  'The Crane boys hit the night coach again, I heard.','Mind your horse. Things wander off around here.','Sheriff Hale is the only honest law for a hundred miles.',
+  'Copper\'s running thin in the hills. Town\'s running thinner.','Telegraph\'s been down since the storm. Or since the Cranes cut it.','You look like you\'ve been riding since Tuesday.'];
+function spawnNPC(id,name,x,z,o={}){const h=makeHuman(o);scene.add(h.g);const n={id,name,h,pos:new V3(x,groundY(x,z),z),home:new V3(x,0,z),yaw:o.yaw??0,baseYaw:o.yaw??0,
+  wander:!!o.wander,target:null,waitT:rand(0,4),speed:0,lines:o.lines,shop:o.shop,marker:null,
+  kind:'npc',hp:100,dead:false,koT:0,fleeT:0,cowerT:0,fallT:0,looted:false,assaulted:false,robbedDay:0,important:!!(id||o.shop)};
+  h.g.position.copy(n.pos);h.g.rotation.y=n.yaw;npcs.push(n);if(id){NPC[id]=n;n.marker=markerSprite('!','#e3b14f');n.marker.position.y=2.55;n.marker.visible=false;h.g.add(n.marker);}return n;}
+function spawnPeople(){
+  spawnNPC('sheriff','Sheriff Ada Hale',-58,-7.6,{shirt:'#6d7a8a',vest:'#3a2a20',pants:'#2e2a26',hat:'#5a4030',hair:'#4a2a18',skin:'#d9a585',
+    lines:['Keep your iron holstered in my town.','I\'d deputize you, but the last three didn\'t last the month.','Crane\'s men drink at Dry Creek and steal everywhere else.']});
+  spawnNPC('pruitt','Elias Pruitt',14,-7.6,{shirt:'#e8e0d0',vest:'#4a4a52',pants:'#3a3a40',hat:'#222',bowler:true,beard:'#888',skin:'#d9a585',
+    shop:'bank',lines:['Money is a nervous animal. It flees from trouble.','The bank is solvent. Mostly.']});
+  spawnNPC('ma','Ma Delgado',SITES.ranch.x,SITES.ranch.z+3.6,{shirt:'#8a4a5a',dress:'#5a3a4a',hat:'#c9b58a',hair:'#aaa',skin:'#a8714f',
+    lines:['Wipe your boots before you come up on my porch.','My boys will be back with the herd by the first frost.']});
+  spawnNPC(null,'Otis Bell',-10,-7.6,{shirt:'#d6c9a6',vest:'#6a4a2a',pants:'#3d3a35',bowler:true,hat:'#3a2a1e',beard:'#6a4a2a',shop:'store'});
+  spawnNPC(null,'Lou the Barkeep',-34,-7.6,{shirt:'#e0d8c8',vest:'#7a2a1a',pants:'#2e2a26',bowler:true,hat:'#222',beard:'#3a2010',shop:'saloon'});
+  spawnNPC(null,'Mrs. Winslow',40,-7.6,{shirt:'#4a5a7a',dress:'#3a4a6a',hat:'#7a6a8a',hair:'#6a3a1a',skin:'#d9a585',shop:'hotel'});
+  spawnNPC(null,'Doc Hargrove',-28,7.6,{shirt:'#ddd',coat:'#2a2a2a',pants:'#2a2a2a',bowler:true,hat:'#222',beard:'#bbb',shop:'doctor',yaw:Math.PI});
+  const outfits=[{shirt:'#7a6a50',pants:'#4a4038'},{shirt:'#a05a3a',pants:'#3a3530',vest:'#3a2a1a'},{shirt:'#5a6a7a',pants:'#3a3a3a',coat:'#5a4535'},
+    {shirt:'#c8b898',dress:'#7a5a3a',hair:'#3a2010'},{shirt:'#8a8a6a',pants:'#5a4a3a',beard:'#5a3a20'},{shirt:'#6a3a3a',dress:'#4a2a3a',hair:'#1a1008'}];
+  OUTFITS=outfits;for(let i=0;i<11;i++)spawnCivilian(rand(-70,60),rand(-6,6));
+  spawnNPC(null,'Clerk Tibbs',12,7.6,{shirt:'#cfc6b0',vest:'#2a3a4a',pants:'#2a2a2a',bowler:true,hat:'#333',shop:'telegraph',yaw:Math.PI});
+  // people you can court
+  spawnNPC('clara','Clara Bright',-5,3,{shirt:'#e6dcc8',dress:'#4a5a6a',hat:'#8a6a5a',hair:'#6a3a1a',skin:'#d9a585',wander:true}).suitor=true;
+  spawnNPC('mateo','Mateo Ruiz',-52,7.8,{shirt:'#c8b08a',vest:'#5a3a22',pants:'#3a342c',hat:'#6a5038',skin:'#a8714f',yaw:Math.PI}).suitor=true;
+  spawnNPC('june','June Harrow',SITES.ranch.x+9,SITES.ranch.z+5,{shirt:'#8a5a4a',pants:'#4a4038',hat:'#9a7a50',hair:'#c8a060',skin:'#e0b090',yaw:0.4}).suitor=true;
+}
+let OUTFITS=[];
+function spawnCivilian(x,z){return spawnNPC(null,pick(['Townsman','Miner','Rancher','Drifter','Shopper','Local']),x,z,
+  {...pick(OUTFITS),skin:pick(SKINS),hat:pick(['#3a2a1e','#6a5a40','#2a2a2a','#8a7050']),wander:true});}
+function spawnOutlaw(x,z,tag,o={}){
+  const h=makeHuman({shirt:o.shirt||pick(['#5a3a2a','#3a3a3a','#6a5a3a','#4a2a2a']),pants:'#2a2622',coat:o.coat||(Math.random()<0.5?pick(['#3a2a1e','#2a2420','#4a3a2a']):null),
+    vest:o.vest!==undefined?o.vest:(Math.random()<0.4?'#1e1812':null),hat:o.hat||'#1d1611',bandana:o.bandana??'#7d1f1a',skin:pick(SKINS),scale:o.scale,beard:o.beard,badge:o.badge});
+  h.gun.visible=true;scene.add(h.g);
+  const e={kind:'outlaw',h,pos:new V3(x,groundY(x,z),z),anchor:new V3(x,0,z),hp:o.hp||100,tag,alerted:false,dead:false,shootT:rand(1.2,2.4),moveT:0,
+    target:new V3(x,0,z),walking:false,yaw:rand(0,TAU),boss:!!o.boss,acc:o.acc||1,looted:false,name:o.name,fallT:0,losT:0,los:false,strafeT:0,speed:0,
+    mounted:false,hq:null,flinchT:0,crimeHit:false};
+  h.g.position.copy(e.pos);outlaws.push(e);return e;
+}
+// deputies ride in on horseback, then dismount to fight
+function spawnLawman(x,z){
+  const e=spawnOutlaw(x,z,'law',{shirt:'#b8a07a',vest:'#3a2a1e',coat:'#5a4a38',hat:'#6a5038',bandana:null,badge:true,acc:1.1,hp:110,name:'Deputy'});
+  const hq=makeQuad({scale:1,color:pick(['#6a4528','#2e2018','#9a7a5a']),dark:'#1a0f08',mane:'#1a0f08',tailC:'#1a0f08',saddle:true});scene.add(hq.g);
+  e.hq=hq;e.alerted=true;e.yaw=Math.atan2(P.pos.x-x,P.pos.z-z);remountLaw(e);return e;}
+function remountLaw(e){e.mounted=true;e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;e.hq.g.add(e.h.g);e.h.g.position.set(0,1.05,0.05);e.h.g.rotation.set(0,0,0);}
+function dismountLaw(e){e.mounted=false;e.speed=0;scene.add(e.h.g);const s=e.yaw+Math.PI/2;e.pos.x+=Math.sin(s)*1.5;e.pos.z+=Math.cos(s)*1.5;resolve(e.pos,0.4);
+  e.pos.y=groundY(e.pos.x,e.pos.z);e.h.g.position.copy(e.pos);e.h.g.rotation.set(0,e.yaw,0);}
+function spawnGang(site,n,tag,spread=14){for(let i=0;i<n;i++){const a=i/n*TAU+rand(-0.3,0.3),r=rand(4,spread);spawnOutlaw(site.x+Math.cos(a)*r,site.z+Math.sin(a)*r,tag);}}
+function spawnAnimal(kind,x,z,zone,tag){
+  const q=kind==='deer'?makeQuad({scale:0.62,color:'#9a6a42',dark:'#4a3020',belly:'#d8c0a0',antlers:Math.random()<0.4,neckTilt:0.25,headTilt:0.8,tailLen:0.35,tailC:'#e8dcc8',tailTilt:2.6})
+    :makeQuad({scale:0.46,color:'#6e6a64',dark:'#3a3836',belly:'#a8a49c',neckTilt:1.05,headTilt:0.2,tailLen:1.2,tailTilt:1.2,ear:'#4a4644'});
+  q.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(q.g);
+  const a={kind,q,pos:new V3(x,groundY(x,z),z),yaw:rand(0,TAU),yawT:0,hp:kind==='deer'?38:55,dead:false,skinned:false,speed:0,t:0,walk:false,fearT:0,zig:rand(0,9),
+    zone:zone||new V3(x,0,z),tag,alerted:false,biteT:0,fallT:0,removeT:0};
+  q.g.position.copy(a.pos);animals.push(a);return a;
+}
+function spawnDeerHerds(){DEER_ZONES.forEach(zn=>{for(let i=0;i<4;i++)spawnAnimal('deer',zn.x+rand(-20,20),zn.z+rand(-20,20),new V3(zn.x,0,zn.z));});}
+
+// player + horse models
+const PH=makeHuman({shirt:'#b8a888',vest:'#4a3020',coat:'#6a4a2e',pants:'#3a342c',hat:'#2a1c12',bandana:null,beard:'#3a2414',skin:'#c08a68'});
+PH.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(PH.g);
+const PBADGE=bx(0.08,0.08,0.02,'#e3b14f',-0.13,0.5,0.17,PH.torso);PBADGE.visible=false;
+
+// ---------------- quests ----------------
+const deadCount=tag=>outlaws.filter(e=>e.tag===tag&&e.dead).length;
+const liveCentroid=(tag,fallback)=>{const l=outlaws.filter(e=>e.tag===tag&&!e.dead);if(!l.length)return fallback;const c=new V3();l.forEach(e=>c.add(e.pos));return c.divideScalar(l.length);};
+const QDEF={
+  intro:{title:'A Stranger in Coppervale',reward:10,unlock:['creek','supper'],stages:[
+    {obj:'Speak with Sheriff Ada Hale outside the jailhouse',talk:'sheriff',lines:[
+      'Another drifter. You have the look of somebody who can handle a gun.','Name\'s Ada Hale. I keep what passes for peace in Coppervale.',
+      'The Crane gang has been bleeding this territory dry, and I\'m short on deputies and long on trouble.','Make yourself useful and there\'s honest money in it. Here, ten dollars for the walk over.']}]},
+  creek:{title:'The Dry Creek Boys',giver:'sheriff',reward:50,unlock:['coach'],offer:[
+      'Some of Crane\'s men are camped at Dry Creek, southwest of town along the old road.','They robbed the Hendricks homestead last week and laughed about it in my saloon.',
+      'Clear that camp out and I\'ll pay you fifty dollars.'],stages:[
+    {obj:'Ride southwest to the outlaw camp at Dry Creek',reach:'creek',start:()=>{if(!outlaws.some(e=>e.tag==='creek'&&!e.dead))spawnGang(SITES.creek,6,'creek');}},
+    {obj:q=>`Clear out the Dry Creek Boys (${deadCount('creek')}/6)`,resume:0,target:()=>liveCentroid('creek',SITES.creek),on:{kill:(q,d)=>d.tag==='creek'&&deadCount('creek')>=6},doneIf:()=>deadCount('creek')>=6},
+    {obj:'Report back to Sheriff Hale',talk:'sheriff',lines:['Dry Creek\'s quiet? Good. That\'s the first good news this month.','Fifty dollars, as promised.',
+      'Elias Pruitt at the bank has been asking after someone with your talents. Go see him.']}]},
+  coach:{title:'The Midnight Coach',giver:'pruitt',reward:80,unlock:['hollow'],offer:[
+      'Ah. You must be the one who cleaned out Dry Creek.','The night coach to Fort Ashby never arrived. It carried the company payroll.',
+      'Find the coach on the north road and bring back the strongbox. Eighty dollars on delivery.'],stages:[
+    {obj:'Find the wrecked stagecoach on the north road',reach:'wreck'},
+    {obj:'Recover the strongbox',start:()=>{const p=pickups[0];p.active=true;p.mesh.visible=true;},target:()=>pickups[0].pos,on:{pickup:(q,d)=>d==='strongbox'},
+      end:()=>{const s=SITES.wreck;for(let i=0;i<4;i++){const a=rand(0,TAU),e=spawnOutlaw(s.x+Math.cos(a)*55,s.z+Math.sin(a)*55,'ambush');e.alerted=true;}toast('Ambush','Riders coming in fast!');}},
+    {obj:q=>`Survive the ambush (${deadCount('ambush')}/4)`,resume:1,target:()=>liveCentroid('ambush',SITES.wreck),on:{kill:(q,d)=>d.tag==='ambush'&&deadCount('ambush')>=4},doneIf:()=>deadCount('ambush')>=4},
+    {obj:'Return the strongbox to Mr. Pruitt at the bank',talk:'pruitt',lines:['The payroll! Every last coin of it.','Here is your eighty. And a word of warning.',
+      'Sheriff Hale says Silas Crane himself is holed up at Iron Hollow. She will want to talk to you.']}]},
+  hollow:{title:'Iron Hollow',giver:'sheriff',reward:200,offer:['Pruitt told me about the ambush. Crane\'s men won\'t stop on their own.',
+      'Silas Crane hides out in Iron Hollow, far west past the mesas. Watchtower, a dozen guns.','End this. Two hundred dollars, and this town will owe you a lot more than that.'],
+    stages:[
+    {obj:'Ride west to Iron Hollow',reach:'hollow',start:()=>{if(!outlaws.some(e=>e.tag==='hollow'&&!e.dead)){spawnGang(SITES.hollow,9,'hollow',22);
+      spawnOutlaw(SITES.hollow.x-12,SITES.hollow.z-6,'hollow',{boss:true,hp:350,acc:1.4,name:'Silas Crane',coat:'#d9d2bf',shirt:'#222',hat:'#111',bandana:null,beard:'#ccc',scale:1.08});}}},
+    {obj:'Kill Silas Crane',resume:0,target:()=>{const b=outlaws.find(e=>e.boss&&!e.dead);return b?b.pos:SITES.hollow;},on:{kill:(q,d)=>d.boss},doneIf:()=>outlaws.some(e=>e.boss&&e.dead)},
+    {obj:()=>EMP.town?'Find Sheriff Hale at the Delgado Ranch':'Return to Sheriff Hale in Coppervale',talk:'sheriff',lines:['Silas Crane is dead? Then Coppervale can finally breathe.','Two hundred dollars. And if you ever want a badge, it\'s yours.']}],
+    onComplete:()=>setTimeout(showEnding,2500)},
+  supper:{title:'Meat on the Table',giver:'ma',reward:25,unlock:['howls'],offer:['Lost, stranger? No? Then you can help an old woman.',
+      'My boys are off driving cattle and the larder is empty.','Bring me three deer hides. The herds graze on the grassland all around here.','Twenty-five dollars and a hot meal for your trouble.'],stages:[
+    {obj:q=>`Hunt deer and skin them (${q.count}/3)`,target:()=>{let best=null,bd=1e9;for(const a of animals)if(a.kind==='deer'&&(!a.dead||!a.skinned)){const d=d2(a.pos,P.pos);if(d<bd){bd=d;best=a.pos;}}return best;},
+      on:{skin:q=>++q.count>=3}},
+    {obj:'Bring the hides to Ma Delgado at her ranch',talk:'ma',lines:['Three fine hides! You have a steady hand.','Here\'s your money. Come back any time you want a plate of beans.']}]},
+  howls:{title:'Howls on Gray Ridge',giver:'ma',reward:40,offer:['Something has been taking my calves at night. Wolves, up on Gray Ridge, due north.','Thin out that pack and I will sleep easy again.'],stages:[
+    {obj:'Ride north to Gray Ridge',reach:'ridge',start:()=>{if(!animals.some(a=>a.tag==='ridge'&&!a.dead))for(let i=0;i<5;i++)spawnAnimal('wolf',SITES.ridge.x+rand(-15,15),SITES.ridge.z+rand(-15,15),null,'ridge');}},
+    {obj:q=>`Kill the wolf pack (${animals.filter(a=>a.tag==='ridge'&&a.dead).length}/5)`,resume:0,target:()=>{const w=animals.find(a=>a.tag==='ridge'&&!a.dead);return w?w.pos:SITES.ridge;},
+      on:{kill:(q,d)=>d.tag==='ridge'&&animals.filter(a=>a.tag==='ridge'&&a.dead).length>=5},doneIf:()=>animals.filter(a=>a.tag==='ridge'&&a.dead).length>=5},
+    {obj:'Tell Ma Delgado the ridge is clear',talk:'ma',lines:['No more howling at night. Bless you.','Forty dollars. Don\'t argue, take it.']}]},
+};
+const QS={};for(const id in QDEF)QS[id]={state:'locked',stage:0,count:0};
+const curStage=id=>QDEF[id].stages[QS[id].stage];
+function objText(id){const st=curStage(id);return typeof st.obj==='function'?st.obj(QS[id]):st.obj;}
+function stageTarget(id){const st=curStage(id);if(st.target)return st.target();if(st.talk)return NPC[st.talk].pos;if(st.reach)return SITES[st.reach];return null;}
+function startQuest(id){QS[id].state='active';QS[id].stage=0;QS[id].count=0;tracked=id;banner('NEW MISSION',QDEF[id].title);curStage(id).start?.();save();}
+function advance(id){const s=QS[id];curStage(id).end?.();s.stage++;s.count=0;
+  if(s.stage>=QDEF[id].stages.length)return completeQuest(id);curStage(id).start?.();sfx.ping();toast('Objective',objText(id));save();}
+function completeQuest(id){const d=QDEF[id];QS[id].state='done';P.money+=d.reward;P.stats.earned+=d.reward;banner('MISSION COMPLETE',`${d.title}  ·  +$${d.reward}`);sfx.sting();
+  (d.unlock||[]).forEach(u=>{if(QS[u].state==='locked'){QS[u].state='available';setTimeout(()=>toast('New mission',`${QDEF[u].title}: see ${NPC[QDEF[u].giver].name}`),2600);}});
+  d.onComplete?.();tracked=Object.keys(QS).find(k=>QS[k].state==='active')||null;save();}
+function questEvent(type,data){for(const id in QS){if(QS[id].state!=='active')continue;const fn=curStage(id).on?.[type];if(fn&&fn(QS[id],data))advance(id);}}
+// doneIf covers kills made before the objective began, e.g. sniping a camp from outside its radius, which would otherwise never complete
+function checkReach(){for(const id in QS){if(QS[id].state!=='active')continue;const st=curStage(id);
+  if(st.reach){const s=SITES[st.reach];if(Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<s.r+15)advance(id);}else if(st.doneIf&&st.doneIf())advance(id);}}
+
+// ---------------- UI ----------------
+function toast(t,s){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b></b><span></span>`;el.firstChild.textContent=t;el.lastChild.textContent=s||'';
+  $('toasts').appendChild(el);setTimeout(()=>el.remove(),4200);while($('toasts').children.length>4)$('toasts').firstChild.remove();}
+let bannerT=0;function banner(small,big,loc){$('bannerSmall').textContent=small;$('bannerBig').textContent=big;$('banner').className=loc?'loc':'';$('banner').hidden=false;bannerT=loc?2.6:3.6;}
+function dialog(name,lines,done){dlg={name,lines,i:0,done};renderDlg();}
+function renderDlg(){$('dialog').hidden=!dlg;if(!dlg)return;$('dlgWho').textContent=dlg.name;$('dlgLine').textContent=dlg.lines[dlg.i];}
+function advanceDlg(){if(!dlg)return;dlg.i++;if(dlg.i>=dlg.lines.length){const d=dlg.done;dlg=null;renderDlg();d?.();}else renderDlg();}
+const SHOPS={
+  store:{title:'Bell\'s Mercantile',items:()=>[
+    {label:'Revolver cartridges ×12',price:4,act:()=>WEAPONS[0].reserve+=12},
+    {label:'Rifle cartridges ×10',price:6,act:()=>WEAPONS[1].reserve+=10,off:()=>!WEAPONS[1].owned},
+    {label:'Health tonic',price:6,act:()=>P.tonics++},
+    {label:'Wildflower bouquet (a gift)',price:3,act:()=>P.gifts.flowers++},
+    {label:'Silver locket (a gift)',price:15,act:()=>P.gifts.locket++},
+    {label:'Gold wedding ring',price:40,act:()=>P.gifts.ring++,off:()=>P.gifts.ring>0||!!ROM.spouse},
+    {label:'Shotgun shells ×8',price:5,act:()=>WEAPONS[2].reserve+=8,off:()=>!WEAPONS[2].owned},
+    {label:'Lever-action rifle',price:60,act:()=>{WEAPONS[1].owned=true;switchWeapon(1);toast('Purchased','Lever-action rifle. Press 2 to equip.');},off:()=>WEAPONS[1].owned},
+    {label:'Double-barrel shotgun',price:45,act:()=>{WEAPONS[2].owned=true;switchWeapon(2);toast('Purchased','Double-barrel shotgun. Press 3 to equip.');},off:()=>WEAPONS[2].owned},
+    {label:'Sell deer hides',price:-3,act:()=>{},sell:true,off:()=>P.pelts<1}]},
+  saloon:{title:'The Rusty Spur',items:()=>[
+    {label:'Bowl of stew (full health)',price:4,act:()=>P.hp=100},
+    {label:'Whiskey (full focus)',price:2,act:()=>P.focus=100},
+    {label:'Hear the gossip',price:0,act:()=>setTimeout(()=>dialog('Lou the Barkeep',[pick(['Crane keeps a lookout tower at Iron Hollow. Shoot the man up top first.','Deer spook if you ride right at them. Walk in slow.','Wolves don\'t chase as fast as a galloping horse, but they try.','A headshot drops most men in one go. Most.','Folks say a man with a camp and a copper still could get rich out in that desert.'])]),50)},
+    {label:'Buy dirt on a local (for blackmail)',price:8,noMult:true,act:buyDirt},
+    {label:`Sell moonshine on the quiet (${P.crates} crates)`,price:0,note:'$12 a crate',off:()=>!P.crates,act:sellShine}]},
+  bank:{title:'Coppervale Bank',items:()=>[
+    {label:'Ask how business is',price:0,note:'',act:()=>{closeMenu();dialog('Elias Pruitt',[EMP.town?'Business is whatever you say it is now, I suppose.':'Copper built this town. Copper and other people\'s money.']);}}]},
+  hotel:{title:'Grand Hotel',items:()=>[
+    {label:'Room for the night (sleep to 7 AM)',price:3,act:()=>sleepTo(7)},
+    {label:'Afternoon nap (sleep to 6 PM)',price:2,act:()=>sleepTo(18)}]},
+  doctor:{title:'Doc Hargrove',items:()=>[
+    {label:'Patch me up (full health)',price:5,act:()=>P.hp=100},
+    {label:'Health tonic',price:6,act:()=>P.tonics++}]},
+  telegraph:{title:'Telegraph Office',items:()=>[
+    {label:P.bounty?'Pay off your bounty':'No bounty on file',price:P.bounty,noMult:true,off:()=>!P.bounty,
+      act:()=>{P.bounty=0;P.honor=clamp(P.honor+5,-100,100);toast('Bounty paid','Your name is clear in Arroyo Territory.');}},
+    {label:'Wire a donation to the widows\' fund (+honor)',price:10,noMult:true,act:()=>{P.honor=clamp(P.honor+8,-100,100);toast('Donation sent','Honor improved.');}}]},
+};
+const priceOf=it=>it.noMult||it.price<=0?it.price:Math.round(it.price*priceMult());
+function openShop(k){menu={k};renderMenu();}
+// long menus run past 9 items, so 0, - and = pick items 10 to 12
+const MENU_KEYS=['1','2','3','4','5','6','7','8','9','0','-','='],MENU_CODES=['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal'];
+function renderMenu(){$('menu').hidden=!menu;if(!menu)return;const s=menu.custom||SHOPS[menu.k];
+  let items=typeof s.items==='function'?s.items():s.items;if(menu.k)items=items.concat(underworldItems(menu.k));menu.items=items;
+  $('menu').innerHTML=`<h3></h3>${items.map((it,i)=>`<div class="row${it.off?.()?' off':''}"><span><span class="k">${MENU_KEYS[i]||''}</span> ${it.label}</span><span>${it.note!==undefined?it.note:it.sell?`+$3 each (${P.pelts})`:it.price?'$'+priceOf(it):'free'}</span></div>`).join('')}<div class="foot">Press a number to choose · <span class="k">E</span> to leave · You have $${P.money}${priceMult()>1?' · prices raised for your reputation':priceMult()<1?' · friendly discount':''}</div>`;
+  $('menu').querySelector('h3').textContent=s.title;}
+function buy(i){const it=menu.items[i];if(!it||it.off?.())return;
+  if(it.sell){const v=P.pelts*3;P.money+=v;P.pelts=0;sfx.coin();toast('Sold',`Hides for $${v}`);renderMenu();return;}
+  const pr=priceOf(it);if(P.money<pr){toast('Not enough money',`You need $${pr}`);return;}P.money-=pr;it.act();if(pr)sfx.coin();renderMenu();save();}
+function sleepTo(h){const fade=$('fade');fade.textContent='';fade.style.opacity=1;menu=null;renderMenu();setTimeout(()=>{const nd=h<=gameHour;if(nd)P.day++;gameHour=h;if(nd)onNewDay();P.hp=100;P.stamina=100;fade.style.opacity=0;toast('Rested',h===7?'Morning in Coppervale.':'Evening falls.');save();},900);}
+function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dailyLedger(),esc=s=>String(s).replace(/[<>&]/g,'');
+  const list=(o,f)=>Object.keys(o).filter(k=>o[k]).map(f).join(', ')||'None yet.';
+  const hints=[];
+  if(!EMP.camps.length)hints.push('Ride at least 170 m out of town into open desert and press B to pitch a camp ($50).');
+  if(EMP.camps.length&&!EMP.camps.some(c=>c.still))hints.push('Build a moonshine still from the camp ledger, then sell the crates to Lou at the Rusty Spur.');
+  if(EMP.camps.length&&g.length<2)hints.push('Recruit townsfolk (talk to them in Coppervale) or hire guns at your camp.');
+  if(g.length>=2&&Object.keys(EMP.rackets).length<6)hints.push('Walk into a business with two of your gang nearby and offer them “protection”.');
+  if(Object.keys(EMP.dirt).length<5)hints.push('Buy dirt on locals from Lou, then blackmail them for daily hush money.');
+  if(!ROM.spouse)hints.push('Court Clara Bright (town), Mateo Ruiz (livery) or June Harrow (Delgado Ranch). Chat daily, bring gifts from the Mercantile, then propose with a ring. Marriage brings kin to your clan, and in time children.');
+  if(!EMP.town)hints.push('With three or more riders beside you, aim at Sheriff Hale and press E to raid Coppervale and take the jailhouse.');
+  sh.innerHTML=`<h2>${esc(EMP.name||'No gang yet')}</h2>
+  <div style="font-size:14px;color:#6a4a2a;margin-bottom:8px">Rank: <b>${r.name}</b> · Influence ${r.inf}${r.next?` · ${r.next[0]} needed for ${r.next[1]}`:' · the territory is yours'}</div>
+  <div class="q"><b>Daily ledger, paid at dawn</b><div>Rackets +$${L.r} · Blackmail +$${L.b} · Town +$${L.t} · Wages −$${L.w} · <b style="font-family:inherit;font-size:inherit">Net ${L.net>=0?'+':'−'}$${Math.abs(L.net)}</b></div></div>
+  <div class="q"><b>Gang (${g.length}/${gangCap()})</b><div>${g.map(a=>`${esc(a.name)} (${Math.round(a.hp)} hp)`).join(', ')||'Nobody rides with you yet.'}</div><div>Orders: ${EMP.order==='hold'?'holding position':'riding with you'} · press G to switch</div></div>
+  <div class="q"><b>Camps (${EMP.camps.length}/3)</b><div>${EMP.camps.map(c=>`Near ${campName(c)}: still ${c.still?'level '+c.still:'not built'}, ${c.stock} crates ready`).join('<br>')||'No camps yet.'}</div><div>Moonshine on your horse: ${P.crates} crates</div></div>
+  <div class="q"><b>Protection rackets</b><div>${list(EMP.rackets,k=>BUSINESS[k])}</div></div>
+  <div class="q"><b>Blackmail</b><div>Paying: ${list(EMP.blackmail,k=>SECRETS[k].who)}</div><div>Secrets you know: ${list(EMP.dirt,k=>`${SECRETS[k].who} (${SECRETS[k].short})`)}</div></div>
+  <div class="q"><b>Family</b><div>${ROM.spouse?`Married to ${NPC[ROM.spouse].name} (day ${ROM.wedDay}). They live at ${EMP.camps.length?'your first camp and help run its still':'the Grand Hotel'}.`:'Unmarried. '+Object.keys(ROM.aff).map(k=>`${NPC[k].name} ${Math.round(ROM.aff[k])}/100`).join(' · ')}</div>
+    <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouse?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
+  <div class="q"><b>Coppervale</b><div>${EMP.town?'Yours. Your colours fly over the jailhouse, crimes in town go unreported, and the town pays $40 a day. Keep 4+ riders or a posse may take it back.':'Held by Sheriff Hale.'}</div></div>
+  <h2 style="font-size:22px;margin-top:16px">Next moves</h2>${hints.map(h=>`<div class="q">${h}</div>`).join('')||'<div class="q">You run the territory. Spend it well.</div>'}
+  <p style="font-size:13px;color:#7a5a3a;margin-top:14px">Press K to close.</p>`;}
+function showJournal(){const sh=$('journalSheet');const rows=Object.keys(QDEF).filter(id=>QS[id].state!=='locked').map(id=>{const s=QS[id],d=QDEF[id];
+  const status=s.state==='active'?(id===tracked?'tracked':'active'):s.state==='available'?'see '+NPC[d.giver].name:'complete';
+  const obj=s.state==='active'?objText(id):s.state==='available'?'A new job is waiting.':'Finished. Paid $'+d.reward+'.';
+  return `<div class="q ${s.state==='done'?'done':''}"><b>${d.title}</b><span class="tag">${status}</span><div>${obj}</div></div>`;}).join('');
+  const crimes=crimeLog.length?`<h2 style="font-size:24px;margin-top:18px">Crimes</h2>`+crimeLog.map(c=>`<div class="q"><b style="font-size:16px">${c.name}</b><span class="tag">${c.seen?'+$'+c.bounty+' bounty':'unseen'} · day ${c.day}</span></div>`).join(''):'';
+  sh.innerHTML=`<h2>Journal</h2><div style="font-size:14px;color:#6a4a2a;margin-bottom:6px">Day ${P.day} · $${P.money} · ${P.pelts} hides · ${P.stats.kills} downed · Honor: ${honorName()}${P.bounty?` · <b style="color:#a0261c">Bounty $${P.bounty}</b>`:''}</div>${rows}${crimes}<p style="font-size:13px;color:#7a5a3a;margin-top:14px">Press J to close.</p>`;}
+
+// ---------------- map image ----------------
+const mapCanvas=document.createElement('canvas');mapCanvas.width=mapCanvas.height=1024;
+function buildMap(){const small=document.createElement('canvas');small.width=small.height=ROW;const sx=small.getContext('2d'),img=sx.createImageData(ROW,ROW);const c=new THREE.Color(),o={};
+  const parch=[0.86,0.78,0.6];
+  for(let iz=0;iz<ROW;iz++)for(let ix=0;ix<ROW;ix++){const i=iz*ROW+ix;c.setRGB(VCOL[i*3],VCOL[i*3+1],VCOL[i*3+2]);c.getRGB(o,THREE.SRGBColorSpace);
+    const sh=clamp(1+(H[Math.max(iz-1,0)*ROW+Math.max(ix-1,0)]-H[Math.min(iz+1,N)*ROW+Math.min(ix+1,N)])*0.05,0.55,1.35);
+    const k=i*4;img.data[k]=clamp(lerp(o.r,parch[0],0.45)*sh*255,0,255);img.data[k+1]=clamp(lerp(o.g,parch[1],0.45)*sh*255,0,255);img.data[k+2]=clamp(lerp(o.b,parch[2],0.45)*sh*255,0,255);img.data[k+3]=255;}
+  sx.putImageData(img,0,0);const x=mapCanvas.getContext('2d');x.imageSmoothingEnabled=true;x.drawImage(small,0,0,1024,1024);
+  const W=v=>(v+HALF)/SIZE*1024;x.lineCap='round';x.lineJoin='round';
+  for(const r of ROADS){x.strokeStyle='rgba(90,55,30,.85)';x.lineWidth=Math.max(2,r.w*0.35);x.beginPath();r.pts.forEach(([a,b],i)=>i?x.lineTo(W(a),W(b)):x.moveTo(W(a),W(b)));x.stroke();}
+  x.fillStyle='#3f6f84';x.beginPath();x.arc(W(POND.x),W(POND.z),POND.r/SIZE*1024,0,TAU);x.fill();
+  x.fillStyle='rgba(50,30,18,.9)';for(const b of boxes)x.fillRect(W(b.minX),W(b.minZ),Math.max(1.5,(b.maxX-b.minX)/SIZE*1024),Math.max(1.5,(b.maxZ-b.minZ)/SIZE*1024));
+  const vg=x.createRadialGradient(512,512,380,512,512,740);vg.addColorStop(0,'rgba(60,35,15,0)');vg.addColorStop(1,'rgba(60,35,15,.55)');x.fillStyle=vg;x.fillRect(0,0,1024,1024);}
+const mm=$('minimap'),mmx=mm.getContext('2d');
+let mmZoom=1,revealT=0;
+function drawMinimap(target){
+  // zoom out as you speed up, so a galloping rider sees further ahead
+  mmZoom=lerp(mmZoom,1+clamp((P.mounted?HORSE.speed:P.speed)/19,0,1)*0.9,0.15);
+  const S=mm.width,R=S/2,k=S/(260*mmZoom);mmx.save();mmx.clearRect(0,0,S,S);mmx.beginPath();mmx.arc(R,R,R,0,TAU);mmx.clip();mmx.fillStyle='#2b1d12';mmx.fillRect(0,0,S,S);
+  mmx.translate(R,R);mmx.rotate(cam.yaw);mmx.scale(k,k);mmx.translate(-P.pos.x,-P.pos.z);mmx.drawImage(mapCanvas,-HALF,-HALF,SIZE,SIZE);mmx.restore();
+  const toS=(x,z)=>{const dx=(x-P.pos.x)*k,dz=(z-P.pos.z)*k,c=Math.cos(cam.yaw),s=Math.sin(cam.yaw);return [R+dx*c-dz*s,R+dx*s+dz*c];};
+  const dot=(x,z,col,r=4,clampEdge)=>{let [sx,sy]=toS(x,z);const dx=sx-R,dy=sy-R,d=Math.hypot(dx,dy);if(d>R-8){if(!clampEdge)return;sx=R+dx/d*(R-8);sy=R+dy/d*(R-8);}
+    mmx.fillStyle=col;mmx.strokeStyle='#1a120c';mmx.lineWidth=2;mmx.beginPath();mmx.arc(sx,sy,r,0,TAU);mmx.fill();mmx.stroke();};
+  if(WANTED.active){const [sx,sy]=toS(WANTED.last.x,WANTED.last.z);mmx.strokeStyle='rgba(220,50,30,.85)';mmx.fillStyle='rgba(220,50,30,.15)';mmx.lineWidth=2;
+    mmx.beginPath();mmx.arc(sx,sy,120*k,0,TAU);mmx.fill();mmx.stroke();}
+  for(const e of outlaws)if(!e.dead&&(e.alerted||e.tag==='law'))dot(e.pos.x,e.pos.z,e.tag==='law'?'#6aa0d8':'#c0392b',4);
+  for(const a of animals)if(!a.dead&&(a.alerted||a.kind==='wolf'&&a.tag))dot(a.pos.x,a.pos.z,'#c0392b',3);
+  for(const id in NPC)if(NPC[id].marker.visible)dot(NPC[id].pos.x,NPC[id].pos.z,'#e3b14f',5,true);
+  if(!P.mounted)dot(HORSE.pos.x,HORSE.pos.z,'#c0612f',4,true);
+  for(const cp of EMP.camps)dot(cp.x,cp.z,'#6fbf5f',6,true);
+  for(const a of EMP.gang)if(!a.dead)dot(a.pos.x,a.pos.z,'#e3b14f',3);
+  if(target){const [tx,ty]=toS(target.x,target.z),dd=Math.hypot(tx-R,ty-R),len=Math.min(dd,R-10);
+    mmx.save();mmx.setLineDash([6,5]);mmx.strokeStyle=WP?'rgba(255,90,60,.9)':'rgba(244,210,122,.9)';mmx.lineWidth=2.5;mmx.beginPath();mmx.moveTo(R,R);
+    mmx.lineTo(R+(tx-R)/dd*len,R+(ty-R)/dd*len);mmx.stroke();mmx.restore();dot(target.x,target.z,WP?'#ff5a3c':'#f4d27a',6,true);}
+  const qt=tracked&&QS[tracked].state==='active'?stageTarget(tracked):null;if(qt&&qt!==target)dot(qt.x,qt.z,'#f4d27a',5,true);
+  mmx.save();mmx.translate(R,R);mmx.rotate(cam.yaw-(P.mounted?HORSE.yaw:P.yaw)+Math.PI);mmx.fillStyle='#fff';mmx.strokeStyle='#1a120c';mmx.lineWidth=2;
+  mmx.beginPath();mmx.moveTo(0,-9);mmx.lineTo(6,7);mmx.lineTo(0,3);mmx.lineTo(-6,7);mmx.closePath();mmx.fill();mmx.stroke();mmx.restore();
+  const [nx,ny]=toS(P.pos.x,P.pos.z-1000);const a=Math.atan2(ny-R,nx-R);mmx.font='bold 20px Georgia';mmx.fillStyle='#efe2c4';mmx.textAlign='center';mmx.textBaseline='middle';mmx.fillText('N',R+Math.cos(a)*(R-14),R+Math.sin(a)*(R-14));
+}
+// ---- fog of war: 20 m cells, revealed within 140 m of where you've been ----
+const FOG_N=80,FOG_C=SIZE/FOG_N,fog=new Uint8Array(FOG_N*FOG_N),fogCanvas=document.createElement('canvas');fogCanvas.width=fogCanvas.height=FOG_N;
+const fogCtx=fogCanvas.getContext('2d'),fogImg=fogCtx.createImageData(FOG_N,FOG_N);
+for(let i=0;i<FOG_N*FOG_N;i++){fogImg.data[i*4]=52;fogImg.data[i*4+1]=36;fogImg.data[i*4+2]=24;fogImg.data[i*4+3]=238;}
+const fogAt=(x,z)=>{const i=Math.floor((x+HALF)/FOG_C),j=Math.floor((z+HALF)/FOG_C);return i>=0&&j>=0&&i<FOG_N&&j<FOG_N&&fog[j*FOG_N+i]===1;};
+function reveal(x,z,r){const r2=r*r;let ch=false;
+  const i0=Math.max(0,Math.floor((x-r+HALF)/FOG_C)),i1=Math.min(FOG_N-1,Math.floor((x+r+HALF)/FOG_C)),j0=Math.max(0,Math.floor((z-r+HALF)/FOG_C)),j1=Math.min(FOG_N-1,Math.floor((z+r+HALF)/FOG_C));
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const k=j*FOG_N+i;if(fog[k])continue;const dx=-HALF+(i+0.5)*FOG_C-x,dz=-HALF+(j+0.5)*FOG_C-z;
+    if(dx*dx+dz*dz<r2){fog[k]=1;fogImg.data[k*4+3]=0;ch=true;}}
+  if(ch)fogCtx.putImageData(fogImg,0,0);}
+function revealAll(){fog.fill(1);for(let i=0;i<FOG_N*FOG_N;i++)fogImg.data[i*4+3]=0;fogCtx.putImageData(fogImg,0,0);}
+function fogEncode(){let s='';for(let i=0;i<fog.length;i+=8){let b=0;for(let j=0;j<8;j++)if(fog[i+j])b|=1<<j;s+=String.fromCharCode(b);}return btoa(s);}
+function fogDecode(str){const s=atob(str);for(let i=0;i<s.length;i++){const b=s.charCodeAt(i);for(let j=0;j<8;j++){const k=i*8+j;if(k<fog.length&&b>>j&1){fog[k]=1;fogImg.data[k*4+3]=0;}}}fogCtx.putImageData(fogImg,0,0);}
+// ---- world map: zoom, pan, points of interest, waypoints, fast travel ----
+const SITE_DESC={town:'Saloon, store, bank, hotel, doctor and telegraph office.',ranch:'Ma Delgado\'s spread. June Harrow works here.',creek:'An outlaw camp on the dry creek bed.',
+  wreck:'Where the night coach went over.',ridge:'Wolf country.',hollow:'The Crane gang\'s canyon hideout.'};
+const MV={cx:0,cz:0,ppu:1,drag:null,moved:false,hover:null,mx:-1,my:-1};
+let WP=null;
+const MAP_S=900,minPPU=MAP_S/SIZE,maxPPU=MAP_S/160;
+function mapClamp(){MV.ppu=clamp(MV.ppu,minPPU,maxPPU);const half=MAP_S/2/MV.ppu;MV.cx=half>=HALF?0:clamp(MV.cx,-HALF+half,HALF-half);MV.cz=half>=HALF?0:clamp(MV.cz,-HALF+half,HALF-half);}
+const mapToC=(x,z)=>[MAP_S/2+(x-MV.cx)*MV.ppu,MAP_S/2+(z-MV.cz)*MV.ppu],mapToW=(px,py)=>[MV.cx+(px-MAP_S/2)/MV.ppu,MV.cz+(py-MAP_S/2)/MV.ppu];
+function mapOpen(){MV.cx=P.pos.x;MV.cz=P.pos.z;MV.ppu=minPPU*2.2;MV.hover=null;mapClamp();const c=$('bigmapCanvas'),s=Math.floor(Math.min(innerWidth*0.94,innerHeight*0.78));c.style.width=c.style.height=s+'px';drawBigMap();}
+function mapPOIs(){const L=[];
+  for(const k in SITES){const s=SITES[k];if(!fogAt(s.x,s.z))continue;L.push({x:s.x,z:s.z,kind:'site',label:k==='town'&&EMP.town?`Coppervale (${EMP.name})`:s.name,desc:SITE_DESC[k],travel:true,
+    tx:k==='town'?45:k==='ranch'?s.x-10:s.x+s.r*0.6,tz:k==='town'?2:k==='ranch'?s.z+14:s.z});}
+  for(const c of EMP.camps)L.push({x:c.x,z:c.z,kind:'camp',label:`${EMP.name} camp`,desc:`Still ${c.still?'level '+c.still:'not built'} · ${c.stock} crates ready`,travel:true,free:true,tx:c.x+2,tz:c.z-3});
+  if(fogAt(0,0))for(const n of npcs)if(!n.dead&&n.shop)L.push({x:n.pos.x,z:n.pos.z,kind:'shop',label:BUSINESS[n.shop]||n.name,
+    desc:`${n.name}${EMP.rackets[n.shop]?' · pays you protection':''}${EMP.blackmail[n.shop]?' · being blackmailed':''}`,small:true,shop:n.shop});
+  for(const id in NPC){const n=NPC[id];if(n.dead)continue;
+    if(n.marker&&n.marker.visible){const q=Object.keys(QS).find(q=>QS[q].state==='available'&&QDEF[q].giver===id);L.push({x:n.pos.x,z:n.pos.z,kind:'mission',label:n.name,desc:q?`New mission: ${QDEF[q].title}`:'Expecting you'});}
+    else if(n.suitor&&fogAt(n.pos.x,n.pos.z))L.push({x:n.pos.x,z:n.pos.z,kind:'heart',label:n.name,desc:ROM.spouse===id?'Your spouse':`Affection ${Math.round(ROM.aff[id])}/100`,small:true});}
+  for(const z of DEER_ZONES)if(fogAt(z.x,z.z))L.push({x:z.x,z:z.z,kind:'hunt',label:'Hunting ground',desc:'Deer graze here. Walk in slowly on foot.',small:true});
+  return L;}
+function navTarget(){return WP||(tracked&&QS[tracked].state==='active'?stageTarget(tracked):null);}
+function drawBigMap(){const c=$('bigmapCanvas'),x=c.getContext('2d'),S=MAP_S,z=MV.ppu/minPPU;
+  x.setTransform(1,0,0,1,0,0);x.fillStyle='#2b1d12';x.fillRect(0,0,S,S);
+  x.save();x.translate(S/2,S/2);x.scale(MV.ppu,MV.ppu);x.translate(-MV.cx,-MV.cz);x.imageSmoothingEnabled=true;
+  x.drawImage(mapCanvas,-HALF,-HALF,SIZE,SIZE);x.drawImage(fogCanvas,-HALF,-HALF,SIZE,SIZE);
+  if(WANTED.active){x.fillStyle='rgba(200,40,30,.18)';x.strokeStyle='rgba(200,40,30,.8)';x.lineWidth=2/MV.ppu;x.beginPath();x.arc(WANTED.last.x,WANTED.last.z,120,0,TAU);x.fill();x.stroke();}
+  x.restore();
+  const pois=mapPOIs(),target=navTarget(),qt=tracked&&QS[tracked].state==='active'?stageTarget(tracked):null;MV.pois=pois;
+  const icon=(p,hl)=>{const [px,py]=mapToC(p.x,p.z);if(px<-40||py<-40||px>S+40||py>S+40)return;x.lineWidth=2;x.strokeStyle='#1a120c';const r=hl?1.3:1;
+    if(p.kind==='site'){x.fillStyle='#2b1d12';x.beginPath();x.arc(px,py,5*r,0,TAU);x.fill();}
+    else if(p.kind==='camp'){x.fillStyle='#3f7f35';x.beginPath();x.moveTo(px,py-10*r);x.lineTo(px+9*r,py+7*r);x.lineTo(px-9*r,py+7*r);x.closePath();x.fill();x.stroke();}
+    else if(p.kind==='shop'){if(z<2.5&&!hl)return;x.fillStyle=EMP.rackets[p.shop]?'#b8862a':'#6b4a2c';x.fillRect(px-5*r,py-5*r,10*r,10*r);x.strokeRect(px-5*r,py-5*r,10*r,10*r);}
+    else if(p.kind==='mission'){x.fillStyle='#e3b14f';x.beginPath();x.arc(px,py,8*r,0,TAU);x.fill();x.stroke();x.fillStyle='#1a120c';x.font='bold 13px Georgia';x.textAlign='center';x.textBaseline='middle';x.fillText('!',px,py+1);}
+    else if(p.kind==='heart'){x.fillStyle='#b8321f';x.font=`${Math.round(16*r)}px Georgia`;x.textAlign='center';x.textBaseline='middle';x.fillText('♥',px,py);}
+    else if(p.kind==='hunt'){if(z<1.6&&!hl)return;x.strokeStyle='#4f6a2c';x.setLineDash([4,3]);x.beginPath();x.arc(px,py,Math.max(10,40*MV.ppu),0,TAU);x.stroke();x.setLineDash([]);}
+    const showLabel=hl||p.kind==='site'||p.kind==='camp'||(z>=2.5&&p.small)||p.kind==='mission';
+    if(showLabel){x.textAlign='center';x.textBaseline='alphabetic';x.font=p.kind==='site'?'20px Sancreek, Georgia':'15px Alegreya Sans, sans-serif';
+      x.lineWidth=4;x.strokeStyle='rgba(230,214,178,.85)';const ly=py-(p.kind==='site'?12:13);x.strokeText(p.label,px,ly);x.fillStyle='#2b1d12';x.fillText(p.label,px,ly);}};
+  for(const p of pois)if(p!==MV.hover)icon(p,false);
+  const dot=(wx,wz,col,r)=>{const [px,py]=mapToC(wx,wz);x.fillStyle=col;x.strokeStyle='#1a120c';x.lineWidth=2;x.beginPath();x.arc(px,py,r,0,TAU);x.fill();x.stroke();};
+  for(const a of EMP.gang)if(!a.dead)dot(a.pos.x,a.pos.z,'#e3b14f',3.5);
+  if(WANTED.active)for(const e of outlaws)if(e.tag==='law'&&!e.dead)dot(e.pos.x,e.pos.z,'#6aa0d8',4);
+  if(!P.mounted)dot(HORSE.pos.x,HORSE.pos.z,'#c0612f',5);
+  if(qt&&qt!==WP){const [px,py]=mapToC(qt.x,qt.z);x.fillStyle='#e3b14f';x.strokeStyle='#1a120c';x.lineWidth=2.5;x.beginPath();x.moveTo(px,py-11);x.lineTo(px+9,py);x.lineTo(px,py+11);x.lineTo(px-9,py);x.closePath();x.fill();x.stroke();}
+  if(WP){const [px,py]=mapToC(WP.x,WP.z);x.strokeStyle='#1a120c';x.lineWidth=6;x.beginPath();x.moveTo(px-8,py-8);x.lineTo(px+8,py+8);x.moveTo(px+8,py-8);x.lineTo(px-8,py+8);x.stroke();
+    x.strokeStyle='#ff5a3c';x.lineWidth=3;x.stroke();}
+  if(MV.hover)icon(MV.hover,true);
+  const [ppx,ppy]=mapToC(P.pos.x,P.pos.z);x.save();x.translate(ppx,ppy);x.rotate(-(P.mounted?HORSE.yaw:P.yaw)+Math.PI);x.fillStyle='#fff';x.strokeStyle='#000';x.lineWidth=2;
+  x.beginPath();x.moveTo(0,-13);x.lineTo(8,9);x.lineTo(0,4);x.lineTo(-8,9);x.closePath();x.fill();x.stroke();x.restore();
+  // legend and scale bar
+  const items=[['#fff','You'],['#c0612f','Your horse'],['#e3b14f','Gang / missions'],['#3f7f35','Your camps'],['#b8321f','Courtship'],['#6aa0d8','Lawmen'],['#ff5a3c','Waypoint']];
+  x.fillStyle='rgba(26,18,12,.72)';x.fillRect(12,S-12-items.length*19-14,150,items.length*19+14);x.font='13px Alegreya Sans, sans-serif';x.textAlign='left';x.textBaseline='middle';
+  items.forEach(([c2,t],i)=>{const y=S-12-items.length*19+i*19+2;x.fillStyle=c2;x.beginPath();x.arc(26,y,5,0,TAU);x.fill();x.fillStyle='#efe2c4';x.fillText(t,38,y);});
+  const m=MV.ppu*100>120?100:MV.ppu*200>120?200:500,bw=m*MV.ppu;x.fillStyle='rgba(26,18,12,.72)';x.fillRect(S-bw-34,S-40,bw+22,28);x.fillStyle='#efe2c4';x.fillRect(S-bw-23,S-22,bw,3);
+  x.textAlign='center';x.fillText(`${m} m`,S-bw/2-23,S-31);
+  const h=MV.hover;$('mapInfo').innerHTML=h?`<b>${h.label}</b> · ${h.desc||''}${h.travel?` · <span class="k">F</span> or double-click: fast travel (${h.free?'free':'$3 stage fare'}, 2 hours)`:''}`
+    :WP?`Waypoint set ${Math.round(Math.hypot(WP.x-P.pos.x,WP.z-P.pos.z))} m away. Right-click to clear it.`:'Explored land is drawn; the rest is unmapped. Ride out to fill it in.';}
+function mapEvent(e){const c=$('bigmapCanvas'),r=c.getBoundingClientRect(),sc=MAP_S/r.width;return [(e.clientX-r.left)*sc,(e.clientY-r.top)*sc];}
+function mapHover(px,py){let best=null,bd=16;for(const p of MV.pois||[]){if(p.kind==='shop'&&MV.ppu/minPPU<2.5)continue;const [qx,qy]=mapToC(p.x,p.z),d=Math.hypot(qx-px,qy-py);if(d<bd){bd=d;best=p;}}return best;}
+function mapTravelHover(){const p=MV.hover;if(p&&p.travel)fastTravel(p);else toast('Fast travel','Hover a location or camp you have discovered, then press F.');}
+{const c=$('bigmapCanvas');
+  c.addEventListener('mousedown',e=>{e.preventDefault();const [px,py]=mapEvent(e);MV.drag={px,py,cx:MV.cx,cz:MV.cz};MV.moved=false;
+    if(e.button===2){WP=null;drawBigMap();MV.drag=null;}});
+  addEventListener('mousemove',e=>{if(modal!=='map')return;const [px,py]=mapEvent(e);
+    if(MV.drag){const dx=px-MV.drag.px,dy=py-MV.drag.py;if(Math.abs(dx)+Math.abs(dy)>4)MV.moved=true;if(MV.moved){MV.cx=MV.drag.cx-dx/MV.ppu;MV.cz=MV.drag.cz-dy/MV.ppu;mapClamp();c.style.cursor='grabbing';}}
+    const h=mapHover(px,py);if(h!==MV.hover||MV.moved){MV.hover=h;drawBigMap();}});
+  addEventListener('mouseup',e=>{if(modal!=='map'||!MV.drag)return;const wasDrag=MV.moved;MV.drag=null;c.style.cursor='crosshair';
+    if(!wasDrag&&e.button===0&&e.target===c){const [px,py]=mapEvent(e);
+      if(WP){const [wx,wy]=mapToC(WP.x,WP.z);if(Math.hypot(wx-px,wy-py)<14){WP=null;drawBigMap();return;}}
+      const h=mapHover(px,py),[wx,wz]=mapToW(px,py);WP=h?{x:h.x,z:h.z,label:h.label}:{x:clamp(wx,-HALF+40,HALF-40),z:clamp(wz,-HALF+40,HALF-40),label:'Waypoint'};sfx.ping();drawBigMap();}});
+  c.addEventListener('dblclick',e=>{const [px,py]=mapEvent(e);const h=mapHover(px,py);if(h&&h.travel){WP=null;fastTravel(h);}});
+  c.addEventListener('wheel',e=>{e.preventDefault();const [px,py]=mapEvent(e),[wx,wz]=mapToW(px,py);MV.ppu*=e.deltaY<0?1.2:1/1.2;mapClamp();
+    // keep the point under the cursor fixed while zooming
+    MV.cx=wx-(px-MAP_S/2)/MV.ppu;MV.cz=wz-(py-MAP_S/2)/MV.ppu;mapClamp();drawBigMap();},{passive:false});
+  c.addEventListener('contextmenu',e=>e.preventDefault());}
+function canTravel(){if(WANTED.active)return 'Not while the law is after you.';if(RAID.active)return 'Not in the middle of a raid.';
+  if(outlaws.some(e=>!e.dead&&e.alerted&&e.tag!=='law'&&d2(e.pos,P.pos)<90))return 'Not in the middle of a fight.';return null;}
+function advanceHours(h){gameHour+=h;if(gameHour>=24){gameHour-=24;P.day++;onNewDay();}}
+function fastTravel(p){const why=canTravel();if(why){toast('Can\'t travel',why);return;}
+  if(!p.free&&P.money<3){toast('Not enough money','A stage ticket costs $3.');return;}
+  if(!p.free)P.money-=3;closeModal();const f=$('fade');f.textContent='';f.style.opacity=1;
+  setTimeout(()=>{if(P.mounted)dismount(true);const a=rand(0,TAU);P.pos.set(p.tx+Math.cos(a)*2,0,p.tz+Math.sin(a)*2);resolve(P.pos,0.4);P.pos.y=groundY(P.pos.x,P.pos.z);
+    HORSE.pos.set(P.pos.x+2.5,0,P.pos.z+1.5);resolve(HORSE.pos,1.1);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);HORSE.speed=0;HORSE.called=false;
+    if(EMP.order!=='hold')for(const g of EMP.gang)if(!g.dead){if(g.mounted)dismountLaw(g);g.pos.set(P.pos.x+rand(-6,6),0,P.pos.z+rand(-6,6));resolve(g.pos,0.5);}
+    advanceHours(2);camPivot=null;updateShadowProxies(true);reveal(P.pos.x,P.pos.z,160);f.style.opacity=0;toast('Arrived',`${p.label}${p.free?'':' · $3 stage fare'}`);save();},700);}
+const compassEls=[];
+function buildCompass(){const c=$('compass');const L=['N','NE','E','SE','S','SW','W','NW'];for(let i=0;i<24;i++){const el=document.createElement('span');const a=i/24*TAU;
+  if(i%3===0){el.textContent=L[i/3];el.className=i%6===0?'c':'';}else{el.textContent='|';el.className='t';}c.appendChild(el);compassEls.push({el,a});}
+  const o=document.createElement('span');o.className='obj';o.textContent='◆';c.appendChild(o);compassEls.obj=o;}
+function updateCompass(target){const w=$('compass').clientWidth,heading=-cam.yaw,pxr=w/2.4;
+  for(const {el,a} of compassEls){const r=angDiff(heading,a);el.style.display=Math.abs(r)>1.25?'none':'';el.style.left=(w/2+r*pxr)+'px';}
+  const o=compassEls.obj;if(target){const b=Math.atan2(target.x-P.pos.x,-(target.z-P.pos.z)),r=clamp(angDiff(heading,b),-1.15,1.15);o.style.display='';o.style.left=(w/2+r*pxr)+'px';}else o.style.display='none';}
+
+// ---------------- world beacon ----------------
+const beacon=new THREE.Mesh(new THREE.CylinderGeometry(0.9,0.9,300,10,1,true),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:0.22,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide}));
+scene.add(beacon);
+
+// ---------------- combat ----------------
+const ray=new THREE.Ray(),_hv=new V3();
+function raySphere(o,d,c,r){const ox=o.x-c.x,oy=o.y-c.y,oz=o.z-c.z,b=ox*d.x+oy*d.y+oz*d.z,cc=ox*ox+oy*oy+oz*oz-r*r,disc=b*b-cc;if(disc<0)return -1;const t=-b-Math.sqrt(disc);return t>0?t:-1;}
+function hitSpheres(e){const p=e.pos;
+  if(e.kind==='outlaw'||e.kind==='npc'){const s=e.boss?1.08:1,y=p.y+(e.mounted?1.05:0);
+    return [{c:new V3(p.x,y+1.25*s,p.z),r:0.36*s},{c:new V3(p.x,y+0.5*s,p.z),r:0.32*s,limb:true},{c:new V3(p.x,y+1.78*s,p.z),r:0.19*s,head:true}];}
+  const s=e.q.s,fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);
+  return [{c:new V3(p.x+fx*0.55*s,p.y+1.45*s,p.z+fz*0.55*s),r:0.62*s},{c:new V3(p.x-fx*0.55*s,p.y+1.45*s,p.z-fz*0.55*s),r:0.62*s},
+    {c:new V3(p.x+fx*1.35*s,p.y+(e.kind==='deer'?2.5:1.9)*s,p.z+fz*1.35*s),r:0.35*s,head:true}];}
+function raycastWorld(o,d,maxD){
+  let best={t:maxD,ent:null,head:false,kind:'none'};
+  for(let t=1;t<maxD;t+=1.5){if(o.y+d.y*t<groundY(o.x+d.x*t,o.z+d.z*t)){let a=t-1.5,b=t;for(let i=0;i<6;i++){const m=(a+b)/2;if(o.y+d.y*m<groundY(o.x+d.x*m,o.z+d.z*m))b=m;else a=m;}best.t=b;best.kind='ground';break;}}
+  ray.set(o,d);for(const b of boxes){const h=ray.intersectBox(b.box3,_hv);if(h){const t=h.distanceTo(o);if(t<best.t){best.t=t;best.kind='wall';}}}
+  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0))];
+  for(const e of list){if(d2(e.pos,o)>maxD+5)continue;for(const s of hitSpheres(e)){const t=raySphere(o,d,s.c,s.r);if(t>0&&t<best.t){best.t=t;best.ent=e;best.head=!!s.head;best.limb=!!s.limb;best.kind='ent';}}}
+  best.point=o.clone().addScaledVector(d,best.t);return best;
+}
+function terrainLOS(a,b){const d=b.clone().sub(a),L=d.length();d.divideScalar(L);for(let t=3;t<L-1;t+=3){const x=a.x+d.x*t,y=a.y+d.y*t,z=a.z+d.z*t;if(y<groundY(x,z))return false;}
+  ray.set(a,d);for(const bb of boxes){if(Math.min(Math.abs(bb.minX-a.x),Math.abs(bb.maxX-a.x))>L+20)continue;const h=ray.intersectBox(bb.box3,_hv);if(h&&h.distanceTo(a)<L)return false;}return true;}
+const PUFFG=new THREE.IcosahedronGeometry(0.12,0);
+function puff(p,color,n=6,spd=2,size=1){for(let i=0;i<n;i++){const m=new THREE.Mesh(PUFFG,new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,depthWrite:false}));
+  m.position.copy(p);m.scale.setScalar(size);scene.add(m);const life=rand(0.35,0.8);fx.push({o:m,v:new V3(rand(-1,1),rand(0.3,1.6),rand(-1,1)).multiplyScalar(spd),life,max:life,grow:size*2.5});}}
+function tracer(a,b,col=0xffe0a0){const g=new THREE.BufferGeometry().setFromPoints([a,b]),l=new THREE.Line(g,new THREE.LineBasicMaterial({color:col,transparent:true,opacity:0.9}));scene.add(l);fx.push({o:l,life:0.07,max:0.07,line:true});}
+const flash=new THREE.Mesh(new THREE.IcosahedronGeometry(0.16,0),new THREE.MeshBasicMaterial({color:0xffd080}));flash.visible=false;scene.add(flash);let flashT=0;
+function muzzle(p){flash.position.copy(p);flash.visible=true;flash.scale.setScalar(rand(0.8,1.4));muzzleLight.position.copy(p);muzzleLight.intensity=60;flashT=0.05;}
+const curW=()=>WEAPONS[P.weapon];
+const tipFor=()=>[PH.gunTip,PH.rifleTip,PH.shotTip][P.weapon];
+function shotSpread(){const w=curW();return w.spread*(P.aiming?1:2.5)*(P.speed>3&&!P.mounted?1.8:1)*(P.mounted&&HORSE.speed>2?1.6:1)+P.bloom;}
+function fire(target){
+  const w=curW();if(P.fireCd>0||P.reloadT>0||!P.alive||dlg||menu)return;
+  if(w.ammo<=0){sfx.click();P.fireCd=0.25;if(w.reserve>0)startReload();else if(!w.warned){w.warned=true;toast('Out of ammo','Buy more at Bell\'s Mercantile.');}return;}
+  w.ammo--;P.fireCd=w.rate;P.fireHold=0.9;
+  // turn to face the shot first, so the muzzle is where the player expects it
+  const f=new V3();if(target)f.copy(target).sub(camera.position).normalize();else camera.getWorldDirection(f);
+  if(P.mounted)PH.g.rotation.y=angDiff(HORSE.yaw,Math.atan2(f.x,f.z));else{P.yaw=Math.atan2(f.x,f.z);PH.g.rotation.y=P.yaw;}
+  poseArms(true);(P.mounted?HORSE.q.g:PH.g).updateMatrixWorld(true);
+  const tip=tipFor().getWorldPosition(new V3()),camO=camera.position.clone(),chest=P.pos.clone();chest.y+=P.mounted?2.4:1.3;
+  // the crosshair ray starts level with the player, so nothing behind the shoulder is hit
+  const skip=Math.max(0.3,chest.clone().sub(camO).dot(f)+0.2),pellets=w.pellets||1,sp=target?(w.pellets?0.012:0):shotSpread();
+  for(let i=0;i<pellets;i++){
+    const dir=f.clone();dir.x+=rand(-sp,sp);dir.y+=rand(-sp,sp);dir.z+=rand(-sp,sp);dir.normalize();
+    const aim=raycastWorld(camO.clone().addScaledVector(dir,skip),dir,330);
+    // then the bullet travels from the muzzle to that point, so cover in front of the gun blocks it
+    const to=aim.point.clone().sub(tip),L=to.length();to.divideScalar(L);
+    const hit=raycastWorld(tip.clone().addScaledVector(to,0.05),to,L+0.5);
+    if(i<3)tracer(tip,hit.point);
+    if(hit.ent){const zone=hit.head?3:hit.limb?0.6:1,fall=w.range?clamp(1-(hit.t-8)/w.range,0.2,1):1,focusBonus=target?2.2:1;
+      hurt(hit.ent,w.dmg*zone*fall*focusBonus*rand(0.95,1.1),hit.head,hit.point);}
+    else if(hit.kind!=='none')puff(hit.point,hit.kind==='ground'?0xb8946a:0x8a6a4a,pellets>1?2:6,1.6);
+  }
+  muzzle(tip);sfx.gun(0,P.weapon);
+  P.recoil+=w.recoil;cam.pitch-=w.recoil;P.bloom=Math.min(P.bloom+w.spread*0.8+0.004,0.05);cam.shake=Math.max(cam.shake,0.12+w.recoil*2);
+  alertFromShot(P.pos);
+  if(w.ammo===0&&w.reserve>0)setTimeout(startReload,250);
+}
+function switchWeapon(i){if(i===P.weapon||!WEAPONS[i].owned)return;P.weapon=i;P.reloadT=0;P.fireCd=Math.max(P.fireCd,0.25);sfx.click();}
+function cycleWeapon(dir){for(let k=1;k<=WEAPONS.length;k++){const i=(P.weapon+dir*k+WEAPONS.length*3)%WEAPONS.length;if(WEAPONS[i].owned){switchWeapon(i);return;}}}
+const _af=new V3(),_av=new V3();
+function startAssist(){camera.getWorldDirection(_af);let best=0.2,tgt=null;
+  for(const e of [...outlaws.filter(e=>!e.dead&&(e.tag!=='law'||WANTED.active)),...animals.filter(a=>!a.dead)]){
+    const d=d2(e.pos,P.pos);if(d>130||d<1.5)continue;const eye=new V3(e.pos.x,e.pos.y+(e.mounted?2.3:e.q?1.4*e.q.s:1.25),e.pos.z);
+    _av.copy(eye).sub(camera.position).normalize();const a=Math.acos(clamp(_av.dot(_af),-1,1));
+    if(a<best&&terrainLOS(camera.position.clone(),eye)){best=a;tgt=e;}}
+  if(tgt)P.assist={e:tgt,t:0.16};}
+function startReload(){const w=curW();if(P.reloadT>0||w.ammo>=w.mag||w.reserve<=0)return;P.reloadT=w.reload;sfx.reload();}
+function hitmarker(kill){const h=$('hitmark');h.className='on'+(kill?' kill':'');setTimeout(()=>h.className=kill?'kill':'',60);}
+function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0))return;e.hp-=dmg;puff(pt,0x8a1a10,head?10:6,2.2);
+  if(e.kind==='npc')return hurtNPC(e,false);
+  if(e.kind==='outlaw'){e.flinchT=0.25;e.shootT+=0.3;
+    if(e.tag==='law'){if(!WANTED.active&&!e.crimeHit){e.crimeHit=true;commitCrime('assaultLaw',e.pos,null,true);}}
+    else for(const o of outlaws)if(o.tag===e.tag&&!o.dead)o.alerted=true;}
+  else if(e.kind==='deer')e.fearT=10;else e.alerted=true;
+  if(e.hp<=0){if(e.mounted)dismountLaw(e);e.dead=true;e.fallT=0;P.stats.kills++;
+    if(!ally){if(head)P.stats.heads++;P.focus=Math.min(100,P.focus+12);hitmarker(true);if(head&&e.kind==='outlaw')toast('Headshot','');}
+    if(e.boss)banner('',`${e.name} is dead`,true);
+    if(e.tag==='law')commitCrime('killLaw',e.pos,null,true);
+    questEvent('kill',{type:e.kind,tag:e.tag,boss:e.boss});}
+  else if(!ally)hitmarker(false);}
+function hurtNPC(n,punch){
+  if(n.hp<=0){
+    if(punch){n.koT=25;n.fallT=0;n.hp=60;hitmarker(false);toast(n.name,'Knocked out cold.');if(!n.assaulted){n.assaulted=true;commitCrime('assault',n.pos,n);}return;}
+    hitmarker(true);P.stats.kills++;
+    // people the story needs are left badly wounded instead of killed
+    if(n.important){n.koT=45;n.fallT=0;n.hp=100;toast(`${n.name} is badly wounded`,'Doc Hargrove will pull them through.');}
+    else{n.dead=true;n.fallT=0;n.deadT=0;}
+    commitCrime('murder',n.pos,n);return;}
+  hitmarker(false);scare(n);
+  if(n.suitor&&ROM.spouse!==n.id&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
+  if(!n.assaulted){n.assaulted=true;commitCrime(punch?'assault':'assaultArmed',n.pos,n);}
+}
+
+// ---------------- crime & the law ----------------
+const CRIMES={gunfire:{name:'Firing a gun in town',bounty:5,honor:-1},assault:{name:'Assault',bounty:10,honor:-5},assaultArmed:{name:'Assault with a weapon',bounty:25,honor:-8},
+  assaultLaw:{name:'Attacking a lawman',bounty:40,honor:-10},murder:{name:'Murder',bounty:60,honor:-20},killLaw:{name:'Killing a lawman',bounty:100,honor:-25},
+  robbery:{name:'Robbery',bounty:25,honor:-10},storeRobbery:{name:'Store robbery',bounty:40,honor:-12},bankRobbery:{name:'Bank robbery',bounty:150,honor:-25},
+  horseTheft:{name:'Horse theft',bounty:30,honor:-10},looting:{name:'Looting the dead',bounty:10,honor:-5},
+  extortion:{name:'Extortion',bounty:30,honor:-6},bootlegging:{name:'Bootlegging',bounty:20,honor:-3},raid:{name:'Raiding Coppervale',bounty:200,honor:-20}};
+const WANTED={active:false,last:new V3(),searchT:0,reinforceT:0,recogT:0,warned:false};
+const crimeLog=[];
+const inTown=p=>Math.hypot(p.x-SITES.town.x,p.z-SITES.town.z)<SITES.town.r;
+const wantedLevel=()=>P.bounty<60?1:P.bounty<150?2:3;
+const lawAlive=()=>outlaws.filter(e=>e.tag==='law'&&!e.dead).length;
+const priceMult=()=>P.honor<-40?1.3:P.honor>40?0.85:1;
+const honorName=()=>P.honor>=50?'Respected':P.honor>=15?'Decent':P.honor>-15?'Unknown':P.honor>-50?'Shady':'Notorious';
+function witnesses(pos,victim){let n=0;const eye=pos.clone();eye.y+=1.5;
+  for(const v of npcs){if(v.dead||v.koT>0)continue;const d=d2(v.pos,pos);if(v===victim){n++;continue;}
+    if(d<40){const a=v.pos.clone();a.y+=1.6;if(terrainLOS(a,eye))n++;}}
+  for(const e of outlaws)if(e.tag==='law'&&!e.dead&&d2(e.pos,pos)<70)n++;
+  return n;}
+function commitCrime(type,pos,victim,force){const c=CRIMES[type];P.honor=clamp(P.honor+c.honor,-100,100);
+  if(EMP.town&&inTown(pos)&&type!=='raid'){crimeLog.unshift({name:c.name,seen:false,bounty:0,day:P.day});toast(c.name,'Your town, your rules. Nobody reports it.');return;}
+  const seen=force||witnesses(pos,victim)>0;crimeLog.unshift({name:c.name,seen,bounty:c.bounty,day:P.day});if(crimeLog.length>12)crimeLog.length=12;
+  if(!seen){toast(c.name,'Nobody saw it.');return;}
+  P.bounty+=c.bounty;toast('Crime witnessed',`${c.name} · +$${c.bounty} bounty`);setWanted();}
+function setWanted(){const was=WANTED.active;WANTED.active=true;WANTED.last.copy(P.pos);WANTED.searchT=0;WANTED.recogT=0;
+  for(const e of outlaws)if(e.tag==='law'&&!e.dead)e.alerted=true;
+  if(!was){banner('The law is coming','Wanted',true);$('banner').classList.add('wanted');for(let i=lawAlive();i<2;i++)spawnLawNear();WANTED.reinforceT=10;}}
+function spawnLawNear(){for(let k=0;k<10;k++){const a=rand(0,TAU),r=rand(85,105),x=clamp(P.pos.x+Math.sin(a)*r,-HALF+50,HALF-50),z=clamp(P.pos.z+Math.cos(a)*r,-HALF+50,HALF-50);
+  if(slopeAt(x,z)<0.6)return spawnLawman(x,z);}return spawnLawman(P.pos.x+90,P.pos.z);}
+function updateWanted(dt){
+  if(!WANTED.active){
+    if(P.bounty>0&&P.alive){
+      if(inTown(P.pos)&&!EMP.town){WANTED.recogT+=dt;if(!WANTED.warned&&WANTED.recogT>1){WANTED.warned=true;toast('Folks are staring',`There's a $${P.bounty} bounty on you. Pay it at the telegraph office.`);}}
+      else{WANTED.recogT=0;WANTED.warned=false;}
+      const spotted=outlaws.some(e=>e.tag==='law'&&!e.dead&&e.los&&d2(e.pos,P.pos)<25);
+      if(WANTED.recogT>15||spotted){toast('Recognized','The law knows your face.');setWanted();}
+    }
+    return;}
+  let seen=false;for(const e of outlaws)if(e.tag==='law'&&!e.dead&&e.los&&d2(e.pos,P.pos)<80)seen=true;
+  if(seen){WANTED.last.copy(P.pos);WANTED.searchT=0;}else WANTED.searchT+=dt;
+  if(RAID.active){WANTED.last.copy(P.pos);WANTED.searchT=0;return;}
+  WANTED.reinforceT-=dt;if(WANTED.reinforceT<=0){WANTED.reinforceT=14;if(lawAlive()<wantedLevel()*2)spawnLawNear();}
+  if(WANTED.searchT>18&&d2(P.pos,WANTED.last)>120){WANTED.active=false;for(const e of outlaws)if(e.tag==='law')e.alerted=false;
+    banner('','You lost the law',true);toast('Escaped',`Your $${P.bounty} bounty stands. Pay it at the telegraph office.`);}
+}
+function scare(n){if(n.dead||n.koT>0)return;if(n.wander)n.fleeT=12;else n.cowerT=8;}
+function alertFromShot(pos){
+  for(const e of outlaws)if(!e.dead&&e.tag!=='law'&&d2(e.pos,pos)<75)e.alerted=true;
+  for(const a of animals)if(!a.dead&&d2(a.pos,pos)<90){if(a.kind==='deer')a.fearT=8;else a.alerted=true;}
+  let heard=0;for(const n of npcs)if(!n.dead&&!(n.koT>0)&&d2(n.pos,pos)<50){scare(n);heard++;}
+  const fighting=outlaws.some(e=>!e.dead&&e.alerted&&e.tag!=='law'&&d2(e.pos,pos)<90);
+  if(heard&&!WANTED.active&&!fighting&&inTown(pos)&&clock.elapsedTime-lastGunfireCrime>30){lastGunfireCrime=clock.elapsedTime;commitCrime('gunfire',pos,null);}
+}
+function punch(){if(P.mounted||P.punchT>0||dlg||menu||!P.alive)return;P.punchT=0.4;
+  const cf=camFwd();P.yaw=Math.atan2(cf.x,cf.z);let tgt=null,bd=1.9;
+  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();
+    if(d<bd&&v.normalize().dot(cf)>0.5){bd=d;tgt=t;}}
+  if(!tgt){nz(0.05,900,0.08);return;}
+  sfx.punch();cam.shake=Math.max(cam.shake,0.15);
+  if(tgt.kind==='npc'){tgt.hp-=rand(30,40);hurtNPC(tgt,true);}else hurt(tgt,25,false,tgt.pos.clone().add(new V3(0,1.4,0)));}
+const canRob=n=>!!n&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
+function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&ROM.spouse!==n.id&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
+  if(n.id==='pruitt'){m=Math.floor(rand(120,220));t='bankRobbery';line='Don\'t shoot! Take the vault money, all of it!';}
+  else if(n.shop){m=Math.floor(rand(25,50));t='storeRobbery';line='All right, all right. Here\'s the till.';}
+  else{m=Math.floor(rand(3,14));t='robbery';line=pick(['Please, it\'s all I have!','Take it and go!','You\'ll hang for this.']);}
+  P.money+=m;P.stats.robbed=(P.stats.robbed||0)+m;sfx.coin();toast(n.name,`“${line}” (+$${m})`);scare(n);commitCrime(t,n.pos,n);}
+function lootNPC(n){n.looted=true;const m=Math.floor(rand(1,9));P.money+=m;sfx.coin();toast('Searched the body',`$${m}`);commitCrime('looting',n.pos,null);}
+function damagePlayer(n,from){if(!P.alive)return;P.hp-=n;P.lastHurt=clock.elapsedTime;cam.shake=Math.max(cam.shake,0.35);vignetteT=0.6;sfx.hurt();if(P.hp<=0)die();}
+function enemyShoot(e,d){
+  (e.mounted?e.hq.g:e.h.g).updateMatrixWorld(true);const tip=e.h.gunTip.getWorldPosition(new V3());const chest=P.pos.clone();chest.y+=P.mounted?2.4:1.3;
+  let ch=(0.55-d*0.006)*e.acc*(e.mounted?0.7:1);if(P.speed>5||HORSE.speed>8&&P.mounted)ch*=0.55;if(focusOn)ch*=0.6;if(P.aiming&&!P.mounted)ch*=0.9;ch=clamp(ch,0.05,0.75);
+  const hit=Math.random()<ch,end=hit?chest:chest.clone().add(new V3(rand(-2,2),rand(-1,1.5),rand(-2,2)));
+  muzzleE(tip);tracer(tip,end,0xffc890);sfx.gun(d,false);
+  if(hit)damagePlayer(rand(8,14)*(e.boss?1.6:1),e.pos);else{if(d<25)nz(0.12,4000,0.08,'highpass',0.05);}
+}
+function muzzleE(p){puff(p,0xffd080,2,0.5,0.6);}
+let vignetteT=0;
+function die(){P.alive=false;P.hp=0;setFocus(false);const f=$('fade');f.textContent='You were gunned down';f.style.opacity=1;
+  setTimeout(()=>{if(P.mounted)dismount(true);const camp=nearestCamp(P.pos);
+    // wake at your own camp if you have one, otherwise at Doc Hargrove's
+    if(camp){P.pos.set(camp.x+2,0,camp.z-3);HORSE.pos.set(camp.x-3,0,camp.z-4);}else{P.pos.set(-28,0,6.5);HORSE.pos.set(-22,0,4);}
+    P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.speed=0;
+    if(P.bounty>0){const paid=Math.min(P.money,P.bounty);P.money-=paid;P.bounty=0;WANTED.active=false;
+      setTimeout(()=>toast('The law collected',`$${paid} was taken against your bounty. Your record is clean.`),1500);}
+    const lost=Math.floor(P.money*0.1);P.money-=lost;P.hp=100;P.stamina=100;P.alive=true;for(const e of outlaws)e.alerted=false;for(const a of animals)a.alerted=false;
+    f.style.opacity=0;setTimeout(()=>f.textContent='',600);toast(camp?'Your gang dragged you back to camp':'Doc Hargrove patched you up',lost?`Lost $${lost} on the way.`:'Take it easy out there.');},2600);}
+
+// ---------------- the empire: gang, camps, moonshine, rackets, blackmail, the town ----------------
+const EMP={name:null,color:'#3a4a5a',gang:[],camps:[],rackets:{},blackmail:{},dirt:{},town:false,order:'follow',rankIdx:0};
+const GANGS=[['The Dust Devils','#b8862a'],['The Copper Kings','#b06a3a'],['The Red Mesa Boys','#9a2a1a'],['The Iron Horse Gang','#3a4a6a']];
+const NAMES=['Jed Harlan','Wes Pike','Cole Dorsey','Ruthie Vance','Abe Kettle','Mercy Quill','Tom Brannock','Lupe Ortega','Hank Sterling','Ivy Marsh','Eli Crowder','Rosa Delmar','Nate Tolliver','Cass Whitlow'];
+const SECRETS={bank:{who:'Elias Pruitt',short:'skimming the payroll',line:'Pruitt skims the mining payroll. Keeps a second ledger in his desk drawer.'},
+  store:{who:'Otis Bell',short:'watered-down lamp oil',line:'Otis cuts his lamp oil with water and sells it at full price.'},
+  hotel:{who:'Mrs. Winslow',short:'hiding Crane money',line:'Mrs. Winslow keeps a strongbox of Crane money under the floor of room six.'},
+  doctor:{who:'Doc Hargrove',short:'selling laudanum out back',line:'The Doc sells laudanum out the back door to anyone with a dollar.'},
+  telegraph:{who:'Clerk Tibbs',short:'reading private telegrams',line:'Tibbs reads every private telegram and sells what he learns.'}};
+const BUSINESS={store:'Bell\'s Mercantile',saloon:'The Rusty Spur',hotel:'Grand Hotel',doctor:'Doc Hargrove',telegraph:'Telegraph Office',bank:'Coppervale Bank'};
+const RANKS=[[0,'Drifter'],[20,'Outlaw'],[50,'Gang Boss'],[100,'Kingpin'],[160,'Don of the Territory']];
+const RAID={active:false,wave:0,next:0};
+const liveGang=()=>EMP.gang.filter(a=>!a.dead);
+const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+(ROM.spouse?2:0);
+function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.reduce((s,c)=>s+c.still*10,0)+Object.keys(EMP.rackets).length*10+Object.keys(EMP.blackmail).length*12+(EMP.town?60:0)
+  +(ROM.spouse?15:0)+ROM.children.length*8;}
+function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:RANKS[idx][1],next:RANKS[idx+1]};}
+function dailyLedger(){const r=Object.keys(EMP.rackets).length*10,b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40:0,w=liveGang().filter(a=>!a.kin).length*3;return {r,b,t,w,net:r+b+t-w};}
+function openCustom(title,items){menu={custom:{title,items}};renderMenu();}
+function closeMenu(){menu=null;renderMenu();}
+function ensureGangName(cb){if(EMP.name)return cb();
+  openCustom('Name your gang',GANGS.map(([nm,col])=>({label:nm,price:0,note:'',act:()=>{EMP.name=nm;EMP.color=col;closeMenu();banner('A new gang rides',nm);setTimeout(cb,500);}})));}
+function spawnAlly(x,z,o={}){const used=new Set(EMP.gang.map(a=>a.name)),name=o.name||NAMES.find(n=>!used.has(n))||pick(NAMES);
+  const h=makeHuman({shirt:pick(['#6a5a40','#4a3a2a','#7a4a3a','#5a5a4a']),vest:pick(['#2a1e14',null]),coat:Math.random()<0.4?pick(['#3a2a1e','#4a3a2a']):null,pants:'#2e2a26',
+    hat:pick(['#2a1c12','#4a3a28','#1a1a1a']),bandana:EMP.color,skin:pick(SKINS),beard:Math.random()<0.4?'#3a2414':null});
+  h.gun.visible=true;h.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(h.g);
+  const hq=makeQuad({scale:1,color:pick(['#7a4a2a','#3a2a1e','#a08060','#5a3a2a']),dark:'#1a0f08',mane:'#1a0f08',tailC:'#1a0f08',saddle:true});scene.add(hq.g);
+  const a={kind:'ally',name,h,hq,pos:new V3(x,0,z),yaw:rand(0,TAU),hp:180,dead:false,fallT:0,deadT:0,mounted:false,speed:0,shootT:rand(1,2),tT:0,target:null,slot:0,hold:new V3(x,0,z)};
+  resolve(a.pos,0.5);a.pos.y=groundY(a.pos.x,a.pos.z);h.g.position.copy(a.pos);const hx=a.pos.x+1.6;hq.g.position.set(hx,groundY(hx,a.pos.z),a.pos.z);
+  EMP.gang.push(a);return a;}
+function recruit(n){closeMenu();ensureGangName(()=>{const i=npcs.indexOf(n);if(i>=0)npcs.splice(i,1);scene.remove(n.h.g);
+  const a=spawnAlly(n.pos.x,n.pos.z);toast(`${a.name} joins ${EMP.name}`,'Wages are $3 a day, paid at dawn.');save();});}
+function hireAtCamp(c){closeMenu();ensureGangName(()=>{const a=spawnAlly(c.x+rand(-4,4),c.z+rand(-4,4));toast(`${a.name} joins ${EMP.name}`,'They\'ll ride with you.');save();});}
+function nearestAlly(p,r){let b=null,bd=r;for(const a of EMP.gang){if(a.dead)continue;const d=d2(a.pos,p);if(d<bd){bd=d;b=a;}}return b;}
+function pickAllyTarget(a){let best=null,bd=55;
+  for(const e of outlaws){if(e.dead)continue;const d=d2(e.pos,a.pos);
+    if(e.tag==='law'?!(WANTED.active||RAID.active):!(e.alerted||d<30))continue;if(d<bd){bd=d;best=e;}}
+  for(const w of animals)if(w.kind==='wolf'&&!w.dead&&w.alerted){const d=d2(w.pos,a.pos);if(d<bd){bd=d;best=w;}}
+  return best;}
+function allyShoot(a,e){(a.mounted?a.hq.g:a.h.g).updateMatrixWorld(true);const tip=a.h.gunTip.getWorldPosition(new V3()),d=d2(a.pos,e.pos),pt=e.pos.clone();
+  pt.y+=e.mounted?2.3:e.q?1.3*e.q.s:1.25;const hit=Math.random()<clamp(0.78-d*0.008,0.2,0.75)*(a.mounted?0.75:1);
+  tracer(tip,hit?pt:pt.clone().add(new V3(rand(-1.5,1.5),rand(-1,1),rand(-1.5,1.5))),0xffc890);muzzleE(tip);sfx.gun(d2(a.pos,P.pos),0);
+  if(hit)hurt(e,rand(36,52),false,pt,true);}
+function shootAlly(e,a){(e.mounted?e.hq.g:e.h.g).updateMatrixWorld(true);const tip=e.h.gunTip.getWorldPosition(new V3()),pt=a.pos.clone();pt.y+=a.mounted?2.3:1.25;
+  const d=d2(e.pos,a.pos),hit=Math.random()<clamp(0.5-d*0.006,0.08,0.55);
+  tracer(tip,hit?pt:pt.clone().add(new V3(rand(-2,2),rand(-1,1),rand(-2,2))),0xffc890);muzzleE(tip);sfx.gun(d2(e.pos,P.pos),0);
+  if(hit){a.hp-=rand(7,11)*(e.boss?1.5:1);if(a.hp<=0){if(a.mounted)dismountLaw(a);a.dead=true;a.fallT=0;a.deadT=0;toast(`${a.name} is down`,'Your gang lost a rider.');}}}
+function setOrder(o){EMP.order=o;for(const a of EMP.gang)a.hold.copy(a.pos);toast('Gang orders',o==='hold'?'Hold this ground.':'Ride with me.');}
+function updateGang(dt){let slot=0;
+  for(let i=EMP.gang.length-1;i>=0;i--){const a=EMP.gang[i],d=d2(a.pos,P.pos);
+    if(a.dead){if(a.fallT<1){a.fallT=Math.min(1,a.fallT+dt*2.5);a.h.g.rotation.x=-Math.PI/2*a.fallT;a.h.g.position.y=a.pos.y+0.15*a.fallT;}
+      a.deadT+=dt;if(a.deadT>45&&d>50){scene.remove(a.h.g);scene.remove(a.hq.g);EMP.gang.splice(i,1);}continue;}
+    a.slot=slot++;const hold=EMP.order==='hold';
+    // riders who fall far behind catch up out of sight, just behind you
+    if(!hold&&d>(P.mounted?70:120)&&!a.target){const b=P.yaw+Math.PI+rand(-0.4,0.4),r=P.mounted?28:14;a.pos.set(P.pos.x+Math.sin(b)*r,0,P.pos.z+Math.cos(b)*r);resolve(a.pos,1.1);a.yaw=P.yaw;if(a.mounted)a.hq.g.position.copy(a.pos);}
+    if(P.mounted&&!hold&&!a.mounted&&d>6)remountLaw(a);
+    else if(a.mounted&&(!P.mounted||hold)&&a.speed<4)dismountLaw(a);
+    const ang=P.yaw+Math.PI+(a.slot%2?1:-1)*(0.45+Math.floor(a.slot/2)*0.3),sd=(P.mounted?5:2.8)+Math.floor(a.slot/2)*(P.mounted?3:1.4);
+    const gx=hold?a.hold.x:P.pos.x+Math.sin(ang)*sd,gz=hold?a.hold.z:P.pos.z+Math.cos(ang)*sd,gd=Math.hypot(gx-a.pos.x,gz-a.pos.z);
+    a.tT-=dt;if(a.tT<=0){a.tT=0.5;a.target=pickAllyTarget(a);}
+    let spd=0;
+    if(gd>1.2){a.yaw=angLerp(a.yaw,Math.atan2(gx-a.pos.x,gz-a.pos.z),1-Math.exp(-(a.mounted?3:6)*dt));
+      spd=a.mounted?clamp(gd*1.3,0,P.mounted?Math.max(HORSE.speed+4,8):10):clamp(gd*1.6,0,6.5);
+      // blocked by a rock or cactus: try veering left, then right, before giving up this frame
+      const r=a.mounted?1.1:0.45,sl=a.mounted?1.0:1.4,mv=y=>tryMove(a.pos,Math.sin(y)*spd*dt,Math.cos(y)*spd*dt,r,sl);
+      if(!mv(a.yaw)&&!mv(a.yaw+0.8)&&!mv(a.yaw-0.8))spd=0;}
+    a.speed=lerp(a.speed,spd,1-Math.exp(-4*dt));
+    const t=a.target;let aimYaw=null;
+    if(t&&!t.dead){aimYaw=Math.atan2(t.pos.x-a.pos.x,t.pos.z-a.pos.z);a.shootT-=dt;if(a.shootT<=0){a.shootT=rand(0.8,1.4);allyShoot(a,t);}}
+    else a.hp=Math.min(180,a.hp+4*dt);
+    a.pos.y=groundY(a.pos.x,a.pos.z);
+    if(a.mounted){a.hq.g.position.copy(a.pos);a.hq.g.rotation.y=a.yaw;if(d<200)animQuad(a.hq,a.speed,dt,false);a.h.g.rotation.y=aimYaw!=null?angDiff(a.yaw,aimYaw):0;
+      a.h.legL.rotation.set(-0.7,0,-0.35);a.h.legR.rotation.set(-0.7,0,0.35);a.h.armL.rotation.set(-0.6,0,0);if(aimYaw==null)a.h.armR.rotation.set(-0.6,0,0);}
+    else{if(aimYaw!=null&&spd<1)a.yaw=angLerp(a.yaw,aimYaw,1-Math.exp(-8*dt));a.h.g.position.copy(a.pos);a.h.g.rotation.y=a.yaw;if(d<150)animHuman(a.h,a.speed,dt,aimYaw!=null);}
+    if(aimYaw!=null)a.h.armR.rotation.set(-Math.PI/2,0,0);
+  }}
+// camps
+function campSpotProblem(p){if(Math.hypot(p.x-SITES.town.x,p.z-SITES.town.z)<170)return 'Too close to Coppervale. Ride further out.';
+  for(const s of SITE_LIST)if(Math.hypot(p.x-s.x,p.z-s.z)<s.r+50)return `Too close to ${s.name}.`;
+  for(const c of EMP.camps)if(Math.hypot(p.x-c.x,p.z-c.z)<120)return 'You already have a camp nearby.';
+  if(Math.hypot(p.x-POND.x,p.z-POND.z)<POND.r+20)return 'Too close to the water.';
+  if(roadDist(p.x,p.z)<8)return 'Too close to the road. Lawmen ride these trails.';
+  if(slopeAt(p.x,p.z)>0.35)return 'The ground is too steep here.';return null;}
+function tryMakeCamp(){if(P.mounted){toast('Get down first','Dismount to pitch a camp.');return;}
+  if(EMP.camps.length>=3){toast('Three camps already','That\'s as many as one outfit can run.');return;}
+  const why=campSpotProblem(P.pos);if(why){toast('Bad spot',why);return;}
+  ensureGangName(()=>openCustom('Pitch a camp',[{label:'Pitch camp here (tents, fire, a ledger)',price:50,noMult:true,act:()=>{closeMenu();makeCamp(P.pos.x+4,P.pos.z+4);}}]));}
+function makeCamp(x,z,data,silent){const c={x,z,still:0,stock:0,stockT:0,...(data||{}),x,z};EMP.camps.push(c);
+  for(let i=0;i<3;i++){const a=i/3*TAU+0.5;prop('tent',x+Math.cos(a)*8,z+Math.sin(a)*8,a);}
+  prop('fire',x,z);prop('crate',x+3.2,z-1.5);prop('barrel',x+3.6,z+1.2);
+  const g=new THREE.Group();g.position.set(x-4,groundY(x-4,z+3),z+3);scene.add(g);bx(0.15,5,0.15,'#4a3424',0,2.5,0,g);bx(1.6,1,0.05,EMP.color,0.8,4.4,0,g);
+  if(c.still)buildStill(c);
+  if(ROM.spouse&&EMP.camps.length===1)placeSpouse();
+  if(!silent){banner('Camp established',`${EMP.name} has a home`,true);toast('Your camp','Press E at the camp fire to use the ledger: rest, build a still, hire men.');save();}
+  return c;}
+function buildStill(c){if(c.stillG)return;const g=new THREE.Group(),sx=c.x+5,sz=c.z-4;g.position.set(sx,groundY(sx,sz),sz);scene.add(g);
+  mesh(cylG(0.7,0.8,1.3,12),'#b06a3a',0,0.65,0,g);mesh(new THREE.SphereGeometry(0.55,10,6,0,TAU,0,Math.PI/2),'#b06a3a',0,1.3,0,g);
+  const pipe=bx(0.08,0.08,1.6,'#8a5a2a',0,1.6,0.8,g);pipe.rotation.x=0.4;mesh(cylG(0.4,0.4,0.9,10),'#6b4a2c',0,0.45,1.7,g);
+  for(let i=0;i<3;i++)bx(0.5,0.4,0.5,'#7a5634',1.2,0.2+i*0.4,0.3,g);addCol(sx,sz,1);c.stillG=g;}
+function nearestCamp(p){let b=null,bd=1e9;for(const c of EMP.camps){const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<bd){bd=d;b=c;}}return b;}
+function campName(c){let best='the open desert',bd=260;for(const s of SITE_LIST){const d=Math.hypot(c.x-s.x,c.z-s.z);if(d<bd){bd=d;best=s.name;}}return best;}
+function openCampMenu(c){const up=[0,40,80,150][c.still+1]||0;
+  openCustom(`${EMP.name} — camp near ${campName(c)}`,[
+    {label:'Rest until morning',price:0,note:'free',act:()=>sleepTo(7)},
+    c.still<3?{label:c.still?`Upgrade the still to level ${c.still+1}`:'Build a moonshine still',price:up,noMult:true,act:()=>{c.still++;buildStill(c);toast('Moonshine',`Still level ${c.still}: about ${c.still} crate${c.still>1?'s':''} every 2 hours.`);}}
+      :{label:'Still is fully upgraded',price:0,note:'level 3',off:()=>true,act:()=>{}},
+    {label:`Load moonshine onto your horse (${c.stock} crates)`,price:0,note:c.stock?'':'none ready',off:()=>!c.stock,act:()=>{P.crates+=c.stock;toast('Loaded up',`${c.stock} crates. Lou at the Rusty Spur buys on the quiet.`);c.stock=0;}},
+    {label:`Hire a gun (${liveGang().length}/${gangCap()} riders)`,price:25,noMult:true,off:()=>liveGang().length>=gangCap(),act:()=>hireAtCamp(c)},
+    {label:EMP.order==='hold'?'Gang is holding position: call them to ride with you':'Gang rides with you: order them to hold here',price:0,note:'G',act:()=>{setOrder(EMP.order==='hold'?'follow':'hold');closeMenu();}}]);}
+function updateCamps(dt){for(const c of EMP.camps)if(c.still){c.stockT+=dt*24/960;const per=2/(c.still*(ROM.spouse&&c===EMP.camps[0]?1.5:1));while(c.stockT>=per){c.stockT-=per;if(c.stock<12)c.stock++;}}}
+function sellShine(){closeMenu();const n=P.crates,m=n*12;P.money+=m;P.crates=0;sfx.coin();toast('Lou counts out the money',`${n} crates of moonshine for $${m}.`);
+  if(!EMP.town&&Math.random()<0.15)setTimeout(()=>{toast('A deputy saw the deal','Bootlegging is a crime in Coppervale.');commitCrime('bootlegging',P.pos,null,true);},800);}
+function buyDirt(){closeMenu();const left=Object.keys(SECRETS).filter(k=>!EMP.dirt[k]);if(!left.length){dialog('Lou the Barkeep',['I\'ve told you every secret in this town. Even mine.']);return;}
+  const k=pick(left);EMP.dirt[k]=true;dialog('Lou the Barkeep',['Lean in. You didn\'t hear this from me.',SECRETS[k].line,`Mention it to ${SECRETS[k].who} sometime. Quietly.`]);}
+function underworldItems(k){const it=[];if(!BUSINESS[k])return it;
+  if(!EMP.rackets[k])it.push({label:'Offer them “protection”',price:0,note:'+$10/day',act:()=>shakedown(k)});
+  if(EMP.dirt[k]&&!EMP.blackmail[k])it.push({label:`Blackmail: ${SECRETS[k].short}`,price:0,note:'+$15/day',act:()=>blackmail(k)});
+  return it;}
+function businessNPC(k){return k==='bank'?NPC.pruitt:npcs.find(n=>n.shop===k);}
+function shakedown(k){closeMenu();const n=businessNPC(k),backup=liveGang().filter(a=>d2(a.pos,P.pos)<25).length;
+  if(backup>=2||P.honor<=-30||EMP.town){EMP.rackets[k]=true;P.honor=clamp(P.honor-5,-100,100);
+    dialog(n.name,[backup>=2?'I see your friends outside. Fine. Ten dollars a day, and you keep trouble away from my door.':'I know your name. Ten dollars a day. Just leave us be.']);toast('New racket',`${BUSINESS[k]} pays ${EMP.name||'you'} every morning.`);save();}
+  else{dialog(n.name,['Protection? From who, you? Get out before I call the deputies.']);commitCrime('extortion',n.pos,n);}}
+function blackmail(k){closeMenu();const n=businessNPC(k);EMP.blackmail[k]=true;P.honor=clamp(P.honor-6,-100,100);
+  dialog(n.name,['...Who told you that?','Keep your voice down. Fifteen dollars a day and it stays between us.']);toast('Blackmail',`${SECRETS[k].who} will pay every morning.`);
+  if(outlaws.some(e=>e.tag==='law'&&!e.dead&&d2(e.pos,P.pos)<15))commitCrime('extortion',n.pos,n,true);save();}
+function canRaid(){return !EMP.town&&!RAID.active&&liveGang().filter(a=>d2(a.pos,P.pos)<40).length>=3;}
+function startRaid(){RAID.active=true;RAID.wave=0;RAID.next=2;EMP.order='follow';commitCrime('raid',P.pos,null,true);
+  banner('Hold the town through three waves','Raid on Coppervale');$('banner').classList.add('wanted');for(const n of npcs)scare(n);}
+function updateRaid(dt){if(!RAID.active)return;
+  if(!P.alive||Math.hypot(P.pos.x-SITES.town.x,P.pos.z-SITES.town.z)>170){RAID.active=false;toast('Raid failed',P.alive?'You abandoned the town.':'You were cut down.');return;}
+  if(lawAlive()===0){RAID.next-=dt;if(RAID.next<=0){if(RAID.wave>=3){winRaid();return;}RAID.wave++;RAID.next=4;const n=2+RAID.wave*2;
+    for(let i=0;i<n;i++){const a=rand(0,TAU);spawnLawman(SITES.town.x+Math.cos(a)*rand(95,115),SITES.town.z+Math.sin(a)*rand(95,115));}
+    toast(`Wave ${RAID.wave} of 3`,`${n} lawmen ride on Coppervale.`);}}}
+function winRaid(){RAID.active=false;WANTED.active=false;P.bounty=0;for(const e of outlaws)if(e.tag==='law')e.alerted=false;P.honor=clamp(P.honor-15,-100,100);
+  applyTown(true);sfx.sting();banner(`${EMP.name} runs the jailhouse now`,'Coppervale is yours',false);save();}
+function applyTown(on,silent){EMP.town=on;const n=NPC.sheriff;
+  if(on){n.pos.set(SITES.ranch.x-6,0,SITES.ranch.z+3.6);n.baseYaw=0;n.lines=['You took my town. Enjoy it while it lasts.','Crane was a thief. You\'re a thief with a badge.'];}
+  else{n.pos.set(-58,0,-7.6);n.baseYaw=0;n.lines=['Keep your iron holstered in my town.','Crane\'s men drink at Dry Creek and steal everywhere else.'];}
+  n.yaw=0;n.koT=0;n.fallT=0;n.h.g.rotation.x=0;n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);
+  const s=SIGNS.SHERIFF;if(s){s.material.map=signTex(on?`${EMP.name.replace(/^The /,'').toUpperCase()} HQ`:'SHERIFF');s.material.needsUpdate=true;}
+  PBADGE.visible=on;if(!on&&!silent)toast('Coppervale has fallen','A posse from Fort Ashby retook the jailhouse.');}
+function onNewDay(){const L=dailyLedger();
+  if(ROM.spouse){placeSpouse();if(P.day-ROM.wedDay>=3&&ROM.children.length<3&&Math.random()<0.45)setTimeout(birthChild,3000);}
+  if(L.r||L.b||L.t||L.w){P.money=Math.max(0,P.money+L.net);toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
+  if(EMP.town&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
+  save();}
+
+// ---------------- courtship, marriage and the family ----------------
+const SUITORS={
+  clara:{blurb:'the schoolteacher',chat:['The children asked me today whether outlaws can read. I told them the good ones can.','I came west for the open sky. I stayed for the quiet. You are not very quiet.','Do you ever wonder what this town will look like in fifty years?'],
+    gift:'Wildflowers! I\'ll press one in my grammar book.',locket:'A locket? I don\'t know what to say. Yes I do. Thank you.'},
+  mateo:{blurb:'the livery stablehand',chat:['Your horse likes you. Horses are honest about these things.','I break mustangs for a living. You remind me of one.','Some nights I ride out past the mesas just to see the stars.'],
+    gift:'Flowers for a man who smells of hay. You have a sense of humour.',locket:'I\'ll wear it under my shirt. Close to the heart, as they say.'},
+  june:{blurb:'a hand at the Delgado Ranch',chat:['Ma Delgado says I work like two men. I say I work like one woman.','I can rope a calf at forty feet. Want to see?','This ranch is the first place that ever felt like mine.'],
+    gift:'Prettier than anything that grows on this ranch.',locket:'Nobody ever gave me something meant to keep. I\'ll keep it.'}};
+const ROM={aff:{clara:0,mateo:0,june:0},chatDay:{},spouse:null,wedDay:0,children:[]};
+const KIN_FIRST=['Amos','Bette','Clem','Dora','Ezra','Faye','Gus','Hettie'];
+const CHILD_NAMES=['Eliza','Samuel','Hattie','Otto','Nell','Caleb','Lucy','Wren'];
+const family=[];
+const surname=n=>n.name.split(' ').slice(1).join(' ');
+function courtMenu(n){const a=Math.round(ROM.aff[n.id]);
+  if(ROM.spouse===n.id){openCustom(`${n.name}, your spouse`,[
+    {label:'Ask how things are at home',price:0,note:'',act:()=>{closeMenu();dialog(n.name,[ROM.children.length?`${ROM.children.join(' and ')} ${ROM.children.length>1?'are':'is'} asleep. Come sit a while.`:'The camp is quiet. I like it when you\'re back.',EMP.town?'Folks in town still call you the boss. I call you late for supper.':'Be careful out there. I mean it.'])}},
+    {label:'Rest together until morning (full health)',price:0,note:'free',act:()=>sleepTo(7)}]);return;}
+  if(ROM.spouse){dialog(n.name,['You\'re married. Go home to your family.']);return;}
+  openCustom(`${n.name}, ${SUITORS[n.id].blurb} · affection ${a}/100`,[
+    {label:'Talk a while',price:0,note:ROM.chatDay[n.id]===P.day?'again tomorrow':'+affection',off:()=>ROM.chatDay[n.id]===P.day,act:()=>court(n,'chat')},
+    {label:`Give wildflowers (you have ${P.gifts.flowers})`,price:0,note:'+12',off:()=>!P.gifts.flowers,act:()=>court(n,'flowers')},
+    {label:`Give a silver locket (you have ${P.gifts.locket})`,price:0,note:'+30',off:()=>!P.gifts.locket,act:()=>court(n,'locket')},
+    {label:a<100?'Propose marriage (they need to love you first)':P.gifts.ring?'Propose marriage':'Propose marriage (buy a ring at the Mercantile)',price:0,note:a>=100?'♥':'',off:()=>a<100||!P.gifts.ring,act:()=>wedding(n)}]);}
+function court(n,kind){closeMenu();const mult=P.honor<=-50?0.5:1,S=SUITORS[n.id];let g,line;
+  if(kind==='chat'){ROM.chatDay[n.id]=P.day;g=8;line=pick(S.chat);}else if(kind==='flowers'){P.gifts.flowers--;g=12;line=S.gift;}else{P.gifts.locket--;g=30;line=S.locket;}
+  ROM.aff[n.id]=Math.min(100,ROM.aff[n.id]+g*mult);const lines=[line];if(ROM.aff[n.id]>=100)lines.push('I think I could spend my life with you, if you asked me properly.');
+  dialog(n.name,lines);if(mult<1)toast('Your reputation precedes you','A notorious outlaw wins hearts at half the pace.');save();}
+function homeSpot(){const c=EMP.camps[0];return c?{x:c.x-3,z:c.z+4,camp:c}:{x:46,z:-7.4,camp:null};}
+function placeSpouse(){const n=NPC[ROM.spouse];if(!n)return;const h=homeSpot();n.wander=false;n.target=null;n.pos.set(h.x,0,h.z);n.baseYaw=0;n.koT=0;n.fallT=0;n.h.g.rotation.x=0;
+  n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);family.forEach((k,i)=>{k.pos.set(h.x+rand(-3,3),0,h.z+rand(-3,3));});}
+function wedding(n){closeMenu();P.gifts.ring--;const f=$('fade');f.textContent='';f.style.opacity=1;
+  setTimeout(()=>{ROM.spouse=n.id;ROM.wedDay=P.day;P.honor=clamp(P.honor+10,-100,100);placeSpouse();f.style.opacity=0;sfx.sting();
+    banner('Wed at the Coppervale church',`You married ${n.name}`);
+    ensureGangName(()=>{const sn=surname(n);for(let i=0;i<2;i++){const a=spawnAlly(P.pos.x+rand(-5,5),P.pos.z+rand(-5,5),{name:`${KIN_FIRST[(ROM.wedDay+i*3)%KIN_FIRST.length]} ${sn}`});a.kin=true;}
+      toast('Family joins the clan',`Two of ${n.name.split(' ')[0]}'s kin ride with you now. Kin take no wages.`);save();});},1400);}
+function spawnChild(name){const h=makeHuman({shirt:pick(['#c8b898','#8a6a8a','#6a8a9a','#b08060']),pants:'#4a4038',hat:'#8a7050',skin:pick(SKINS),scale:0.55});
+  h.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(h.g);const s=homeSpot(),k={name,h,pos:new V3(s.x+rand(-3,3),0,s.z+rand(-3,3)),yaw:0,t:0,target:null,speed:0};family.push(k);return k;}
+function birthChild(){const name=CHILD_NAMES.find(c=>!ROM.children.includes(c))||'Little One';ROM.children.push(name);spawnChild(name);
+  banner('The family grows',`${name} is born`,true);toast('A child is born',`${name} will grow up at ${EMP.camps.length?'your camp':'the Grand Hotel'}.`);save();}
+function updateFamily(dt){const home=homeSpot();
+  for(const k of family){const d=d2(k.pos,P.pos);if(d>200)continue;k.t-=dt;
+    if(!k.target||k.t<=0){k.t=rand(2,6);k.target=new V3(home.x+rand(-6,6),0,home.z+rand(-6,6));}
+    const gd=d2(k.pos,k.target);k.speed=gd>0.5?(Math.random()<0.01?3:k.speed||1.2):0;
+    if(k.speed){k.yaw=angLerp(k.yaw,Math.atan2(k.target.x-k.pos.x,k.target.z-k.pos.z),1-Math.exp(-5*dt));tryMove(k.pos,Math.sin(k.yaw)*k.speed*dt,Math.cos(k.yaw)*k.speed*dt,0.3,1.4);}
+    k.pos.y=groundY(k.pos.x,k.pos.z);k.h.g.position.copy(k.pos);k.h.g.rotation.y=k.yaw;animHuman(k.h,k.speed*1.6,dt,false);}}
+// "soliciting": talk a townsperson into riding with you, no money changing hands
+function solicitChance(){return clamp(0.2+rankInfo().idx*0.15+(P.honor<=-30?0.1:0)+(EMP.town?0.15:0),0.2,0.9);}
+function solicit(n){closeMenu();n.solicitDay=P.day;
+  if(Math.random()<solicitChance()){ensureGangName(()=>{const i=npcs.indexOf(n);if(i>=0)npcs.splice(i,1);scene.remove(n.h.g);const a=spawnAlly(n.pos.x,n.pos.z);
+    toast(`${a.name} is in`,`Talked into joining ${EMP.name}. Wages are $3 a day.`);save();});}
+  else dialog(n.name,[pick(['Ride with outlaws? Not today, friend.','My mother would turn in her grave.','Ask me again when your name means something.'])]);}
+
+// ---------------- interactions ----------------
+function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
+  if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
+    return canRaid()?{label:'Seize Coppervale (starts a raid)',act:startRaid}:{label:'Seize Coppervale (bring 3 gang members)',act:()=>toast('Not enough guns','Bring at least 3 of your gang within 40 m.')};
+  if(!P.mounted)for(const cp of EMP.camps)c(Math.hypot(cp.x-P.pos.x,cp.z-P.pos.z),5,'Camp ledger',()=>openCampMenu(cp));
+  if(P.aiming&&canRob(aimedNPC)){const n=aimedNPC;return {label:n.id==='pruitt'?'Rob the bank':n.shop?'Rob the till':'Rob '+n.name,act:()=>rob(n)};}
+  for(const n of npcs){if(n.dead||n.koT>0||(!n.important&&P.mounted))continue;c(d2(n.pos,P.pos),P.mounted?4.5:3,(n.shop?'Talk / trade with ':'Talk to ')+n.name,()=>talkTo(n));}
+  if(!P.mounted){for(const n of npcs)if(n.dead&&!n.looted)c(d2(n.pos,P.pos),2.4,'Search body',()=>lootNPC(n));
+    for(const e of outlaws)if(e.dead&&!e.looted)c(d2(e.pos,P.pos),2.4,'Loot body',()=>loot(e));
+    for(const a of animals)if(a.dead&&a.kind==='deer'&&!a.skinned)c(d2(a.pos,P.pos),2.8,'Skin deer',()=>skin(a));
+    for(const p of pickups)if(p.active)c(d2(p.pos,P.pos),2.6,'Pick up '+p.label,()=>{p.active=false;p.mesh.visible=false;sfx.coin();toast('Recovered','The payroll strongbox');questEvent('pickup',p.id);});}
+  return best;}
+function talkTo(n){
+  if(n.dead||n.koT>0)return;n.talkT=4;
+  if(WANTED.active&&n.important){dialog(n.name,[n.id==='sheriff'?'You have some nerve walking up to me. Deputies!':'Get out of here before the deputies see you!']);return;}
+  if(n.id==='sheriff'&&P.bounty>0){dialog(n.name,[`There's a $${P.bounty} bounty on your head. Square it at the telegraph office, then we'll talk work.`]);return;}
+  for(const id in QS){if(QS[id].state!=='active')continue;const st=curStage(id);if(st.talk===n.id){dialog(n.name,st.lines,()=>advance(id));return;}}
+  for(const id in QS){if(QS[id].state==='available'&&QDEF[id].giver===n.id){dialog(n.name,QDEF[id].offer,()=>startQuest(id));return;}}
+  if(n.suitor){courtMenu(n);return;}
+  if(n.shop){if(n.robbedDay===P.day){dialog(n.name,['You! Get out of my sight before I fetch the deputies.']);return;}openShop(n.shop);return;}
+  if(!n.important){const full=liveGang().length>=gangCap();
+    openCustom(n.name,[{label:'Pass the time',price:0,note:'',act:()=>{closeMenu();dialog(n.name,[pick(AMBIENT)]);}},
+      {label:!EMP.camps.length?'Recruit them (you need a camp first: press B in open desert)':full?'Recruit them (gang is full: build more camps)':'Recruit them into your gang',
+        price:20,noMult:true,off:()=>!EMP.camps.length||liveGang().length>=gangCap(),act:()=>recruit(n)},
+      {label:n.solicitDay===P.day?'Talk them into joining (they said no today)':'Talk them into joining, no pay up front',price:0,note:`${Math.round(solicitChance()*100)}% chance`,
+        off:()=>!EMP.camps.length||liveGang().length>=gangCap()||n.solicitDay===P.day,act:()=>solicit(n)}]);return;}
+  dialog(n.name,[pick(n.lines||AMBIENT)]);
+}
+function loot(e){e.looted=true;if(e.tag==='law')commitCrime('looting',e.pos,null);const m=Math.floor(rand(e.boss?40:3,e.boss?60:12));P.money+=m;WEAPONS[0].reserve+=6;let s=`$${m}, 6 revolver rounds`;
+  if(WEAPONS[1].owned&&Math.random()<0.5){WEAPONS[1].reserve+=5;s+=', 5 rifle rounds';}sfx.coin();toast('Looted',s);}
+function skin(a){a.skinned=true;a.removeT=2.5;P.pelts++;sfx.click();toast('Skinned','Deer hide added to your pack');questEvent('skin');}
+function nearestHorse(){let b=null,bd=3.4;for(const h of horses){const d=d2(h.pos,P.pos);if(d<bd){bd=d;b=h;}}return b;}
+function mount(){if(P.mounted)return false;const h=nearestHorse();if(!h)return false;
+  if(!h.owned){h.owned=true;h.name='Stolen horse';commitCrime('horseTheft',h.pos,null);}
+  HORSE=h;P.mounted=true;h.q.g.add(PH.g);PH.g.position.set(0,1.05,0.05);PH.g.rotation.set(0,0,0);h.called=false;return true;}
+function dismount(force){if(!P.mounted)return;if(HORSE.speed>6&&!force)return;P.mounted=false;scene.add(PH.g);const s=HORSE.yaw+Math.PI/2;
+  P.pos.set(HORSE.pos.x+Math.sin(s)*1.6,0,HORSE.pos.z+Math.cos(s)*1.6);resolve(P.pos,0.4);P.pos.y=groundY(P.pos.x,P.pos.z);P.yaw=HORSE.yaw;HORSE.speed=0;}
+
+// ---------------- updates ----------------
+const clock=new THREE.Clock();
+function camFwd(){return new V3(-Math.sin(cam.yaw),0,-Math.cos(cam.yaw));}
+function poseArms(aim){
+  const p=cam.pitch*0.9,long=P.weapon>0;
+  if(aim){PH.armR.rotation.set(-Math.PI/2+p,0,0);PH.gun.visible=P.weapon===0;PH.rifle.visible=P.weapon===1;PH.shotgun.visible=P.weapon===2;
+    if(long)PH.armL.rotation.set(-Math.PI/2+p+0.15,0,0.55);}
+  else{PH.gun.visible=PH.rifle.visible=PH.shotgun.visible=false;}
+}
+function updatePlayer(dt){
+  const busy=!!(dlg||menu||!P.alive);let ix=0,iz=0;
+  if(!busy){if(K.KeyW)iz-=1;if(K.KeyS)iz+=1;if(K.KeyA)ix-=1;if(K.KeyD)ix+=1;}
+  const f=camFwd(),r=new V3(Math.cos(cam.yaw),0,-Math.sin(cam.yaw)),move=new V3().addScaledVector(f,-iz).addScaledVector(r,ix),has=move.lengthSq()>0;if(has)move.normalize();
+  const wasAim=P.aiming;P.aiming=mouse.right&&!busy;P.fireCd-=dt;P.fireHold-=dt;
+  if(P.aiming&&!wasAim&&aimAssist)startAssist();
+  if(!P.aiming)P.assist=null;
+  if(P.assist){P.assist.t-=dt;const e=P.assist.e;
+    if(P.assist.t<=0||e.dead)P.assist=null;
+    else{const c=camera.position,ty=e.pos.y+(e.mounted?2.3:e.q?1.4*e.q.s:1.25),dx=e.pos.x-c.x,dy=ty-c.y,dz=e.pos.z-c.z,k=1-Math.exp(-22*dt);
+      cam.yaw=angLerp(cam.yaw,Math.atan2(-dx,-dz),k);cam.pitch=lerp(cam.pitch,-Math.atan2(dy,Math.hypot(dx,dz)),k);}}
+  if(P.recoil>0){const rr=Math.min(P.recoil,P.recoil*dt*7+0.0004);cam.pitch+=rr*0.85;P.recoil-=rr;}
+  P.bloom=Math.max(0,P.bloom-dt*0.08);
+  if(P.reloadT>0){P.reloadT-=dt;if(P.reloadT<=0){const w=curW(),n=Math.min(w.mag-w.ammo,w.reserve);w.ammo+=n;w.reserve-=n;}}
+  // holding the trigger keeps firing at the weapon's rate
+  if(mouse.left&&!busy&&!focusOn&&(locked||lockFailed)&&P.fireCd<=0&&curW().ammo>0)fire();
+  // what the crosshair is resting on
+  aimedNPC=null;hostileAimed=false;
+  if(P.aiming){camera.getWorldDirection(_af);let best=0.08;
+    for(const n of npcs){if(n.dead||n.koT>0||d2(n.pos,P.pos)>14)continue;_av.set(n.pos.x,n.pos.y+1.2,n.pos.z).sub(camera.position).normalize();
+      const a=Math.acos(clamp(_av.dot(_af),-1,1));if(a<best){best=a;aimedNPC=n;}}
+    for(const e of outlaws){if(e.dead||(e.tag==='law'&&!WANTED.active)||d2(e.pos,P.pos)>160)continue;_av.set(e.pos.x,e.pos.y+(e.mounted?2.3:1.2),e.pos.z).sub(camera.position);
+      const L=_av.length();_av.divideScalar(L);if(Math.acos(clamp(_av.dot(_af),-1,1))<Math.atan(0.5/L)){hostileAimed=true;break;}}}
+  const aimPose=P.aiming||P.fireHold>0;
+  if(P.mounted){
+    // reins: W/S for pace, A/D steer the horse itself, so riding doesn't depend on where the camera points
+    const fwd=busy?0:(K.KeyW?1:0)-(K.KeyS?1:0),turn=busy?0:(K.KeyA?1:0)-(K.KeyD?1:0);
+    const gallop=K.ShiftLeft&&HORSE.stamina>2&&fwd>0,target=fwd>0?(gallop?19:9):fwd<0?(HORSE.speed>1.5?0:-2.2):0;
+    HORSE.speed=lerp(HORSE.speed,target,1-Math.exp(-(Math.abs(target)>Math.abs(HORSE.speed)?1.4:2.6)*dt));if(gallop)HORSE.stamina-=9*dt;
+    HORSE.yaw+=turn*(HORSE.speed>12?1.5:HORSE.speed>3?2.1:2.6)*dt;
+    if(HORSE.speed>2&&!P.aiming&&clock.elapsedTime-lastMouseT>1.2){cam.yaw=angLerp(cam.yaw,HORSE.yaw+Math.PI,1-Math.exp(-2.2*dt));cam.pitch=lerp(cam.pitch,0.2,1-Math.exp(-1.5*dt));}
+    const st=HORSE.speed*dt;if(!tryMove(HORSE.pos,Math.sin(HORSE.yaw)*st,Math.cos(HORSE.yaw)*st,1.1,1.0))HORSE.speed*=0.6;
+    HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);P.pos.copy(HORSE.pos);P.speed=HORSE.speed;P.yaw=HORSE.yaw;
+    PH.legL.rotation.set(-0.7,0,-0.35);PH.legR.rotation.set(-0.7,0,0.35);PH.torso.position.y=0.92;PH.torso.rotation.x=HORSE.speed>12?0.2:0.05;
+    PH.g.rotation.y=aimPose?angDiff(HORSE.yaw,Math.atan2(f.x,f.z)):0;
+    if(!aimPose){PH.armR.rotation.set(-0.6,0,0);PH.armL.rotation.set(-0.6,0,0);}
+  }else{
+    const sprint=K.ShiftLeft&&P.stamina>1&&has&&!P.aiming,spd=P.aiming?2.6:sprint?7.5:3.8;if(sprint)P.stamina-=16*dt;
+    P.speed=lerp(P.speed,has?spd:0,1-Math.exp(-10*dt));if(has)P.moveDir.copy(move);
+    tryMove(P.pos,P.moveDir.x*P.speed*dt,P.moveDir.z*P.speed*dt,0.4,1.4);
+    if(K.Space&&P.jumpY===0&&!busy){P.vy=5.5;P.jumpY=0.001;}
+    if(P.jumpY>0){P.vy-=18*dt;P.jumpY+=P.vy*dt;if(P.jumpY<=0){P.jumpY=0;P.vy=0;}}
+    P.pos.y=groundY(P.pos.x,P.pos.z)+P.jumpY;
+    const ty=aimPose||firstPerson?Math.atan2(f.x,f.z):has?Math.atan2(move.x,move.z):P.yaw;P.yaw=angLerp(P.yaw,ty,1-Math.exp(-12*dt));
+    PH.g.position.copy(P.pos);PH.g.rotation.y=P.yaw;animHuman(PH,P.speed,dt,aimPose);
+    P.stepT-=dt*P.speed;if(P.stepT<=0&&P.speed>1){P.stepT=1.6;sfx.step();}
+  }
+  poseArms(aimPose);
+  if(P.punchT>0){P.punchT-=dt;const k=clamp(P.punchT/0.4,0,1);PH.armR.rotation.set(-Math.PI/2*Math.sin(k*Math.PI),0,0);}
+  if(!K.ShiftLeft||!has)P.stamina=Math.min(100,P.stamina+22*dt);
+  if(clock.elapsedTime-P.lastHurt>6&&P.alive)P.hp=Math.min(100,P.hp+3*dt);
+  if(focusOn&&!FOCUS.firing){P.focus-=14*(dt/timeScale);if(P.focus<=0){P.focus=0;focusRelease();}}
+}
+function updateHorse(dt){
+  for(const h of horses){const ridden=P.mounted&&h===HORSE,d=d2(h.pos,P.pos);
+    if(!ridden){
+      if(h===HORSE&&h.called&&d>3.5){const ty=Math.atan2(P.pos.x-h.pos.x,P.pos.z-h.pos.z);h.yaw=angLerp(h.yaw,ty,1-Math.exp(-4*dt));
+        h.speed=lerp(h.speed,d>20?16:6,1-Math.exp(-2*dt));const st=h.speed*dt;if(!tryMove(h.pos,Math.sin(h.yaw)*st,Math.cos(h.yaw)*st,1.1,1.0))h.yaw+=1.2;}
+      else{if(h===HORSE)h.called=false;h.speed=lerp(h.speed,0,1-Math.exp(-3*dt));}
+      h.pos.y=groundY(h.pos.x,h.pos.z);
+    }
+    h.stamina=Math.min(100,h.stamina+(ridden&&K.ShiftLeft?0:7)*dt);
+    if(d>250)continue;
+    h.q.g.position.copy(h.pos);h.q.g.rotation.y=h.yaw;
+    const fx=Math.sin(h.yaw),fz=Math.cos(h.yaw),hf=groundY(h.pos.x+fx*1.1,h.pos.z+fz*1.1),hb=groundY(h.pos.x-fx*1.1,h.pos.z-fz*1.1);
+    h.q.g.rotation.x=-Math.atan2(hf-hb,2.2)*0.8;
+    animQuad(h.q,h.speed,dt,!ridden&&!h.called);
+    h.stepT-=dt*h.speed;if(h.stepT<=0&&h.speed>1.5){h.stepT=h.speed>12?3.2:2.2;if(d<40)sfx.hoof();}
+  }
+}
+function updateNPCs(dt){
+  for(const n of npcs){
+    if(n.dead||n.koT>0){
+      if(n.fallT<1){n.fallT=Math.min(1,n.fallT+dt*2.5);n.h.g.rotation.x=-Math.PI/2*n.fallT;n.h.g.position.y=n.pos.y+0.15*n.fallT;}
+      if(n.dead)n.deadT+=dt;
+      else{n.koT-=dt;if(n.koT<=0){n.koT=0;n.h.g.rotation.x=0;n.h.g.position.y=n.pos.y;n.fallT=0;scare(n);}}
+      if(n.marker)n.marker.visible=false;continue;}
+    const d=d2(n.pos,P.pos);let handsUp=false;
+    if(n===aimedNPC&&P.aiming){handsUp=true;n.speed=0;n.cowerT=Math.max(n.cowerT,2);n.yaw=angLerp(n.yaw,Math.atan2(P.pos.x-n.pos.x,P.pos.z-n.pos.z),1-Math.exp(-6*dt));}
+    else if(n.fleeT>0){n.fleeT-=dt;n.yaw=angLerp(n.yaw,Math.atan2(n.pos.x-P.pos.x,n.pos.z-P.pos.z),1-Math.exp(-5*dt));n.speed=5.2;
+      if(!tryMove(n.pos,Math.sin(n.yaw)*n.speed*dt,Math.cos(n.yaw)*n.speed*dt,0.4,1.4))n.yaw+=rand(0.8,1.6);if(n.fleeT<=0)n.target=null;}
+    else if(n.cowerT>0){n.cowerT-=dt;handsUp=true;n.speed=0;}
+    else if(n.talkT>0){n.talkT-=dt;n.yaw=angLerp(n.yaw,Math.atan2(P.pos.x-n.pos.x,P.pos.z-n.pos.z),1-Math.exp(-6*dt));n.speed=0;}
+    else if(n.wander){
+      if(!n.target||d2(n.pos,n.target)<0.6){n.speed=0;n.waitT-=dt;if(n.waitT<=0){n.target=new V3(rand(-72,62),0,rand(-6.5,6.5));n.waitT=rand(2,7);}}
+      else{const ty=Math.atan2(n.target.x-n.pos.x,n.target.z-n.pos.z);n.yaw=angLerp(n.yaw,ty,1-Math.exp(-5*dt));n.speed=1.3;
+        if(!tryMove(n.pos,Math.sin(n.yaw)*n.speed*dt,Math.cos(n.yaw)*n.speed*dt,0.4,1.4))n.target=null;}
+    }else{n.yaw=angLerp(n.yaw,n.baseYaw,1-Math.exp(-2*dt));n.speed=0;}
+    n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);n.h.g.rotation.y=n.yaw;
+    if(d<120)animHuman(n.h,n.speed,dt,false);
+    if(handsUp){n.h.armL.rotation.set(-Math.PI+0.25,0,0.2);n.h.armR.rotation.set(-Math.PI+0.25,0,-0.2);}
+    if(n.marker){const avail=Object.keys(QS).some(id=>QS[id].state==='available'&&QDEF[id].giver===n.id),
+      turnin=Object.keys(QS).some(id=>QS[id].state==='active'&&curStage(id).talk===n.id);n.marker.visible=avail||turnin;
+      n.marker.position.y=2.55+Math.sin(clock.elapsedTime*3)*0.08;}
+  }
+  // clear old bodies and bring new folks into town while the player is away
+  civT-=dt;if(civT<=0){civT=10;
+    for(let i=npcs.length-1;i>=0;i--){const n=npcs[i];if(n.dead&&n.deadT>60&&d2(n.pos,P.pos)>60){scene.remove(n.h.g);npcs.splice(i,1);}}
+    if(npcs.filter(n=>n.wander&&!n.dead).length<11&&!inTown(P.pos))spawnCivilian(rand(-70,60),rand(-6,6));}
+}
+function updateOutlaws(dt){
+  for(let i=outlaws.length-1;i>=0;i--){const e=outlaws[i],d=d2(e.pos,P.pos);
+    if(e.tag==='law'&&!WANTED.active&&d>140){scene.remove(e.h.g);if(e.hq)scene.remove(e.hq.g);outlaws.splice(i,1);continue;}
+    if(e.dead){if(e.fallT<1){e.fallT=Math.min(1,e.fallT+dt*2.5);e.h.g.rotation.x=-Math.PI/2*e.fallT;e.h.g.position.y=e.pos.y+0.15*e.fallT;}continue;}
+    if(d>350)continue;
+    if(e.tag==='law')e.alerted=WANTED.active;
+    e.losT-=dt;if(e.losT<=0){e.losT=0.5;const a=e.pos.clone();a.y+=e.mounted?2.6:1.6;const b=P.pos.clone();b.y+=P.mounted?2.4:1.4;e.los=terrainLOS(a,b);}
+    let spd=0;const toP=Math.atan2(P.pos.x-e.pos.x,P.pos.z-e.pos.z);
+    if(!e.alerted){
+      if(e.tag!=='law'&&d<(P.mounted?45:34)&&e.los){for(const o of outlaws)if(o.tag===e.tag&&!o.dead&&d2(o.pos,e.pos)<60)o.alerted=true;}
+      if(e.mounted)e.speed=lerp(e.speed,0,1-Math.exp(-2*dt));
+      else{e.moveT-=dt;if(e.moveT<=0){e.moveT=rand(3,7);e.target.set(e.anchor.x+rand(-10,10),0,e.anchor.z+rand(-10,10));e.walking=Math.random()<0.5;}
+        if(e.walking&&d2(e.pos,e.target)>0.8){e.yaw=angLerp(e.yaw,Math.atan2(e.target.x-e.pos.x,e.target.z-e.pos.z),1-Math.exp(-4*dt));spd=1.5;}}
+    }else if(e.mounted){
+      e.yaw=angLerp(e.yaw,toP,1-Math.exp(-3*dt));e.speed=lerp(e.speed,d>26?15:0,1-Math.exp(-1.5*dt));
+      if(!tryMove(e.pos,Math.sin(e.yaw)*e.speed*dt,Math.cos(e.yaw)*e.speed*dt,1.1,1.0))e.yaw+=0.9;
+      if(d<=30&&e.los&&e.speed<7)dismountLaw(e);
+    }else if(e.hq&&d>95){remountLaw(e);}
+    else{
+      if(d>170&&e.tag!=='law'){e.alerted=false;e.target.copy(e.anchor);}
+      e.strafeT-=dt;if(e.strafeT<=0){e.strafeT=rand(1.5,3.5);const pd=e.boss?16:rand(12,24),a=Math.atan2(e.pos.x-P.pos.x,e.pos.z-P.pos.z)+rand(-0.8,0.8);
+        e.target.set(P.pos.x+Math.sin(a)*pd,0,P.pos.z+Math.cos(a)*pd);}
+      if(d2(e.pos,e.target)>1)spd=d>40?5.5:3.4;
+      const my=Math.atan2(e.target.x-e.pos.x,e.target.z-e.pos.z);
+      e.yaw=angLerp(e.yaw,toP,1-Math.exp(-8*dt));
+      if(spd){if(!tryMove(e.pos,Math.sin(my)*spd*dt,Math.cos(my)*spd*dt,0.4,1.3))e.strafeT=0;}
+    }
+    if(e.alerted){e.shootT-=dt;if(e.shootT<=0&&P.alive){e.shootT=rand(1.1,2.3)/(e.boss?1.6:1);const al=nearestAlly(e.pos,70);
+      if(al&&(Math.random()<0.3||!(d<80&&e.los)))shootAlly(e,al);else if(d<80&&e.los)enemyShoot(e,d);}}
+    if(!e.alerted&&spd)tryMove(e.pos,Math.sin(e.yaw)*spd*dt,Math.cos(e.yaw)*spd*dt,0.4,1.3);
+    e.pos.y=groundY(e.pos.x,e.pos.z);
+    if(e.mounted){e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;if(d<200)animQuad(e.hq,e.speed,dt,false);
+      e.h.g.rotation.y=e.alerted?angDiff(e.yaw,toP):0;e.h.legL.rotation.set(-0.7,0,-0.35);e.h.legR.rotation.set(-0.7,0,0.35);e.h.armL.rotation.set(-0.6,0,0);
+      if(!e.alerted)e.h.armR.rotation.set(-0.6,0,0);}
+    else{e.h.g.position.copy(e.pos);e.h.g.rotation.y=e.yaw;animHuman(e.h,spd,dt,e.alerted);}
+    if(e.alerted)e.h.armR.rotation.set(-Math.PI/2,0,0);
+    if(e.flinchT>0){e.flinchT-=dt;e.h.torso.rotation.x=-0.3;}
+  }
+}
+let respawnT=20;
+function updateAnimals(dt){
+  for(let i=animals.length-1;i>=0;i--){const a=animals[i];
+    if(a.dead){if(a.fallT<1){a.fallT=Math.min(1,a.fallT+dt*2.5);a.q.g.rotation.z=Math.PI/2*a.fallT;a.q.g.position.y=a.pos.y+0.42*a.q.s*a.fallT;}
+      if(a.removeT>0){a.removeT-=dt;if(a.removeT<=0){scene.remove(a.q.g);animals.splice(i,1);}}continue;}
+    const dx=a.pos.x-P.pos.x,dz=a.pos.z-P.pos.z,d=Math.hypot(dx,dz);if(d>400)continue;
+    if(a.kind==='deer'){
+      if(d<14||(d<34&&P.speed>4))a.fearT=Math.max(a.fearT,5);
+      if(a.fearT>0){a.fearT-=dt;a.zig+=dt*2;a.yaw=angLerp(a.yaw,Math.atan2(dx,dz)+Math.sin(a.zig)*0.5,1-Math.exp(-4*dt));a.speed=lerp(a.speed,11,1-Math.exp(-3*dt));a.walk=true;}
+      else{a.t-=dt;if(a.t<=0){a.t=rand(3,8);a.walk=Math.random()<0.4;a.yawT=a.yaw+rand(-1.5,1.5);if(d2(a.pos,a.zone)>45)a.yawT=Math.atan2(a.zone.x-a.pos.x,a.zone.z-a.pos.z);}
+        a.yaw=angLerp(a.yaw,a.yawT,1-Math.exp(-2*dt));a.speed=lerp(a.speed,a.walk?1.3:0,1-Math.exp(-3*dt));}
+    }else{
+      if(!a.alerted&&d<42){a.alerted=true;sfx.howl();}
+      if(a.alerted){if(d>140)a.alerted=false;a.yaw=angLerp(a.yaw,Math.atan2(-dx,-dz),1-Math.exp(-6*dt));a.speed=lerp(a.speed,d>2?9.5:0,1-Math.exp(-4*dt));
+        a.biteT-=dt;if(d<2.4&&a.biteT<=0&&P.alive){a.biteT=1.1;damagePlayer(P.mounted?6:9,a.pos);}}
+      else{a.t-=dt;if(a.t<=0){a.t=rand(2,5);a.walk=Math.random()<0.5;a.yawT=d2(a.pos,a.zone)>15?Math.atan2(a.zone.x-a.pos.x,a.zone.z-a.pos.z):a.yaw+rand(-1.5,1.5);}
+        a.yaw=angLerp(a.yaw,a.yawT,1-Math.exp(-2*dt));a.speed=lerp(a.speed,a.walk?1.6:0,1-Math.exp(-3*dt));}
+    }
+    if(a.speed>0.05&&!tryMove(a.pos,Math.sin(a.yaw)*a.speed*dt,Math.cos(a.yaw)*a.speed*dt,0.6,1.2)){a.yaw+=rand(1,2);a.yawT=a.yaw;}
+    a.pos.y=groundY(a.pos.x,a.pos.z);a.q.g.position.copy(a.pos);a.q.g.rotation.y=a.yaw;animQuad(a.q,a.speed,dt,a.kind==='deer'&&!a.walk);
+  }
+  respawnT-=dt;if(respawnT<=0){respawnT=15;const n=animals.filter(a=>a.kind==='deer'&&!a.dead).length;
+    if(n<16){const zn=pick(DEER_ZONES);if(Math.hypot(zn.x-P.pos.x,zn.z-P.pos.z)>120)spawnAnimal('deer',zn.x+rand(-15,15),zn.z+rand(-15,15),new V3(zn.x,0,zn.z));}}
+}
+function updateFx(dt){
+  for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.life-=dt;
+    if(f.v){f.o.position.addScaledVector(f.v,dt);f.v.y-=2*dt;f.o.scale.setScalar(lerp(f.grow,f.grow*0.3,f.life/f.max));}
+    f.o.material.opacity=Math.max(0,f.life/f.max)*(f.line?0.9:0.85);
+    if(f.life<=0){scene.remove(f.o);f.o.material.dispose();if(f.line)f.o.geometry.dispose();fx.splice(i,1);}}
+  if(flashT>0){flashT-=dt;if(flashT<=0){flash.visible=false;muzzleLight.intensity=0;}}
+  for(const w of windmills)w.rotation.z+=dt*1.5;
+  const t=clock.elapsedTime;
+  // a fixed pair of lights follows the two nearest campfires; one light per fire made every lit pixel pay for all of them
+  fireLightT-=dt;if(fireLightT<=0){fireLightT=0.5;const near=fires.map(f=>({f,d:f.g.position.distanceToSquared(camera.position)})).sort((a,b)=>a.d-b.d);
+    FIRE_LIGHTS.forEach((L,i)=>{const n=near[i];L.userData.f=n&&n.d<160*160?n.f:null;if(L.userData.f)L.position.copy(n.f.g.position).add(_fireUp);});}
+  for(const f of fires)if(f.g.position.distanceToSquared(camera.position)<200*200)f.f.scale.set(1+Math.sin(t*13)*0.1,1+Math.sin(t*9.7)*0.2,1+Math.cos(t*11)*0.1);
+  FIRE_LIGHTS.forEach((L,i)=>{L.intensity=L.userData.f?35+Math.sin(t*17+i)*6+Math.sin(t*7.3)*5:0;});
+  for(const tw of tumbleweeds){tw.x+=tw.sp*dt;tw.z+=tw.sp*0.3*dt;const dx=tw.x-P.pos.x,dz=tw.z-P.pos.z;
+    if(Math.hypot(dx,dz)>170){tw.x=P.pos.x-rand(80,150);tw.z=P.pos.z+rand(-120,120);}
+    const y=groundY(tw.x,tw.z);tw.m.position.set(tw.x,y+0.7+Math.abs(Math.sin(t*3+tw.sp))*0.5,tw.z);tw.m.rotation.z-=tw.sp*dt*1.3;tw.m.rotation.x+=tw.sp*dt*0.3;}
+  for(const c of clouds){c.position.x+=3*dt;if(c.position.x>950)c.position.x=-950;}
+}
+let lastSite=null;
+function updateSites(){let cur=null;for(const k in SITES){const s=SITES[k];if(Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<s.r+10)cur=k;}
+  if(cur&&cur!==lastSite){banner(cur==='town'?'Arroyo Territory':'',SITES[cur].name,true);visited.add(cur);}lastSite=cur;}
+
+// ---------------- day / night ----------------
+const SKYC={dayTop:new THREE.Color('#4a86c8'),dayHor:new THREE.Color('#dccaa6'),duskTop:new THREE.Color('#3a4a80'),duskHor:new THREE.Color('#f08a48'),
+  nightTop:new THREE.Color('#04060d'),nightHor:new THREE.Color('#141a2c'),sunLow:new THREE.Color('#ffa060'),sunHigh:new THREE.Color('#fff2dc')};
+const _c1=new THREE.Color(),_c2=new THREE.Color(),sunDir=new V3();
+function updateSky(dt){
+  gameHour+=dt*24/960;if(gameHour>=24){gameHour-=24;P.day++;onNewDay();}
+  const ang=(gameHour-6)/12*Math.PI;sunDir.set(Math.cos(ang)*0.85,Math.sin(ang),0.35).normalize();
+  const el=sunDir.y,dayF=smooth(-0.12,0.25,el),dusk=clamp(1-Math.abs(el)*3.5,0,1);
+  _c1.copy(SKYC.nightTop).lerp(SKYC.dayTop,dayF).lerp(SKYC.duskTop,dusk*0.5);_c2.copy(SKYC.nightHor).lerp(SKYC.dayHor,dayF).lerp(SKYC.duskHor,dusk*0.65*smooth(-0.2,0.05,el+0.1));
+  skyU.top.value.copy(_c1);skyU.hor.value.copy(_c2);skyU.sunDir.value.copy(sunDir);skyU.sunCol.value.copy(SKYC.sunLow).lerp(SKYC.sunHigh,smooth(0,0.5,el)).multiplyScalar(dayF);
+  skyU.moonA.value=1-dayF;scene.fog.color.copy(_c2);scene.fog.far=lerp(520,950,dayF)*VIEW/950;
+  const night=1-dayF;
+  // the shadow camera moves in 4 m steps, so between shadow-map refreshes static shadows stay put instead of swimming
+  const sx=Math.round(P.pos.x/4)*4,sz=Math.round(P.pos.z/4)*4;if(sx!==_shadowC.x||sz!==_shadowC.z){_shadowC.set(sx,P.pos.y,sz);shadowDirty=true;}
+  if(el>-0.05){sun.position.copy(_shadowC).addScaledVector(sunDir,250);sun.color.copy(SKYC.sunLow).lerp(SKYC.sunHigh,smooth(0,0.45,el));sun.intensity=2.8*smooth(-0.05,0.2,el);}
+  else{sun.position.copy(_shadowC).addScaledVector(sunDir,-250);sun.color.set('#9ab0ff');sun.intensity=0.45*smooth(-0.05,-0.25,el);}
+  sun.target.position.copy(_shadowC);
+  hemi.intensity=lerp(0.28,1.05,dayF);hemi.color.copy(_c1).lerp(new THREE.Color('#cfe0ff'),0.5);
+  stars.material.opacity=smooth(0.3,0.9,night);
+  windowMat.emissive.setRGB(1.0*night,0.55*night,0.18*night);
+  AU.wind&&(AU.wind.gain.value=0.025+Math.sin(clock.elapsedTime*0.2)*0.012);
+}
+
+// ---------------- camera ----------------
+const _bk=new V3(),_rt=new V3(),_or=new V3();
+let camPivot=null;
+let firstPerson=false;
+function updateFirstPerson(dt){
+  const cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch),fwd=_bk.set(-Math.sin(cam.yaw)*cp,-sp,-Math.cos(cam.yaw)*cp);
+  const eye=new V3(P.pos.x,P.pos.y+(P.mounted?2.78:1.68),P.pos.z);
+  if(!P.mounted&&P.speed>1)eye.y+=Math.sin(PH.phase*2)*0.035*Math.min(P.speed/4,1);
+  cam.shake=Math.max(0,cam.shake-dt*2);const s=cam.shake*cam.shake*0.25;
+  camera.position.copy(eye).addScaledVector(fwd,0.18);camera.position.x+=rand(-s,s);camera.position.y+=rand(-s,s);
+  camera.lookAt(eye.addScaledVector(fwd,30));camPivot=null;
+  const fov=P.aiming?55:(P.mounted&&HORSE.speed>14?82:75);if(Math.abs(camera.fov-fov)>0.05){camera.fov=lerp(camera.fov,fov,1-Math.exp(-6*dt));camera.updateProjectionMatrix();}
+  sky.position.copy(camera.position);stars.position.copy(camera.position);}
+function setFirstPerson(on){firstPerson=on;PH.head.visible=!on;saveSettings();toast('Camera',on?'First person':'Third person');}
+function updateCamera(dt){
+  if(firstPerson)return updateFirstPerson(dt);
+  const aim=P.aiming,base=aim?(P.mounted?3.6:2.3):(P.mounted?7.5:4.6);cam.dist=lerp(cam.dist,base,1-Math.exp(-10*dt));
+  const sh=aim?0.7:0.45,goal=new V3(P.pos.x,P.pos.y+(P.mounted?2.85:1.62),P.pos.z),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
+  // ease the pivot toward the player so gallop bob and collision nudges don't shake the view; snap after teleports
+  if(!camPivot||camPivot.distanceTo(goal)>25)camPivot=goal.clone();else camPivot.lerp(goal,1-Math.exp(-20*dt));
+  const pivot=camPivot;
+  _bk.set(Math.sin(cam.yaw)*cp,sp,Math.cos(cam.yaw)*cp);_rt.set(Math.cos(cam.yaw),0,-Math.sin(cam.yaw));_or.copy(pivot).addScaledVector(_rt,sh);
+  let dist=cam.dist;ray.set(_or,_bk);for(const b of boxes){if(Math.abs((b.minX+b.maxX)/2-_or.x)>40||Math.abs((b.minZ+b.maxZ)/2-_or.z)>40)continue;const h=ray.intersectBox(b.box3,_hv);if(h){const t=h.distanceTo(_or);if(t<dist)dist=Math.max(0.6,t-0.3);}}
+  for(let t=0.5;t<dist;t+=0.5){const x=_or.x+_bk.x*t,y=_or.y+_bk.y*t,z=_or.z+_bk.z*t;if(y<groundY(x,z)+0.35){dist=Math.max(0.6,t-0.5);break;}}
+  const pos=_or.clone().addScaledVector(_bk,dist);const gy=groundY(pos.x,pos.z)+0.5;if(pos.y<gy)pos.y=gy;
+  cam.shake=Math.max(0,cam.shake-dt*2);const s=cam.shake*cam.shake*0.4;pos.x+=rand(-s,s);pos.y+=rand(-s,s);
+  camera.position.copy(pos);camera.lookAt(_or.clone().addScaledVector(_bk,-30));
+  const fov=aim?48:(P.mounted&&HORSE.speed>14?70:62);if(Math.abs(camera.fov-fov)>0.05){camera.fov=lerp(camera.fov,fov,1-Math.exp(-6*dt));camera.updateProjectionMatrix();}
+  sky.position.copy(camera.position);stars.position.copy(camera.position);
+}
+
+// ---------------- HUD ----------------
+let hudT=0,lastPrompt='';
+function fmtHour(h){const hh=Math.floor(h),mm=Math.floor((h-hh)*60/10)*10,ap=hh<12?'AM':'PM';return `${(hh%12)||12}:${String(mm).padStart(2,'0')} ${ap}`;}
+function updateHUD(rdt){
+  if(WP&&Math.hypot(WP.x-P.pos.x,WP.z-P.pos.z)<12){toast('Waypoint reached',WP.label!=='Waypoint'?WP.label:'');WP=null;}
+  const target=navTarget();
+  $('hpBar').style.transform=`scaleX(${P.hp/100})`;$('stBar').style.transform=`scaleX(${P.stamina/100})`;$('fcBar').style.transform=`scaleX(${P.focus/100})`;
+  $('hsBar').style.transform=`scaleX(${HORSE.stamina/100})`;$('hsWrap').style.opacity=P.mounted?1:0.35;
+  const cr=$('cross');cr.style.setProperty('--g',(4+shotSpread()*520).toFixed(1)+'px');
+  cr.className=(P.aiming?'aim':'')+(P.aiming&&canRob(aimedNPC)?' npc':hostileAimed?' target':'');
+  if(bannerT>0){bannerT-=rdt;if(bannerT<=0)$('banner').hidden=true;}
+  vignetteT=Math.max(0,vignetteT-rdt);$('vignette').style.opacity=Math.max(vignetteT,P.hp<35?0.35+Math.sin(clock.elapsedTime*5)*0.15:0);
+  updateCompass(target);
+  hudT-=rdt;if(hudT>0)return;hudT=0.12;
+  $('money').textContent=P.money;$('clock').textContent=`Day ${P.day} · ${fmtHour(gameHour)}`;
+  const w=curW();$('wName').textContent=w.name+(P.reloadT>0?' · reloading':'');$('wAmmo').innerHTML=`${w.ammo}<small> / ${w.reserve}</small>`;
+  $('inv').textContent=`${P.tonics} tonic${P.tonics===1?'':'s'} · ${P.pelts} hide${P.pelts===1?'':'s'}${P.crates?` · ${P.crates} moonshine`:''}`;
+  const SHORT=['Revolver','Rifle','Shotgun'];$('slots').innerHTML=WEAPONS.map((x,i)=>x.owned?(i===P.weapon?`<b>${i+1} ${SHORT[i]}</b>`:`<span>${i+1} ${SHORT[i]}</span>`):'').join('');
+  $('reloadBar').style.transform=`scaleX(${P.reloadT>0?1-P.reloadT/w.reload:0})`;
+  $('honor').textContent='Honor: '+honorName();
+  const ri=rankInfo(),gl=liveGang().length;$('rank').hidden=!EMP.name;if(EMP.name)$('rank').textContent=`${ri.name} · ${gl} ${gl===1?'rider':'riders'}`;
+  if(ri.idx>EMP.rankIdx){EMP.rankIdx=ri.idx;banner(ri.idx===RANKS.length-1?'They speak your name in whispers':'Your name grows',ri.name);sfx.sting();save();}
+  const wn=$('wanted');if(WANTED.active){const lv=wantedLevel();wn.hidden=false;wn.className='';wn.textContent=`Wanted ${'★'.repeat(lv)}${'☆'.repeat(3-lv)} · $${P.bounty}`;}
+  else if(P.bounty>0){wn.hidden=false;wn.className='cold';wn.textContent=`Bounty $${P.bounty} · pay at the telegraph office`;}else wn.hidden=true;
+  if(RAID.active){$('qTitle').textContent='Raid on Coppervale';$('qObj').textContent=RAID.wave?`Hold the town: wave ${RAID.wave} of 3, ${lawAlive()} lawmen left`:'The law is mustering. Hold the street.';$('qHint').textContent='Stay within the town';}
+  else if(tracked&&QS[tracked].state==='active'){$('qTitle').textContent=QDEF[tracked].title;$('qObj').textContent=objText(tracked);
+    const d=target?Math.round(Math.hypot(target.x-P.pos.x,target.z-P.pos.z)):0;$('qHint').textContent=target&&d>8?`${WP?'Waypoint · ':''}${d} m`:'';}
+  else{const av=Object.keys(QS).find(k=>QS[k].state==='available');$('qTitle').textContent=av?'New work':'Free roam';
+    $('qObj').textContent=av?`Talk to ${NPC[QDEF[av].giver].name} about “${QDEF[av].title}”`:'Explore the territory. Press M for the map, J for your journal.';$('qHint').textContent=WP?`Waypoint · ${Math.round(Math.hypot(WP.x-P.pos.x,WP.z-P.pos.z))} m`:'';}
+  const it=!dlg&&!menu&&P.alive?findInteract():null;let pr='';
+  if(it)pr=`<span class="k">E</span> ${it.label}`;
+  const nh=!P.mounted&&!dlg&&!menu?nearestHorse():null;if(nh)pr=(pr?pr+' &nbsp; ':'')+`<span class="k">F</span> ${nh.owned?'Mount '+nh.name:'Steal horse'}`;
+  if(P.mounted&&!pr&&HORSE.speed<6)pr=`<span class="k">F</span> Dismount`;
+  if(pr!==lastPrompt){$('prompt').innerHTML=pr;$('prompt').hidden=!pr;lastPrompt=pr;}
+  drawMinimap(target);
+  // beacon
+  if(target){const d=Math.hypot(target.x-P.pos.x,target.z-P.pos.z);beacon.visible=d>25;beacon.position.set(target.x,groundY(target.x,target.z)+150,target.z);}else beacon.visible=false;
+}
+
+// ---------------- focus ----------------
+// Focus: time slows, clicks place marks on targets, and Q fires one round at each mark in turn
+const FOCUS={marks:[],firing:false,fireT:0,beatT:0};
+const MARK_MAT=markerSprite('✕','#ff3b2f').material;
+function setFocus(on){
+  if(on&&(P.focus<15||!P.alive||dlg||menu)){if(on&&P.focus<15)toast('Not enough focus','Kills refill it, or drink whiskey at the saloon.');return;}
+  focusOn=on;timeScale=on?0.25:1;$('focusFx').style.opacity=on?1:0;$('focusHint').hidden=!on;
+  if(on){FOCUS.beatT=0;tone(260,0.6,0.12,'sine',120);}else{for(const m of FOCUS.marks)scene.remove(m.s);FOCUS.marks.length=0;FOCUS.firing=false;}}
+function focusMark(){
+  const w=curW();if(FOCUS.marks.length>=w.ammo){toast(w.ammo?'Every round is marked':'Gun is empty',w.ammo?'Press Q to fire.':'Press Q to leave focus, then reload.');return;}
+  const f=new V3();camera.getWorldDirection(f);const chest=P.pos.clone();chest.y+=P.mounted?2.4:1.3;
+  const skip=Math.max(0.3,chest.sub(camera.position).dot(f)+0.2),hit=raycastWorld(camera.position.clone().addScaledVector(f,skip),f,330);
+  if(!hit.ent){nz(0.03,2500,0.06);return;}
+  const s=new THREE.Sprite(MARK_MAT);s.scale.setScalar(0.4);s.renderOrder=11;scene.add(s);
+  // aim slightly inside the hit sphere so the follow-up shot can't graze past it
+  FOCUS.marks.push({e:hit.ent,off:hit.point.clone().addScaledVector(f,0.12).sub(hit.ent.pos),s});tone(1500,0.05,0.1,'square');}
+function focusRelease(){if(!FOCUS.marks.length){setFocus(false);return;}FOCUS.firing=true;FOCUS.fireT=0.06;$('focusHint').textContent='';}
+function updateFocus(rdt){
+  if(!focusOn)return;
+  for(const m of FOCUS.marks)m.s.position.copy(m.e.pos).add(m.off);
+  FOCUS.beatT-=rdt;if(FOCUS.beatT<=0){FOCUS.beatT=0.8;tone(62,0.16,0.28,'sine',40);tone(56,0.14,0.2,'sine',36,0.2);}
+  if(!FOCUS.firing){$('focusHint').textContent=`Click targets to mark · Q to fire (${FOCUS.marks.length}/${curW().ammo})`;return;}
+  FOCUS.fireT-=rdt;if(FOCUS.fireT>0)return;FOCUS.fireT=0.14;
+  const m=FOCUS.marks.shift();if(!m){setFocus(false);return;}
+  scene.remove(m.s);if(m.e.dead||m.e.koT>0)return;
+  const t=m.e.pos.clone().add(m.off),c=camera.position,dx=t.x-c.x,dy=t.y-c.y,dz=t.z-c.z;
+  cam.yaw=Math.atan2(-dx,-dz);cam.pitch=clamp(-Math.atan2(dy,Math.hypot(dx,dz)),-1,1.25);updateCamera(0);
+  P.fireCd=0;P.reloadT=0;fire(t);}
+
+// ---------------- save / load ----------------
+const SAVE='dust-iron-save-v1';
+function save(){if(!running)return false;try{localStorage.setItem(SAVE,JSON.stringify({QS,money:P.money,tonics:P.tonics,pelts:P.pelts,day:P.day,hour:gameHour,stats:P.stats,bounty:P.bounty,honor:P.honor,
+  w:WEAPONS.map(w=>({ammo:w.ammo,reserve:w.reserve,owned:w.owned})),pos:[P.pos.x,P.pos.z],horse:[HORSE.pos.x,HORSE.pos.z],tracked,hp:Math.max(30,P.hp),crates:P.crates,crimes:crimeLog,
+  emp:{name:EMP.name,color:EMP.color,order:EMP.order,town:EMP.town,rackets:EMP.rackets,blackmail:EMP.blackmail,dirt:EMP.dirt,
+    camps:EMP.camps.map(c=>({x:c.x,z:c.z,still:c.still,stock:c.stock})),gang:liveGang().map(a=>({name:a.name,kin:!!a.kin}))},
+  rom:{aff:ROM.aff,chatDay:ROM.chatDay,spouse:ROM.spouse,wedDay:ROM.wedDay,children:ROM.children},gifts:P.gifts,fog:fogEncode(),savedAt:Date.now()}));return true;}catch(e){return false;}}
+// write the save whenever the tab is hidden or closed, not only on the 30-second timer
+addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(!s)return false;
+  for(const id in s.QS)if(QS[id])Object.assign(QS[id],s.QS[id]);Object.assign(P,{money:s.money,tonics:s.tonics,pelts:s.pelts,day:s.day,bounty:s.bounty||0,honor:s.honor||0});P.stats=s.stats||P.stats;gameHour=s.hour;
+  s.w.forEach((w,i)=>{if(WEAPONS[i])Object.assign(WEAPONS[i],w);});P.pos.set(s.pos[0],0,s.pos[1]);resolve(P.pos,0.4);
+  const hp=s.horse||[s.pos[0]+2,s.pos[1]+2];HORSE.pos.set(hp[0],0,hp[1]);resolve(HORSE.pos,1.1);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);HORSE.q.g.position.copy(HORSE.pos);
+  tracked=s.tracked;if(s.hp)P.hp=s.hp;P.crates=s.crates||0;if(s.crimes)crimeLog.push(...s.crimes.slice(0,12));
+  if(s.emp){const e=s.emp;Object.assign(EMP,{name:e.name,color:e.color||EMP.color,order:e.order||'follow'});Object.assign(EMP.rackets,e.rackets||{});Object.assign(EMP.blackmail,e.blackmail||{});Object.assign(EMP.dirt,e.dirt||{});
+    (e.camps||[]).forEach(c=>makeCamp(c.x,c.z,{still:c.still,stock:c.stock},true));
+    (e.gang||[]).forEach(g=>{const a=spawnAlly(P.pos.x+rand(-6,6),P.pos.z+rand(-6,6),{name:typeof g==='string'?g:g.name});a.kin=!!g.kin;});
+    if(e.town)applyTown(true,true);}
+  if(s.gifts)Object.assign(P.gifts,s.gifts);
+  if(s.fog)fogDecode(s.fog);else revealAll();
+  if(s.rom){Object.assign(ROM.aff,s.rom.aff||{});Object.assign(ROM.chatDay,s.rom.chatDay||{});ROM.spouse=s.rom.spouse||null;ROM.wedDay=s.rom.wedDay||0;
+    (s.rom.children||[]).forEach(c=>{ROM.children.push(c);spawnChild(c);});if(ROM.spouse)placeSpouse();}
+  EMP.rankIdx=rankInfo().idx;
+  for(const id in QS)if(QS[id].state==='active'){const st=curStage(id);if(st.resume!==undefined){QS[id].stage=st.resume;QS[id].count=0;}curStage(id).start?.();}
+  if(QS.coach.state==='active'&&QS.coach.stage>=2){pickups[0].active=false;}
+  return true;}catch(e){return false;}}
+const hasSave=()=>{try{return !!localStorage.getItem(SAVE);}catch(e){return false;}};
+
+// ---------------- input ----------------
+// lockFailed: the browser refused pointer lock, so plain mouse movement steers the camera instead
+let locked=false,lockFailed=false,hadLock=false;
+function lockPointer(){try{const r=canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>{lockFailed=true;});}catch(e){lockFailed=true;}}
+document.addEventListener('pointerlockerror',()=>{lockFailed=true;});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;
+  if(locked){hadLock=true;lockFailed=false;paused=false;$('pause').hidden=true;}
+  else{mouse.left=mouse.right=false;if(hadLock&&running&&!modal&&$('ending').hidden)showPause();}});
+function showPause(){paused=true;syncSettingsUI();$('saveNote').textContent='';save();$('pause').hidden=false;}
+function syncSettingsUI(){const v=Math.round(sens/0.0005);$('optSens').value=v;$('optSensVal').textContent=v;$('optInvert').checked=invertY;$('optAssist').checked=aimAssist;
+  $('optFP').checked=firstPerson;$('optQuality').value=quality;$('optFps').textContent=`${Math.round(1/frameEMA)} fps`;}
+$('optFP').addEventListener('change',e=>setFirstPerson(e.target.checked));
+$('optQuality').addEventListener('change',e=>{quality=e.target.value;dynPR=Math.min(devicePixelRatio,1.5);applyQuality();saveSettings();});
+$('optSens').addEventListener('input',e=>{sens=+e.target.value*0.0005;syncSettingsUI();saveSettings();});
+$('optInvert').addEventListener('change',e=>{invertY=e.target.checked;saveSettings();});
+$('optAssist').addEventListener('change',e=>{aimAssist=e.target.checked;saveSettings();});
+document.addEventListener('mousemove',e=>{lastClientX=e.clientX;if(!running||paused||modal)return;if(!locked&&!lockFailed&&!(e.buttons&2))return;
+  const mx=e.movementX,my=e.movementY;if(Math.abs(mx)+Math.abs(my)>1)lastMouseT=clock.elapsedTime;
+  // browsers sometimes report one huge jump when the pointer is captured; ignore it so the camera doesn't snap
+  if(Math.abs(mx)>250||Math.abs(my)>250)return;
+  const s=sens*(P.aiming?0.7:1);cam.yaw-=mx*s;cam.pitch=clamp(cam.pitch+my*s*(invertY?-1:1),-1.0,1.25);
+  if(P.assist&&Math.abs(mx)+Math.abs(my)>2)P.assist=null;});
+canvas.addEventListener('mousedown',e=>{if(!running)return;initAudio();
+  if(dlg&&e.button===0){advanceDlg();return;}
+  // the click that captures the mouse should not also fire a shot
+  if(!locked&&!lockFailed&&!paused){lockPointer();if(e.button!==2)return;}
+  if(e.button===0){if(focusOn){if(!FOCUS.firing)focusMark();return;}mouse.left=true;if(!paused&&!modal&&!menu)fire();}if(e.button===2)mouse.right=true;});
+addEventListener('wheel',e=>{if(running&&!paused&&!modal&&!menu&&!dlg)cycleWeapon(e.deltaY>0?1:-1);},{passive:true});
+addEventListener('mouseup',e=>{if(e.button===0)mouse.left=false;if(e.button===2)mouse.right=false;});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('blur',()=>{for(const k in K)K[k]=false;mouse.left=mouse.right=false;});
+addEventListener('keydown',e=>{if(!running)return;if(['Space','Tab','KeyQ'].includes(e.code))e.preventDefault();if(e.repeat){K[e.code]=true;return;}K[e.code]=true;
+  if(modal){if(e.code==='KeyJ'&&modal==='journal'||e.code==='KeyM'&&modal==='map'||e.code==='KeyK'&&modal==='empire'||e.code==='Escape')closeModal();
+    else if(modal==='map'){if(e.code==='KeyF')mapTravelHover();else if(e.code==='Equal'||e.code==='Minus'){MV.ppu*=e.code==='Equal'?1.25:0.8;mapClamp();drawBigMap();}
+      else if(e.code==='Space'){MV.cx=P.pos.x;MV.cz=P.pos.z;mapClamp();drawBigMap();}}
+    return;}
+  if(paused)return;
+  if(menu){const mi=MENU_CODES.indexOf(e.code);if(mi>=0)buy(mi);if(e.code==='KeyE'||e.code==='Escape'){menu=null;renderMenu();}return;}
+  if(dlg){if(e.code==='KeyE'||e.code==='Space'||e.code==='Enter')advanceDlg();return;}
+  switch(e.code){
+    case 'KeyE':{const it=findInteract();if(it)it.act();break;}
+    case 'KeyF':if(P.mounted){if(HORSE.speed>6)toast('Slow down','Ease off before you jump down.');else dismount();}else if(!mount()&&d2(P.pos,HORSE.pos)<12)toast('Too far',`Walk up to ${HORSE.name} to mount.`);break;
+    case 'KeyH':sfx.whistle();if(!P.mounted){if(d2(HORSE.pos,P.pos)>300){const a=rand(0,TAU);HORSE.pos.set(P.pos.x+Math.sin(a)*60,0,P.pos.z+Math.cos(a)*60);resolve(HORSE.pos,1.1);}HORSE.called=true;}break;
+    case 'KeyR':startReload();break;
+    case 'Digit1':case 'Digit2':case 'Digit3':{const i=+e.code.slice(5)-1;if(WEAPONS[i].owned)switchWeapon(i);else toast('Not owned',`Buy the ${WEAPONS[i].name.toLowerCase()} at Bell's Mercantile.`);break;}
+    case 'KeyV':punch();break;
+    case 'KeyB':tryMakeCamp();break;
+    case 'KeyG':if(!liveGang().length)toast('No gang yet','Build a camp (B), then recruit townsfolk or hire guns at the camp.');else setOrder(EMP.order==='hold'?'follow':'hold');break;
+    case 'KeyK':openModal('empire');break;
+    case 'KeyC':setFirstPerson(!firstPerson);break;
+    case 'KeyT':aimAssist=!aimAssist;saveSettings();toast('Aim assist',aimAssist?'On':'Off');break;
+    case 'BracketLeft':case 'BracketRight':{const v=clamp(Math.round(sens/0.0005)+(e.code==='BracketRight'?1:-1),1,20);sens=v*0.0005;saveSettings();toast('Mouse sensitivity',`${v} / 20`);break;}
+    case 'KeyQ':if(!focusOn)setFocus(true);else if(!FOCUS.firing)focusRelease();break;
+    case 'KeyX':if(P.tonics>0&&P.hp<100){P.tonics--;P.hp=Math.min(100,P.hp+60);sfx.coin();toast('Tonic','You feel the warmth come back.');}break;
+    case 'KeyJ':openModal('journal');break;case 'KeyM':openModal('map');break;case 'KeyP':showPause();document.exitPointerLock?.();break;
+  }});
+addEventListener('keyup',e=>{K[e.code]=false;});
+function openModal(m){modal=m;if(m==='journal'){showJournal();$('journal').hidden=false;}else if(m==='empire'){showEmpire();$('empire').hidden=false;}else{$('bigmap').hidden=false;mapOpen();document.exitPointerLock?.();}}
+function closeModal(){modal=null;$('journal').hidden=true;$('bigmap').hidden=true;$('empire').hidden=true;if(!locked)lockPointer();}
+$('journal').addEventListener('click',closeModal);$('empire').addEventListener('click',closeModal);
+$('bigmap').addEventListener('mousedown',e=>{if(e.target===$('bigmap'))closeModal();});
+$('btnResume').addEventListener('click',()=>{paused=false;$('pause').hidden=true;lockPointer();});
+$('btnSave').addEventListener('click',()=>{$('saveNote').textContent=save()?`Saved: day ${P.day}, ${fmtHour(gameHour)}.`:'This browser blocked saving (private window or storage turned off).';});
+$('btnKeep').addEventListener('click',()=>{$('ending').hidden=true;paused=false;lockPointer();});
+function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').textContent=`Day ${P.day}. ${P.stats.kills} outlaws and beasts downed, ${P.stats.heads} by headshot. $${P.stats.earned} earned in bounties.`;$('ending').hidden=false;}
+
+// ---------------- boot ----------------
+let built=false;
+async function build(){
+  try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();
+  freezeStatic();mergeStatic();
+  spawnPeople();spawnDeerHerds();buildMap();buildCompass();
+  P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
+  applyQuality();if(savedFP){firstPerson=true;PH.head.visible=false;}
+  built=true;$('loadNote').textContent='';if(hasSave())$('btnCont').hidden=false;
+  updateSky(0);updateCamera(0.016);renderer.render(scene,camera);
+}
+function begin(cont){if(!built)return;initAudio();
+  if(!(cont&&loadSave())){try{localStorage.removeItem(SAVE);}catch(e){}QS.intro.state='active';tracked='intro';}
+  P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);
+  $('title').hidden=true;$('hud').hidden=false;running=true;lockPointer();canvas.focus();
+  setTimeout(()=>{banner('Arroyo Territory','Coppervale',true);setTimeout(()=>toast('Objective',tracked?objText(tracked):'Explore'),1200);},400);
+  save();setInterval(()=>running&&!paused&&save(),20000);}
+$('btnNew').addEventListener('click',()=>begin(false));$('btnCont').addEventListener('click',()=>begin(true));
+function tick(rdt){const dt=rdt*timeScale;
+  updateSky(dt);updatePlayer(dt);updateHorse(dt);updateNPCs(dt);updateOutlaws(dt);updateGang(dt);updateWanted(dt);updateRaid(dt);updateCamps(dt);updateFamily(dt);updateAnimals(dt);updateShadowProxies();cullFar();updateFx(dt);
+  // without pointer capture the cursor stops at the window edge, so keep turning while it rests there
+  if(lockFailed&&!locked&&lastClientX>=0){const ex=lastClientX/innerWidth;if(ex<0.05)cam.yaw+=2.2*rdt;else if(ex>0.95)cam.yaw-=2.2*rdt;}
+  revealT-=rdt;if(revealT<=0){revealT=0.5;reveal(P.pos.x,P.pos.z,140);}
+  updateCamera(rdt);updateFocus(rdt);checkReach();updateSites();updateHUD(rdt);}
+function loop(){requestAnimationFrame(loop);const rdt=Math.min(clock.getDelta(),0.05);
+  if(!built)return;
+  if(running&&!paused&&!modal){tick(rdt);autoQuality(rdt);}
+  frameNo++;renderer.shadowMap.needsUpdate=shadowDirty||frameNo%shadowEvery===0;shadowDirty=false;
+  renderer.render(scene,camera);}build().then(()=>{loop();}).catch(err=>{$('loadNote').textContent='Could not build the world: '+err.message;console.error(err);});
+</script>
