@@ -80,7 +80,7 @@ export function buildGameModule() {
 globalThis.__SIM.api={THREE,P,QS,QDEF,curStage,stageTarget,objText,npcs,NPC,outlaws,animals,EMP,ROM,WANTED,RAID,WEAPONS,cam,camera,K,mouse,SITES,DEER_ZONES,pickups,fog,horses,
   CRIMES,crimeLog,SHOPS,BUSINESS,SECRETS,FOG_N,tick,begin,talkTo,buy,openShop,openCampMenu,tryMakeCamp,makeCamp,startRaid,canRaid,findInteract,fire,punch,rob,startReload,
   advanceDlg,closeMenu,groundY,mount,dismount,nearestHorse,liveGang,gangCap,rankInfo,setFocus,focusMark,focusRelease,fastTravel,mapPOIs,courtMenu,campSpotProblem,
-  setOrder,commitCrime,inTown,d2,angDiff,clock,
+  setOrder,commitCrime,inTown,d2,angDiff,clock,LAW,hurt,lawAlive,posseCap,wantedLevel,onNewDay,spawnLawman,dismountLaw,remountLaw,
   get HORSE(){return HORSE;},get menu(){return menu;},get dlg(){return dlg;},get gameHour(){return gameHour;},get tracked(){return tracked;},get built(){return built;},
   get running(){return running;},get focusOn(){return focusOn;},get FOCUS(){return FOCUS;}};
 `;

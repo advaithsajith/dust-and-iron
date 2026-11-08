@@ -64,7 +64,7 @@ The game needs a **keyboard and mouse**. Click the game to capture the mouse; **
 
 **The lawman's errand.** Work through Sheriff Hale's missions, help Ma Delgado at her ranch, and end the Crane gang at Iron Hollow. Ma Delgado wants three deer hides; walk up to the herds slowly on foot, because galloping at them scares them off.
 
-**The outlaw.** Aim at someone and press **E** to rob them; stores and the bank pay more. Anyone who sees a crime reports it. Deputies ride in from all sides, so get out of their sight and out of the red circle on the minimap to shake them. Pay off your bounty at the telegraph office, or the law will collect it when you die. Notorious outlaws also pay 30% more in every shop.
+**The outlaw.** Aim at someone and press **E** to rob them; stores and the bank pay more. Anyone who sees a crime reports it, and deputies ride out after you. How hard they push depends on the crime. A brawl or a stolen horse cools off in under a minute, while a bank job takes a couple of minutes of hard riding to shake. Break their line of sight and they give up sooner. Each chase sends only so many deputies. Gun enough of them down and the rest lose their nerve and ride off; kill about ten and Fort Ashby stops sending anyone for a while. A deputy's horse is fair game once he's off it: steal it with **F**, or shoot it and skin it. Small bounties of $30 or less are forgiven overnight, and bigger ones shrink a little each day. You can also pay them off at the telegraph office. Notorious outlaws pay 30% more in every shop.
 
 **The empire builder.** Ride at least 170 m out of town and press **B** to pitch a camp ($50). From the camp ledger you can build a moonshine still and hire guns, and Lou at the Rusty Spur buys your moonshine for cash. Lou also sells dirt you can use for blackmail. Walk into a business with two of your gang beside you to offer them "protection". With three riders at your back, aim at Sheriff Hale and press **E** to raid the town. Press **K** to watch your rank climb to *Don of the Territory*.
 
@@ -84,7 +84,7 @@ Before release we had **300 scripted bot players** play 200 simulated hours of t
 
 - The bots found a **mission-breaking bug**: kills made from outside a mission area never counted toward it. It is now fixed.
 - **One in four non-criminal sessions ran out of both ammo and money**, and most never recovered.
-- **Escaping the law is close to impossible** for reckless criminals, because deputies keep spawning around wherever you are.
+- **Escaping the law was close to impossible** for reckless criminals, because deputies kept spawning around wherever you were. *Since reworked: chases now cool off, posses are limited, and killing deputies scares the rest off. In a 15-session rerun, outlaw bots died in 3 of 106 chases, down from 95%.*
 - **The empire path pays too well:** a scripted best-case build reached the top rank in a median 12.5 minutes.
 
 The players were scripts, not people, so these results point at what to test with humans next. They are not measurements of player experience.

@@ -786,8 +786,13 @@ function spawnLawman(x,z){
   const e=spawnOutlaw(x,z,'law',{shirt:'#b8a07a',vest:'#3a2a1e',coat:'#5a4a38',hat:'#6a5038',bandana:null,badge:true,acc:1.1,hp:110,name:'Deputy'});
   const hq=makeQuad({scale:1,color:pick(['#6a4528','#2e2018','#9a7a5a']),dark:'#1a0f08',mane:'#1a0f08',tailC:'#1a0f08',saddle:true});scene.add(hq.g);
   e.hq=hq;e.alerted=true;e.yaw=Math.atan2(P.pos.x-x,P.pos.z-z);remountLaw(e);return e;}
-function remountLaw(e){e.mounted=true;e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;e.hq.g.add(e.h.g);e.h.g.position.set(0,1.05,0.05);e.h.g.rotation.set(0,0,0);}
-function dismountLaw(e){e.mounted=false;e.speed=0;scene.add(e.h.g);const s=e.yaw+Math.PI/2;e.pos.x+=Math.sin(s)*1.5;e.pos.z+=Math.cos(s)*1.5;resolve(e.pos,0.4);
+// A deputy's horse is a real loose horse while he's on foot: it grazes, can be shot, skinned or stolen. He takes it back
+// only if it's still free; otherwise he stays on foot.
+function remountLaw(e){if(e.loose){const h=e.loose;e.loose=null;if(h.dead||h.owned||!horses.includes(h)){e.hq=null;return;}horses.splice(horses.indexOf(h),1);}
+  if(!e.hq)return;e.mounted=true;e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;e.hq.g.add(e.h.g);e.h.g.position.set(0,1.05,0.05);e.h.g.rotation.set(0,0,0);}
+function dismountLaw(e){e.mounted=false;e.speed=0;scene.add(e.h.g);
+  if(e.tag==='law'&&e.hq){const h={pos:e.hq.g.position.clone(),yaw:e.yaw,speed:0,stamina:100,called:false,stepT:0,name:'Deputy\'s horse',owned:false,q:e.hq,
+    kind:'horse',hp:140,dead:false,skinned:false,fallT:0,fearT:0,removeT:0};h.q.g.rotation.x=h.q.g.rotation.z=0;horses.push(h);e.loose=h;}const s=e.yaw+Math.PI/2;e.pos.x+=Math.sin(s)*1.5;e.pos.z+=Math.cos(s)*1.5;resolve(e.pos,0.4);
   e.pos.y=groundY(e.pos.x,e.pos.z);e.h.g.position.copy(e.pos);e.h.g.rotation.set(0,e.yaw,0);}
 function spawnGang(site,n,tag,spread=14){for(let i=0;i<n;i++){const a=i/n*TAU+rand(-0.3,0.3),r=rand(4,spread);spawnOutlaw(site.x+Math.cos(a)*r,site.z+Math.sin(a)*r,tag);}}
 function spawnAnimal(kind,x,z,zone,tag){
@@ -1099,12 +1104,12 @@ function hitSpheres(e){const p=e.pos;
     return [{c:new V3(p.x,y+1.25*s,p.z),r:0.36*s},{c:new V3(p.x,y+0.5*s,p.z),r:0.32*s,limb:true},{c:new V3(p.x,y+1.78*s,p.z),r:0.19*s,head:true}];}
   const s=e.q.s,fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);
   return [{c:new V3(p.x+fx*0.55*s,p.y+1.45*s,p.z+fz*0.55*s),r:0.62*s},{c:new V3(p.x-fx*0.55*s,p.y+1.45*s,p.z-fz*0.55*s),r:0.62*s},
-    {c:new V3(p.x+fx*1.35*s,p.y+(e.kind==='deer'?2.5:1.9)*s,p.z+fz*1.35*s),r:0.35*s,head:true}];}
+    {c:new V3(p.x+fx*1.35*s,p.y+(e.kind==='deer'||e.kind==='horse'?2.5:1.9)*s,p.z+fz*1.35*s),r:0.35*s,head:true}];}
 function raycastWorld(o,d,maxD){
   let best={t:maxD,ent:null,head:false,kind:'none'};
   for(let t=1;t<maxD;t+=1.5){if(o.y+d.y*t<groundY(o.x+d.x*t,o.z+d.z*t)){let a=t-1.5,b=t;for(let i=0;i<6;i++){const m=(a+b)/2;if(o.y+d.y*m<groundY(o.x+d.x*m,o.z+d.z*m))b=m;else a=m;}best.t=b;best.kind='ground';break;}}
   ray.set(o,d);for(const b of boxes){const h=ray.intersectBox(b.box3,_hv);if(h){const t=h.distanceTo(o);if(t<best.t){best.t=t;best.kind='wall';}}}
-  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0))];
+  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0)),...horses.filter(h=>h.kind==='horse'&&!h.dead&&!h.owned)];
   for(const e of list){if(d2(e.pos,o)>maxD+5)continue;for(const s of hitSpheres(e)){const t=raySphere(o,d,s.c,s.r);if(t>0&&t<best.t){best.t=t;best.ent=e;best.head=!!s.head;best.limb=!!s.limb;best.kind='ent';}}}
   best.point=o.clone().addScaledVector(d,best.t);return best;
 }
@@ -1162,11 +1167,11 @@ function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0))return;e.
   if(e.kind==='outlaw'){e.flinchT=0.25;e.shootT+=0.3;
     if(e.tag==='law'){if(!WANTED.active&&!e.crimeHit){e.crimeHit=true;commitCrime('assaultLaw',e.pos,null,true);}}
     else for(const o of outlaws)if(o.tag===e.tag&&!o.dead)o.alerted=true;}
-  else if(e.kind==='deer')e.fearT=10;else e.alerted=true;
+  else if(e.kind==='deer')e.fearT=10;else if(e.kind==='horse')e.fearT=6;else e.alerted=true;
   if(e.hp<=0){if(e.mounted)dismountLaw(e);e.dead=true;e.fallT=0;P.stats.kills++;
     if(!ally){if(head)P.stats.heads++;P.focus=Math.min(100,P.focus+12);hitmarker(true);if(head&&e.kind==='outlaw')toast('Headshot','');}
     if(e.boss)banner('',`${e.name} is dead`,true);
-    if(e.tag==='law')commitCrime('killLaw',e.pos,null,true);
+    if(e.tag==='law'){commitCrime('killLaw',e.pos,null,true);onLawKilled(e);}
     questEvent('kill',{type:e.kind,tag:e.tag,boss:e.boss});}
   else if(!ally)hitmarker(false);}
 function hurtNPC(n,punch){
@@ -1183,16 +1188,22 @@ function hurtNPC(n,punch){
 }
 
 // ---------------- crime & the law ----------------
-const CRIMES={gunfire:{name:'Firing a gun in town',bounty:5,honor:-1},assault:{name:'Assault',bounty:10,honor:-5},assaultArmed:{name:'Assault with a weapon',bounty:25,honor:-8},
-  assaultLaw:{name:'Attacking a lawman',bounty:40,honor:-10},murder:{name:'Murder',bounty:60,honor:-20},killLaw:{name:'Killing a lawman',bounty:100,honor:-25},
-  robbery:{name:'Robbery',bounty:25,honor:-10},storeRobbery:{name:'Store robbery',bounty:40,honor:-12},bankRobbery:{name:'Bank robbery',bounty:150,honor:-25},
-  horseTheft:{name:'Horse theft',bounty:30,honor:-10},looting:{name:'Looting the dead',bounty:10,honor:-5},
-  extortion:{name:'Extortion',bounty:30,honor:-6},bootlegging:{name:'Bootlegging',bounty:20,honor:-3},raid:{name:'Raiding Coppervale',bounty:200,honor:-20}};
-const WANTED={active:false,last:new V3(),searchT:0,reinforceT:0,recogT:0,warned:false};
+// heat: how hard the law pushes the chase (0-100). It cools every second, so petty crimes burn out on their own.
+const CRIMES={gunfire:{name:'Firing a gun in town',bounty:5,honor:-1,heat:6},assault:{name:'Assault',bounty:10,honor:-5,heat:10},assaultArmed:{name:'Assault with a weapon',bounty:25,honor:-8,heat:18},
+  assaultLaw:{name:'Attacking a lawman',bounty:40,honor:-10,heat:20},murder:{name:'Murder',bounty:60,honor:-20,heat:40},killLaw:{name:'Killing a lawman',bounty:100,honor:-25,heat:10},
+  robbery:{name:'Robbery',bounty:25,honor:-10,heat:20},storeRobbery:{name:'Store robbery',bounty:40,honor:-12,heat:30},bankRobbery:{name:'Bank robbery',bounty:150,honor:-25,heat:70},
+  horseTheft:{name:'Horse theft',bounty:30,honor:-10,heat:22},looting:{name:'Looting the dead',bounty:10,honor:-5,heat:8},
+  extortion:{name:'Extortion',bounty:30,honor:-6,heat:15},bootlegging:{name:'Bootlegging',bounty:20,honor:-3,heat:10},raid:{name:'Raiding Coppervale',bounty:200,honor:-20,heat:100}};
+const WANTED={active:false,last:new V3(),searchT:0,reinforceT:0,recogT:0,warned:false,heat:0,spawned:0,graceT:0};
+// fear: every deputy killed shakes the rest. Enough of it and they break and ride off, then stop coming at all.
+const LAW={fear:0,kills:[],refuse:false,brokeT:-99};
 const crimeLog=[];
 const inTown=p=>Math.hypot(p.x-SITES.town.x,p.z-SITES.town.z)<SITES.town.r;
-const wantedLevel=()=>P.bounty<60?1:P.bounty<150?2:3;
-const lawAlive=()=>outlaws.filter(e=>e.tag==='law'&&!e.dead).length;
+const wantedLevel=()=>WANTED.heat<35?1:WANTED.heat<70?2:3;
+const lawAlive=()=>outlaws.filter(e=>e.tag==='law'&&!e.dead&&!e.fleeing).length;
+// how many deputies one chase can draw, and how many ride at once; both shrink as fear grows
+const posseCap=()=>Math.max(0,2+wantedLevel()*2-Math.floor(LAW.fear/2));
+const posseSize=()=>Math.max(0,wantedLevel()*2-Math.floor(LAW.fear/3));
 const priceMult=()=>P.honor<-40?1.3:P.honor>40?0.85:1;
 const honorName=()=>P.honor>=50?'Respected':P.honor>=15?'Decent':P.honor>-15?'Unknown':P.honor>-50?'Shady':'Notorious';
 function witnesses(pos,victim){let n=0;const eye=pos.clone();eye.y+=1.5;
@@ -1204,27 +1215,47 @@ function commitCrime(type,pos,victim,force){const c=CRIMES[type];P.honor=clamp(P
   if(EMP.town&&inTown(pos)&&type!=='raid'){crimeLog.unshift({name:c.name,seen:false,bounty:0,day:P.day});toast(c.name,'Your town, your rules. Nobody reports it.');return;}
   const seen=force||witnesses(pos,victim)>0;crimeLog.unshift({name:c.name,seen,bounty:c.bounty,day:P.day});if(crimeLog.length>12)crimeLog.length=12;
   if(!seen){toast(c.name,'Nobody saw it.');return;}
-  P.bounty+=c.bounty;toast('Crime witnessed',`${c.name} · +$${c.bounty} bounty`);setWanted();}
+  P.bounty+=c.bounty;
+  if(LAW.refuse&&type!=='raid'){toast('Crime witnessed',`${c.name} · +$${c.bounty} bounty. No deputy dares come after you.`);return;}
+  toast('Crime witnessed',`${c.name} · +$${c.bounty} bounty`);WANTED.heat=Math.min(100,WANTED.heat+c.heat);setWanted();}
 function setWanted(){const was=WANTED.active;WANTED.active=true;WANTED.last.copy(P.pos);WANTED.searchT=0;WANTED.recogT=0;
-  for(const e of outlaws)if(e.tag==='law'&&!e.dead)e.alerted=true;
-  if(!was){banner('The law is coming','Wanted',true);$('banner').classList.add('wanted');for(let i=lawAlive();i<2;i++)spawnLawNear();WANTED.reinforceT=10;}}
-function spawnLawNear(){for(let k=0;k<10;k++){const a=rand(0,TAU),r=rand(85,105),x=clamp(P.pos.x+Math.sin(a)*r,-HALF+50,HALF-50),z=clamp(P.pos.z+Math.cos(a)*r,-HALF+50,HALF-50);
+  for(const e of outlaws)if(e.tag==='law'&&!e.dead&&!e.fleeing)e.alerted=true;
+  if(!was){WANTED.spawned=0;banner('The law is coming','Wanted',true);$('banner').classList.add('wanted');
+    for(let i=lawAlive();i<Math.min(2,posseSize());i++)spawnLawNear();WANTED.reinforceT=10;}}
+function spawnLawNear(){WANTED.spawned++;for(let k=0;k<10;k++){const a=rand(0,TAU),r=rand(85,105),x=clamp(P.pos.x+Math.sin(a)*r,-HALF+50,HALF-50),z=clamp(P.pos.z+Math.cos(a)*r,-HALF+50,HALF-50);
   if(slopeAt(x,z)<0.6)return spawnLawman(x,z);}return spawnLawman(P.pos.x+90,P.pos.z);}
+// when a chase ends the posse rides home, and nobody re-recognises you for a while, so it can't restart on the spot
+function endChase(title,msg){WANTED.active=false;WANTED.heat=0;WANTED.graceT=90;for(const e of outlaws)if(e.tag==='law'&&!e.dead){e.alerted=false;e.fleeing=true;}banner('',title,true);
+  toast(msg,P.bounty>50?`Your $${P.bounty} bounty stands. Pay it at the telegraph office.`:P.bounty?`A $${P.bounty} bounty is small enough to lapse by morning.`:'');}
+// a deputy went down: the others' nerve frays, and enough killing makes them stop coming
+function onLawKilled(e){LAW.fear+=1;const now=clock.elapsedTime;LAW.kills=LAW.kills.filter(t=>now-t<60);LAW.kills.push(now);
+  const recent=LAW.kills.length,chance=clamp(0.07*LAW.fear+0.15*(recent-1),0,0.85);let broke=0;
+  for(const o of outlaws)if(o.tag==='law'&&!o.dead&&!o.fleeing&&d2(o.pos,e.pos)<100&&Math.random()<chance){o.fleeing=true;o.alerted=false;broke++;}
+  if(broke&&now-LAW.brokeT>20){LAW.brokeT=now;toast('The posse is breaking',broke>1?`${broke} deputies turn their horses and run.`:'A deputy turns his horse and runs.');}
+  if(!LAW.refuse&&LAW.fear>=10){LAW.refuse=true;for(const o of outlaws)if(o.tag==='law'&&!o.dead){o.fleeing=true;o.alerted=false;}
+    banner('Fort Ashby is out of brave men','The law fears you',true);}}
 function updateWanted(dt){
   if(!WANTED.active){
-    if(P.bounty>0&&P.alive){
+    // only a bounty worth chasing gets you recognised; petty ones are left to lapse
+    if(WANTED.graceT>0)WANTED.graceT-=dt;
+    else if(P.bounty>=50&&P.alive&&!LAW.refuse){
       if(inTown(P.pos)&&!EMP.town){WANTED.recogT+=dt;if(!WANTED.warned&&WANTED.recogT>1){WANTED.warned=true;toast('Folks are staring',`There's a $${P.bounty} bounty on you. Pay it at the telegraph office.`);}}
       else{WANTED.recogT=0;WANTED.warned=false;}
-      const spotted=outlaws.some(e=>e.tag==='law'&&!e.dead&&e.los&&d2(e.pos,P.pos)<25);
-      if(WANTED.recogT>15||spotted){toast('Recognized','The law knows your face.');setWanted();}
+      const spotted=outlaws.some(e=>e.tag==='law'&&!e.dead&&!e.fleeing&&e.los&&d2(e.pos,P.pos)<25);
+      if(WANTED.recogT>15||spotted){toast('Recognized','The law knows your face.');WANTED.heat=Math.max(WANTED.heat,20+Math.min(40,P.bounty/5));setWanted();}
     }
     return;}
-  let seen=false;for(const e of outlaws)if(e.tag==='law'&&!e.dead&&e.los&&d2(e.pos,P.pos)<80)seen=true;
+  let seen=false;for(const e of outlaws)if(e.tag==='law'&&!e.dead&&!e.fleeing&&e.los&&d2(e.pos,P.pos)<80)seen=true;
   if(seen){WANTED.last.copy(P.pos);WANTED.searchT=0;}else WANTED.searchT+=dt;
   if(RAID.active){WANTED.last.copy(P.pos);WANTED.searchT=0;return;}
-  WANTED.reinforceT-=dt;if(WANTED.reinforceT<=0){WANTED.reinforceT=14;if(lawAlive()<wantedLevel()*2)spawnLawNear();}
-  if(WANTED.searchT>18&&d2(P.pos,WANTED.last)>120){WANTED.active=false;for(const e of outlaws)if(e.tag==='law')e.alerted=false;
-    banner('','You lost the law',true);toast('Escaped',`Your $${P.bounty} bounty stands. Pay it at the telegraph office.`);}
+  // the chase cools on its own, three times faster while they can't see you
+  WANTED.heat=Math.max(0,WANTED.heat-(seen?0.6:2.2)*dt);
+  if(LAW.refuse&&!lawAlive())return endChase('Nobody rides against you','The law stayed home');
+  if(WANTED.heat<=0)return endChase('The law gave up the chase','They have bigger troubles than you');
+  WANTED.reinforceT-=dt;
+  if(WANTED.reinforceT<=0){WANTED.reinforceT=14+LAW.fear*3;if(!LAW.refuse&&lawAlive()<posseSize()&&WANTED.spawned<posseCap())spawnLawNear();}
+  if(WANTED.spawned>=posseCap()&&!lawAlive())return endChase('The posse is spent','No more riders are coming');
+  if(WANTED.searchT>18&&d2(P.pos,WANTED.last)>120)endChase('You lost the law','Escaped');
 }
 function scare(n){if(n.dead||n.koT>0)return;if(n.wander)n.fleeT=12;else n.cowerT=8;}
 function alertFromShot(pos){
@@ -1263,7 +1294,7 @@ function die(){P.alive=false;P.hp=0;setFocus(false);const f=$('fade');f.textCont
     // wake at your own camp if you have one, otherwise at Doc Hargrove's
     if(camp){P.pos.set(camp.x+2,0,camp.z-3);HORSE.pos.set(camp.x-3,0,camp.z-4);}else{P.pos.set(-28,0,6.5);HORSE.pos.set(-22,0,4);}
     P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.speed=0;
-    if(P.bounty>0){const paid=Math.min(P.money,P.bounty);P.money-=paid;P.bounty=0;WANTED.active=false;
+    if(P.bounty>0){const paid=Math.min(P.money,P.bounty);P.money-=paid;P.bounty=0;WANTED.active=false;WANTED.heat=0;
       setTimeout(()=>toast('The law collected',`$${paid} was taken against your bounty. Your record is clean.`),1500);}
     const lost=Math.floor(P.money*0.1);P.money-=lost;P.hp=100;P.stamina=100;P.alive=true;for(const e of outlaws)e.alerted=false;for(const a of animals)a.alerted=false;
     f.style.opacity=0;setTimeout(()=>f.textContent='',600);toast(camp?'Your gang dragged you back to camp':'Doc Hargrove patched you up',lost?`Lost $${lost} on the way.`:'Take it easy out there.');},2600);}
@@ -1341,7 +1372,8 @@ function updateGang(dt){let slot=0;
     a.pos.y=groundY(a.pos.x,a.pos.z);
     if(a.mounted){a.hq.g.position.copy(a.pos);a.hq.g.rotation.y=a.yaw;if(d<200)animQuad(a.hq,a.speed,dt,false);a.h.g.rotation.y=aimYaw!=null?angDiff(a.yaw,aimYaw):0;
       a.h.legL.rotation.set(-0.7,0,-0.35);a.h.legR.rotation.set(-0.7,0,0.35);a.h.armL.rotation.set(-0.6,0,0);if(aimYaw==null)a.h.armR.rotation.set(-0.6,0,0);}
-    else{if(aimYaw!=null&&spd<1)a.yaw=angLerp(a.yaw,aimYaw,1-Math.exp(-8*dt));a.h.g.position.copy(a.pos);a.h.g.rotation.y=a.yaw;if(d<150)animHuman(a.h,a.speed,dt,aimYaw!=null);}
+    else{if(aimYaw!=null&&spd<1)a.yaw=angLerp(a.yaw,aimYaw,1-Math.exp(-8*dt));a.h.g.position.copy(a.pos);a.h.g.rotation.y=a.yaw;if(d<150)animHuman(a.h,a.speed,dt,aimYaw!=null);
+      if(d<150)animQuad(a.hq,0,dt,true);}  // the parked horse grazes instead of standing frozen
     if(aimYaw!=null)a.h.armR.rotation.set(-Math.PI/2,0,0);
   }}
 // camps
@@ -1402,7 +1434,7 @@ function updateRaid(dt){if(!RAID.active)return;
   if(lawAlive()===0){RAID.next-=dt;if(RAID.next<=0){if(RAID.wave>=3){winRaid();return;}RAID.wave++;RAID.next=4;const n=2+RAID.wave*2;
     for(let i=0;i<n;i++){const a=rand(0,TAU);spawnLawman(SITES.town.x+Math.cos(a)*rand(95,115),SITES.town.z+Math.sin(a)*rand(95,115));}
     toast(`Wave ${RAID.wave} of 3`,`${n} lawmen ride on Coppervale.`);}}}
-function winRaid(){RAID.active=false;WANTED.active=false;P.bounty=0;for(const e of outlaws)if(e.tag==='law')e.alerted=false;P.honor=clamp(P.honor-15,-100,100);
+function winRaid(){RAID.active=false;WANTED.active=false;WANTED.heat=0;P.bounty=0;for(const e of outlaws)if(e.tag==='law')e.alerted=false;P.honor=clamp(P.honor-15,-100,100);
   applyTown(true);sfx.sting();banner(`${EMP.name} runs the jailhouse now`,'Coppervale is yours',false);save();}
 function applyTown(on,silent){EMP.town=on;const n=NPC.sheriff;
   if(on){n.pos.set(SITES.ranch.x-6,0,SITES.ranch.z+3.6);n.baseYaw=0;n.lines=['You took my town. Enjoy it while it lasts.','Crane was a thief. You\'re a thief with a badge.'];}
@@ -1411,6 +1443,10 @@ function applyTown(on,silent){EMP.town=on;const n=NPC.sheriff;
   const s=SIGNS.SHERIFF;if(s){s.material.map=signTex(on?`${EMP.name.replace(/^The /,'').toUpperCase()} HQ`:'SHERIFF');s.material.needsUpdate=true;}
   PBADGE.visible=on;if(!on&&!silent)toast('Coppervale has fallen','A posse from Fort Ashby retook the jailhouse.');}
 function onNewDay(){const L=dailyLedger();
+  // overnight the law's memory fades: petty bounties are forgiven, big ones shrink, and frightened deputies regain their nerve
+  if(P.bounty>0&&!WANTED.active){if(P.bounty<=30){toast('Bounty lapsed',`Nobody's chasing $${P.bounty} anymore. Your record is clean.`);P.bounty=0;}
+    else{const b=P.bounty;P.bounty=Math.round(P.bounty*0.85);toast('Bounty cooling',`The price on your head drops from $${b} to $${P.bounty}.`);}}
+  LAW.fear*=0.5;if(LAW.refuse&&LAW.fear<6){LAW.refuse=false;toast('New deputies in Fort Ashby','The law is willing to ride against you again.');}
   if(ROM.spouse){placeSpouse();if(P.day-ROM.wedDay>=3&&ROM.children.length<3&&Math.random()<0.45)setTimeout(birthChild,3000);}
   if(L.r||L.b||L.t||L.w){P.money=Math.max(0,P.money+L.net);toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
   if(EMP.town&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
@@ -1478,6 +1514,7 @@ function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d
   if(!P.mounted){for(const n of npcs)if(n.dead&&!n.looted)c(d2(n.pos,P.pos),2.4,'Search body',()=>lootNPC(n));
     for(const e of outlaws)if(e.dead&&!e.looted)c(d2(e.pos,P.pos),2.4,'Loot body',()=>loot(e));
     for(const a of animals)if(a.dead&&a.kind==='deer'&&!a.skinned)c(d2(a.pos,P.pos),2.8,'Skin deer',()=>skin(a));
+    for(const h of horses)if(h.dead&&!h.skinned)c(d2(h.pos,P.pos),3,'Skin horse',()=>{h.skinned=true;h.removeT=2.5;P.pelts+=2;sfx.click();toast('Skinned','Two horse hides added to your pack');});
     for(const p of pickups)if(p.active)c(d2(p.pos,P.pos),2.6,'Pick up '+p.label,()=>{p.active=false;p.mesh.visible=false;sfx.coin();toast('Recovered','The payroll strongbox');questEvent('pickup',p.id);});}
   return best;}
 function talkTo(n){
@@ -1499,7 +1536,7 @@ function talkTo(n){
 function loot(e){e.looted=true;if(e.tag==='law')commitCrime('looting',e.pos,null);const m=Math.floor(rand(e.boss?40:3,e.boss?60:12));P.money+=m;WEAPONS[0].reserve+=6;let s=`$${m}, 6 revolver rounds`;
   if(WEAPONS[1].owned&&Math.random()<0.5){WEAPONS[1].reserve+=5;s+=', 5 rifle rounds';}sfx.coin();toast('Looted',s);}
 function skin(a){a.skinned=true;a.removeT=2.5;P.pelts++;sfx.click();toast('Skinned','Deer hide added to your pack');questEvent('skin');}
-function nearestHorse(){let b=null,bd=3.4;for(const h of horses){const d=d2(h.pos,P.pos);if(d<bd){bd=d;b=h;}}return b;}
+function nearestHorse(){let b=null,bd=3.4;for(const h of horses){if(h.dead)continue;const d=d2(h.pos,P.pos);if(d<bd){bd=d;b=h;}}return b;}
 function mount(){if(P.mounted)return false;const h=nearestHorse();if(!h)return false;
   if(!h.owned){h.owned=true;h.name='Stolen horse';commitCrime('horseTheft',h.pos,null);}
   HORSE=h;P.mounted=true;h.q.g.add(PH.g);PH.g.position.set(0,1.05,0.05);PH.g.rotation.set(0,0,0);h.called=false;return true;}
@@ -1569,9 +1606,14 @@ function updatePlayer(dt){
   if(focusOn&&!FOCUS.firing){P.focus-=14*(dt/timeScale);if(P.focus<=0){P.focus=0;focusRelease();}}
 }
 function updateHorse(dt){
-  for(const h of horses){const ridden=P.mounted&&h===HORSE,d=d2(h.pos,P.pos);
+  for(let i=horses.length-1;i>=0;i--){const h=horses[i],ridden=P.mounted&&h===HORSE,d=d2(h.pos,P.pos);
+    if(h.dead){if(h.fallT<1){h.fallT=Math.min(1,h.fallT+dt*2);h.q.g.rotation.z=Math.PI/2*h.fallT;h.q.g.position.y=h.pos.y+0.42*h.fallT;}
+      if(h.removeT>0){h.removeT-=dt;if(h.removeT<=0){scene.remove(h.q.g);horses.splice(i,1);}}continue;}
     if(!ridden){
-      if(h===HORSE&&h.called&&d>3.5){const ty=Math.atan2(P.pos.x-h.pos.x,P.pos.z-h.pos.z);h.yaw=angLerp(h.yaw,ty,1-Math.exp(-4*dt));
+      // a shot horse bolts away from you for a few seconds
+      if(h.fearT>0){h.fearT-=dt;h.yaw=angLerp(h.yaw,Math.atan2(h.pos.x-P.pos.x,h.pos.z-P.pos.z),1-Math.exp(-4*dt));h.speed=lerp(h.speed,13,1-Math.exp(-2*dt));
+        const st=h.speed*dt;if(!tryMove(h.pos,Math.sin(h.yaw)*st,Math.cos(h.yaw)*st,1.1,1.0))h.yaw+=1.2;}
+      else if(h===HORSE&&h.called&&d>3.5){const ty=Math.atan2(P.pos.x-h.pos.x,P.pos.z-h.pos.z);h.yaw=angLerp(h.yaw,ty,1-Math.exp(-4*dt));
         h.speed=lerp(h.speed,d>20?16:6,1-Math.exp(-2*dt));const st=h.speed*dt;if(!tryMove(h.pos,Math.sin(h.yaw)*st,Math.cos(h.yaw)*st,1.1,1.0))h.yaw+=1.2;}
       else{if(h===HORSE)h.called=false;h.speed=lerp(h.speed,0,1-Math.exp(-3*dt));}
       h.pos.y=groundY(h.pos.x,h.pos.z);
@@ -1581,7 +1623,7 @@ function updateHorse(dt){
     h.q.g.position.copy(h.pos);h.q.g.rotation.y=h.yaw;
     const fx=Math.sin(h.yaw),fz=Math.cos(h.yaw),hf=groundY(h.pos.x+fx*1.1,h.pos.z+fz*1.1),hb=groundY(h.pos.x-fx*1.1,h.pos.z-fz*1.1);
     h.q.g.rotation.x=-Math.atan2(hf-hb,2.2)*0.8;
-    animQuad(h.q,h.speed,dt,!ridden&&!h.called);
+    animQuad(h.q,h.speed,dt,!ridden&&!h.called&&!(h.fearT>0));
     h.stepT-=dt*h.speed;if(h.stepT<=0&&h.speed>1.5){h.stepT=h.speed>12?3.2:2.2;if(d<40)sfx.hoof();}
   }
 }
@@ -1617,7 +1659,18 @@ function updateNPCs(dt){
 }
 function updateOutlaws(dt){
   for(let i=outlaws.length-1;i>=0;i--){const e=outlaws[i],d=d2(e.pos,P.pos);
-    if(e.tag==='law'&&!WANTED.active&&d>140){scene.remove(e.h.g);if(e.hq)scene.remove(e.hq.g);outlaws.splice(i,1);continue;}
+    if(e.tag==='law'&&(e.fleeing?d>150:!WANTED.active&&d>140)){scene.remove(e.h.g);
+      // his horse leaves with him, unless you've stolen it or it lies dead
+      const h=e.loose;if(h&&!h.owned&&!h.dead&&horses.includes(h)){horses.splice(horses.indexOf(h),1);scene.remove(h.q.g);}else if(!h&&e.hq)scene.remove(e.hq.g);
+      outlaws.splice(i,1);continue;}
+    // a deputy whose nerve broke gets back on his horse and rides away from you
+    if(e.fleeing&&!e.dead){if(!e.mounted&&e.hq)remountLaw(e);const away=Math.atan2(e.pos.x-P.pos.x,e.pos.z-P.pos.z);
+      e.yaw=angLerp(e.yaw,away,1-Math.exp(-4*dt));e.speed=lerp(e.speed||0,e.mounted?16:6,1-Math.exp(-2*dt));
+      if(!tryMove(e.pos,Math.sin(e.yaw)*e.speed*dt,Math.cos(e.yaw)*e.speed*dt,e.mounted?1.1:0.4,1.2))e.yaw+=rand(0.6,1.4);
+      e.pos.y=groundY(e.pos.x,e.pos.z);
+      if(e.mounted){e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;if(d<200)animQuad(e.hq,e.speed,dt,false);e.h.g.rotation.y=0;e.h.armR.rotation.set(-0.6,0,0);}
+      else{e.h.g.position.copy(e.pos);e.h.g.rotation.y=e.yaw;animHuman(e.h,e.speed,dt,false);}
+      continue;}
     if(e.dead){if(e.fallT<1){e.fallT=Math.min(1,e.fallT+dt*2.5);e.h.g.rotation.x=-Math.PI/2*e.fallT;e.h.g.position.y=e.pos.y+0.15*e.fallT;}continue;}
     if(d>350)continue;
     if(e.tag==='law')e.alerted=WANTED.active;
@@ -1776,7 +1829,7 @@ function updateHUD(rdt){
   $('honor').textContent='Honor: '+honorName();
   const ri=rankInfo(),gl=liveGang().length;$('rank').hidden=!EMP.name;if(EMP.name)$('rank').textContent=`${ri.name} · ${gl} ${gl===1?'rider':'riders'}`;
   if(ri.idx>EMP.rankIdx){EMP.rankIdx=ri.idx;banner(ri.idx===RANKS.length-1?'They speak your name in whispers':'Your name grows',ri.name);sfx.sting();save();}
-  const wn=$('wanted');if(WANTED.active){const lv=wantedLevel();wn.hidden=false;wn.className='';wn.textContent=`Wanted ${'★'.repeat(lv)}${'☆'.repeat(3-lv)} · $${P.bounty}`;}
+  const wn=$('wanted');if(WANTED.active){const lv=wantedLevel();wn.hidden=false;wn.className='';wn.textContent=`Wanted ${'★'.repeat(lv)}${'☆'.repeat(3-lv)} · $${P.bounty}${LAW.refuse?' · the law is afraid':LAW.fear>=4?' · deputies shaken':''}`;}
   else if(P.bounty>0){wn.hidden=false;wn.className='cold';wn.textContent=`Bounty $${P.bounty} · pay at the telegraph office`;}else wn.hidden=true;
   if(RAID.active){$('qTitle').textContent='Raid on Coppervale';$('qObj').textContent=RAID.wave?`Hold the town: wave ${RAID.wave} of 3, ${lawAlive()} lawmen left`:'The law is mustering. Hold the street.';$('qHint').textContent='Stay within the town';}
   else if(tracked&&QS[tracked].state==='active'){$('qTitle').textContent=QDEF[tracked].title;$('qObj').textContent=objText(tracked);
@@ -1824,7 +1877,7 @@ function updateFocus(rdt){
 
 // ---------------- save / load ----------------
 const SAVE='dust-iron-save-v1';
-function save(){if(!running)return false;try{localStorage.setItem(SAVE,JSON.stringify({QS,money:P.money,tonics:P.tonics,pelts:P.pelts,day:P.day,hour:gameHour,stats:P.stats,bounty:P.bounty,honor:P.honor,
+function save(){if(!running)return false;try{localStorage.setItem(SAVE,JSON.stringify({QS,money:P.money,tonics:P.tonics,pelts:P.pelts,day:P.day,hour:gameHour,stats:P.stats,bounty:P.bounty,honor:P.honor,lawFear:LAW.fear,
   w:WEAPONS.map(w=>({ammo:w.ammo,reserve:w.reserve,owned:w.owned})),pos:[P.pos.x,P.pos.z],horse:[HORSE.pos.x,HORSE.pos.z],tracked,hp:Math.max(30,P.hp),crates:P.crates,crimes:crimeLog,
   emp:{name:EMP.name,color:EMP.color,order:EMP.order,town:EMP.town,rackets:EMP.rackets,blackmail:EMP.blackmail,dirt:EMP.dirt,
     camps:EMP.camps.map(c=>({x:c.x,z:c.z,still:c.still,stock:c.stock})),gang:liveGang().map(a=>({name:a.name,kin:!!a.kin}))},
@@ -1832,7 +1885,7 @@ function save(){if(!running)return false;try{localStorage.setItem(SAVE,JSON.stri
 // write the save whenever the tab is hidden or closed, not only on the 30-second timer
 addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(!s)return false;
-  for(const id in s.QS)if(QS[id])Object.assign(QS[id],s.QS[id]);Object.assign(P,{money:s.money,tonics:s.tonics,pelts:s.pelts,day:s.day,bounty:s.bounty||0,honor:s.honor||0});P.stats=s.stats||P.stats;gameHour=s.hour;
+  for(const id in s.QS)if(QS[id])Object.assign(QS[id],s.QS[id]);Object.assign(P,{money:s.money,tonics:s.tonics,pelts:s.pelts,day:s.day,bounty:s.bounty||0,honor:s.honor||0});P.stats=s.stats||P.stats;gameHour=s.hour;LAW.fear=s.lawFear||0;LAW.refuse=LAW.fear>=10;
   s.w.forEach((w,i)=>{if(WEAPONS[i])Object.assign(WEAPONS[i],w);});P.pos.set(s.pos[0],0,s.pos[1]);resolve(P.pos,0.4);
   const hp=s.horse||[s.pos[0]+2,s.pos[1]+2];HORSE.pos.set(hp[0],0,hp[1]);resolve(HORSE.pos,1.1);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);HORSE.q.g.position.copy(HORSE.pos);
   tracked=s.tracked;if(s.hp)P.hp=s.hp;P.crates=s.crates||0;if(s.crimes)crimeLog.push(...s.crimes.slice(0,12));
