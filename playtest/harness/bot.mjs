@@ -217,7 +217,7 @@ export function makeBot(api, { persona, skill, rng, sim }) {
   function planEmpire() {
     const E = api.EMP, gang = api.liveGang().length, c = myCamp();
     if (!c) { if (P.money >= price(55)) { const s = campSpot(); if (s) return { kind: 'makeCamp', ...s, had: 0, cat: 'empire' }; } return questGoal() || { kind: 'hunt', want: 2, cat: 'hunting' }; }
-    if (!c.still && P.money >= price(45)) return { kind: 'campMenu', camp: c, pred: it => /still/.test(it.label) && it.price === 40, tag: 'still', cat: 'empire' };
+    if (!c.still && P.money >= price(30)) return { kind: 'campMenu', camp: c, pred: it => it.label.startsWith('Build a moonshine still'), tag: 'still', cat: 'empire' };
     if (gang < 3 && gang < api.gangCap()) {
       if (rng() < 0.5) { const n = pick(civilians()); if (n) return { kind: 'solicit', npc: n, cat: 'empire' }; }
       if (P.money >= price(30)) return { kind: 'campMenu', camp: c, pred: it => it.label.startsWith('Hire a gun'), tag: 'hire', cat: 'empire' };
@@ -260,14 +260,14 @@ export function makeBot(api, { persona, skill, rng, sim }) {
       const aff = R.aff[suitor];
       if (aff >= 100) { if (!g.ring) { if (P.money >= price(40)) return { kind: 'shop', k: 'store', pred: it => it.label === 'Gold wedding ring', tag: 'ring', cat: 'romance' }; }
         else return { kind: 'court', pick: l => l.startsWith('Propose marriage'), tag: 'propose', cat: 'romance' }; }
-      else if (R.chatDay[suitor] !== P.day) return { kind: 'court', pick: l => l === 'Talk a while', tag: 'chat', cat: 'romance' };
+      else if (P.day * 24 + api.gameHour - (R.chatDay[suitor] ?? -99) >= 4) return { kind: 'court', pick: l => l === 'Talk a while', tag: 'chat', cat: 'romance' };
       else if (g.locket) return { kind: 'court', pick: l => l.startsWith('Give a silver locket'), tag: 'locket', cat: 'romance' };
       else if (g.flowers) return { kind: 'court', pick: l => l.startsWith('Give wildflowers'), tag: 'flowers', cat: 'romance' };
       else if (P.money >= price(15) && aff < 70) return { kind: 'shop', k: 'store', pred: it => it.label.startsWith('Silver locket'), tag: 'locket', cat: 'romance' };
       else if (P.money >= price(3)) return { kind: 'shop', k: 'store', pred: it => it.label.startsWith('Wildflower'), tag: 'flowers', cat: 'romance' };
     }
     if (!myCamp() && P.money >= price(60)) { const s = campSpot(); if (s) return { kind: 'makeCamp', ...s, had: 0, cat: 'empire' }; }
-    if (myCamp() && !myCamp().still && P.money >= price(45)) return { kind: 'campMenu', camp: myCamp(), pred: it => /still/.test(it.label) && it.price === 40, tag: 'still', cat: 'empire' };
+    if (myCamp() && !myCamp().still && P.money >= price(30)) return { kind: 'campMenu', camp: myCamp(), pred: it => it.label.startsWith('Build a moonshine still'), tag: 'still', cat: 'empire' };
     return questGoal() || { kind: 'hunt', want: 2, cat: 'hunting' };
   }
   function plan() {

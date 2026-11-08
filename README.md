@@ -66,9 +66,15 @@ The game needs a **keyboard and mouse**. Click the game to capture the mouse; **
 
 **The outlaw.** Aim at someone and press **E** to rob them; stores and the bank pay more. Anyone who sees a crime reports it, and deputies ride out after you. How hard they push depends on the crime. A brawl or a stolen horse cools off in under a minute, while a bank job takes a couple of minutes of hard riding to shake. Break their line of sight and they give up sooner. Each chase sends only so many deputies. Gun enough of them down and the rest lose their nerve and ride off; kill about ten and Fort Ashby stops sending anyone for a while. A deputy's horse is fair game once he's off it: steal it with **F**, or shoot it and skin it. Small bounties of $30 or less are forgiven overnight, and bigger ones shrink a little each day. You can also pay them off at the telegraph office. Notorious outlaws pay 30% more in every shop.
 
-**The empire builder.** Ride at least 170 m out of town and press **B** to pitch a camp ($50). From the camp ledger you can build a moonshine still and hire guns, and Lou at the Rusty Spur buys your moonshine for cash. Lou also sells dirt you can use for blackmail. Walk into a business with two of your gang beside you to offer them "protection". With three riders at your back, aim at Sheriff Hale and press **E** to raid the town. Press **K** to watch your rank climb to *Don of the Territory*.
+**The empire builder.** To start making moonshine:
+1. Ride at least 170 m out of town to flat ground away from the road, and get off your horse.
+2. Press **B** and choose **Camp with a moonshine still** ($55). It starts with 3 crates and brews about one more every 40 seconds.
+3. Press **E** at the campfire and load the crates onto your horse.
+4. Sell them to Lou at the Rusty Spur for $12 a crate.
 
-**The settler.** Clara Bright teaches school in town, Mateo Ruiz works the livery, and June Harrow ranches with Ma Delgado. Chat with one of them each day and bring gifts from the Mercantile. When they're ready, buy a ring and propose. Marriage brings two of your spouse's kin into your clan, and children follow.
+If you forget the steps, ask Lou at the bar. The camp ledger (**E** at the fire) also upgrades the still and hires guns. Lou also sells dirt you can use for blackmail. Walk into a business with two of your gang beside you to offer them "protection". With three riders at your back, aim at Sheriff Hale and press **E** to raid the town. Press **K** to watch your rank climb to *Don of the Territory*.
+
+**The settler.** Clara Bright teaches school in town, Mateo Ruiz works the livery, and June Harrow ranches with Ma Delgado. Talk to them (**E**, then **Talk a while**: +35, every few in-game hours) and bring gifts from the Mercantile: wildflowers ($3, +40) or a silver locket ($15, +60). Two or three of those reach 100 affection. Then buy a gold ring ($40) and choose **Propose marriage**. You can marry all three. Each wedding brings three of your spouse's kin into your gang (they ride free), raises your gang limit by three, and from the next morning children start arriving.
 
 ### Tips
 

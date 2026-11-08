@@ -882,7 +882,7 @@ const SHOPS={
     {label:'Health tonic',price:6,act:()=>P.tonics++},
     {label:'Wildflower bouquet (a gift)',price:3,act:()=>P.gifts.flowers++},
     {label:'Silver locket (a gift)',price:15,act:()=>P.gifts.locket++},
-    {label:'Gold wedding ring',price:40,act:()=>P.gifts.ring++,off:()=>P.gifts.ring>0||!!ROM.spouse},
+    {label:'Gold wedding ring',price:40,act:()=>P.gifts.ring++,off:()=>P.gifts.ring>0||!unwedSuitors().length},
     {label:'Shotgun shells ×8',price:5,act:()=>WEAPONS[2].reserve+=8,off:()=>!WEAPONS[2].owned},
     {label:'Lever-action rifle',price:60,act:()=>{WEAPONS[1].owned=true;switchWeapon(1);toast('Purchased','Lever-action rifle. Press 2 to equip.');},off:()=>WEAPONS[1].owned},
     {label:'Double-barrel shotgun',price:45,act:()=>{WEAPONS[2].owned=true;switchWeapon(2);toast('Purchased','Double-barrel shotgun. Press 3 to equip.');},off:()=>WEAPONS[2].owned},
@@ -891,6 +891,11 @@ const SHOPS={
     {label:'Bowl of stew (full health)',price:4,act:()=>P.hp=100},
     {label:'Whiskey (full focus)',price:2,act:()=>P.focus=100},
     {label:'Hear the gossip',price:0,act:()=>setTimeout(()=>dialog('Lou the Barkeep',[pick(['Crane keeps a lookout tower at Iron Hollow. Shoot the man up top first.','Deer spook if you ride right at them. Walk in slow.','Wolves don\'t chase as fast as a galloping horse, but they try.','A headshot drops most men in one go. Most.','Folks say a man with a camp and a copper still could get rich out in that desert.'])]),50)},
+    {label:'Ask Lou how moonshining works',price:0,note:'',act:()=>{closeMenu();dialog('Lou the Barkeep',[
+      'You want to make shine? Ride out at least 170 paces from town, somewhere flat and off the road.',
+      'Get down off your horse and press B. Pick "Camp with a moonshine still" for $55, and it\'s brewing before you\'ve unsaddled.',
+      'The still fills about a crate every forty seconds. Walk up to the campfire, press E, and load the crates onto your horse.',
+      'Bring them to me and I pay $12 a crate, no questions. Upgrade the still at the fire and it brews faster.']);}},
     {label:'Buy dirt on a local (for blackmail)',price:8,noMult:true,act:buyDirt},
     {label:`Sell moonshine on the quiet (${P.crates} crates)`,price:0,note:'$12 a crate',off:()=>!P.crates,act:sellShine}]},
   bank:{title:'Coppervale Bank',items:()=>[
@@ -926,7 +931,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
   if(EMP.camps.length&&g.length<2)hints.push('Recruit townsfolk (talk to them in Coppervale) or hire guns at your camp.');
   if(g.length>=2&&Object.keys(EMP.rackets).length<6)hints.push('Walk into a business with two of your gang nearby and offer them “protection”.');
   if(Object.keys(EMP.dirt).length<5)hints.push('Buy dirt on locals from Lou, then blackmail them for daily hush money.');
-  if(!ROM.spouse)hints.push('Court Clara Bright (town), Mateo Ruiz (livery) or June Harrow (Delgado Ranch). Chat daily, bring gifts from the Mercantile, then propose with a ring. Marriage brings kin to your clan, and in time children.');
+  if(unwedSuitors().length)hints.push(`Court ${unwedSuitors().map(id=>NPC[id].name).join(', ')}. Two or three chats or gifts (wildflowers, a silver locket) win a heart; then propose with a gold ring. You can marry more than one, and every wedding brings three kin into your clan.`);
   if(!EMP.town)hints.push('With three or more riders beside you, aim at Sheriff Hale and press E to raid Coppervale and take the jailhouse.');
   sh.innerHTML=`<h2>${esc(EMP.name||'No gang yet')}</h2>
   <div style="font-size:14px;color:#6a4a2a;margin-bottom:8px">Rank: <b>${r.name}</b> · Influence ${r.inf}${r.next?` · ${r.next[0]} needed for ${r.next[1]}`:' · the territory is yours'}</div>
@@ -935,8 +940,8 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
   <div class="q"><b>Camps (${EMP.camps.length}/3)</b><div>${EMP.camps.map(c=>`Near ${campName(c)}: still ${c.still?'level '+c.still:'not built'}, ${c.stock} crates ready`).join('<br>')||'No camps yet.'}</div><div>Moonshine on your horse: ${P.crates} crates</div></div>
   <div class="q"><b>Protection rackets</b><div>${list(EMP.rackets,k=>BUSINESS[k])}</div></div>
   <div class="q"><b>Blackmail</b><div>Paying: ${list(EMP.blackmail,k=>SECRETS[k].who)}</div><div>Secrets you know: ${list(EMP.dirt,k=>`${SECRETS[k].who} (${SECRETS[k].short})`)}</div></div>
-  <div class="q"><b>Family</b><div>${ROM.spouse?`Married to ${NPC[ROM.spouse].name} (day ${ROM.wedDay}). They live at ${EMP.camps.length?'your first camp and help run its still':'the Grand Hotel'}.`:'Unmarried. '+Object.keys(ROM.aff).map(k=>`${NPC[k].name} ${Math.round(ROM.aff[k])}/100`).join(' · ')}</div>
-    <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouse?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
+  <div class="q"><b>Family</b><div>${ROM.spouses.length?`Married to ${ROM.spouses.map(id=>NPC[id].name).join(' and ')}. They live at ${EMP.camps.length?'your first camp and help run its still':'the Grand Hotel'}.`:'Unmarried.'}${unwedSuitors().length?' Courting: '+unwedSuitors().map(k=>`${NPC[k].name} ${Math.round(ROM.aff[k])}/100`).join(' · '):''}</div>
+    <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouses.length?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
   <div class="q"><b>Coppervale</b><div>${EMP.town?'Yours. Your colours fly over the jailhouse, crimes in town go unreported, and the town pays $40 a day. Keep 4+ riders or a posse may take it back.':'Held by Sheriff Hale.'}</div></div>
   <h2 style="font-size:22px;margin-top:16px">Next moves</h2>${hints.map(h=>`<div class="q">${h}</div>`).join('')||'<div class="q">You run the territory. Spend it well.</div>'}
   <p style="font-size:13px;color:#7a5a3a;margin-top:14px">Press K to close.</p>`;}
@@ -1016,7 +1021,7 @@ function mapPOIs(){const L=[];
     desc:`${n.name}${EMP.rackets[n.shop]?' · pays you protection':''}${EMP.blackmail[n.shop]?' · being blackmailed':''}`,small:true,shop:n.shop});
   for(const id in NPC){const n=NPC[id];if(n.dead)continue;
     if(n.marker&&n.marker.visible){const q=Object.keys(QS).find(q=>QS[q].state==='available'&&QDEF[q].giver===id);L.push({x:n.pos.x,z:n.pos.z,kind:'mission',label:n.name,desc:q?`New mission: ${QDEF[q].title}`:'Expecting you'});}
-    else if(n.suitor&&fogAt(n.pos.x,n.pos.z))L.push({x:n.pos.x,z:n.pos.z,kind:'heart',label:n.name,desc:ROM.spouse===id?'Your spouse':`Affection ${Math.round(ROM.aff[id])}/100`,small:true});}
+    else if(n.suitor&&fogAt(n.pos.x,n.pos.z))L.push({x:n.pos.x,z:n.pos.z,kind:'heart',label:n.name,desc:isSpouse(id)?'Your spouse':`Affection ${Math.round(ROM.aff[id])}/100`,small:true});}
   for(const z of DEER_ZONES)if(fogAt(z.x,z.z))L.push({x:z.x,z:z.z,kind:'hunt',label:'Hunting ground',desc:'Deer graze here. Walk in slowly on foot.',small:true});
   return L;}
 function navTarget(){return WP||(tracked&&QS[tracked].state==='active'?stageTarget(tracked):null);}
@@ -1183,7 +1188,7 @@ function hurtNPC(n,punch){
     else{n.dead=true;n.fallT=0;n.deadT=0;}
     commitCrime('murder',n.pos,n);return;}
   hitmarker(false);scare(n);
-  if(n.suitor&&ROM.spouse!==n.id&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
+  if(n.suitor&&!isSpouse(n.id)&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
   if(!n.assaulted){n.assaulted=true;commitCrime(punch?'assault':'assaultArmed',n.pos,n);}
 }
 
@@ -1273,7 +1278,7 @@ function punch(){if(P.mounted||P.punchT>0||dlg||menu||!P.alive)return;P.punchT=0
   sfx.punch();cam.shake=Math.max(cam.shake,0.15);
   if(tgt.kind==='npc'){tgt.hp-=rand(30,40);hurtNPC(tgt,true);}else hurt(tgt,25,false,tgt.pos.clone().add(new V3(0,1.4,0)));}
 const canRob=n=>!!n&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
-function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&ROM.spouse!==n.id&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
+function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&!isSpouse(n.id)&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
   if(n.id==='pruitt'){m=Math.floor(rand(120,220));t='bankRobbery';line='Don\'t shoot! Take the vault money, all of it!';}
   else if(n.shop){m=Math.floor(rand(25,50));t='storeRobbery';line='All right, all right. Here\'s the till.';}
   else{m=Math.floor(rand(3,14));t='robbery';line=pick(['Please, it\'s all I have!','Take it and go!','You\'ll hang for this.']);}
@@ -1312,9 +1317,9 @@ const BUSINESS={store:'Bell\'s Mercantile',saloon:'The Rusty Spur',hotel:'Grand 
 const RANKS=[[0,'Drifter'],[20,'Outlaw'],[50,'Gang Boss'],[100,'Kingpin'],[160,'Don of the Territory']];
 const RAID={active:false,wave:0,next:0};
 const liveGang=()=>EMP.gang.filter(a=>!a.dead);
-const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+(ROM.spouse?2:0);
+const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+ROM.spouses.length*3;
 function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.reduce((s,c)=>s+c.still*10,0)+Object.keys(EMP.rackets).length*10+Object.keys(EMP.blackmail).length*12+(EMP.town?60:0)
-  +(ROM.spouse?15:0)+ROM.children.length*8;}
+  +ROM.spouses.length*15+ROM.children.length*8;}
 function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:RANKS[idx][1],next:RANKS[idx+1]};}
 function dailyLedger(){const r=Object.keys(EMP.rackets).length*10,b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40:0,w=liveGang().filter(a=>!a.kin).length*3;return {r,b,t,w,net:r+b+t-w};}
 function openCustom(title,items){menu={custom:{title,items}};renderMenu();}
@@ -1386,13 +1391,16 @@ function campSpotProblem(p){if(Math.hypot(p.x-SITES.town.x,p.z-SITES.town.z)<170
 function tryMakeCamp(){if(P.mounted){toast('Get down first','Dismount to pitch a camp.');return;}
   if(EMP.camps.length>=3){toast('Three camps already','That\'s as many as one outfit can run.');return;}
   const why=campSpotProblem(P.pos);if(why){toast('Bad spot',why);return;}
-  ensureGangName(()=>openCustom('Pitch a camp',[{label:'Pitch camp here (tents, fire, a ledger)',price:50,noMult:true,act:()=>{closeMenu();makeCamp(P.pos.x+4,P.pos.z+4);}}]));}
+  ensureGangName(()=>openCustom('Pitch a camp',[
+    {label:'Camp with a moonshine still, brewing at once (3 crates ready)',price:55,noMult:true,act:()=>{closeMenu();const c=makeCamp(P.pos.x+4,P.pos.z+4,{still:1,stock:3});
+      toast('Moonshine is brewing','A crate about every 40 seconds. Press E at the fire to load crates, then sell them to Lou at the Rusty Spur.');}},
+    {label:'Camp only (tents, fire, a ledger)',price:30,noMult:true,act:()=>{closeMenu();makeCamp(P.pos.x+4,P.pos.z+4);}}]));}
 function makeCamp(x,z,data,silent){const c={x,z,still:0,stock:0,stockT:0,...(data||{}),x,z};EMP.camps.push(c);
   for(let i=0;i<3;i++){const a=i/3*TAU+0.5;prop('tent',x+Math.cos(a)*8,z+Math.sin(a)*8,a);}
   prop('fire',x,z);prop('crate',x+3.2,z-1.5);prop('barrel',x+3.6,z+1.2);
   const g=new THREE.Group();g.position.set(x-4,groundY(x-4,z+3),z+3);scene.add(g);bx(0.15,5,0.15,'#4a3424',0,2.5,0,g);bx(1.6,1,0.05,EMP.color,0.8,4.4,0,g);
   if(c.still)buildStill(c);
-  if(ROM.spouse&&EMP.camps.length===1)placeSpouse();
+  if(ROM.spouses.length&&EMP.camps.length===1)placeSpouse();
   if(!silent){banner('Camp established',`${EMP.name} has a home`,true);toast('Your camp','Press E at the camp fire to use the ledger: rest, build a still, hire men.');save();}
   return c;}
 function buildStill(c){if(c.stillG)return;const g=new THREE.Group(),sx=c.x+5,sz=c.z-4;g.position.set(sx,groundY(sx,sz),sz);scene.add(g);
@@ -1401,15 +1409,16 @@ function buildStill(c){if(c.stillG)return;const g=new THREE.Group(),sx=c.x+5,sz=
   for(let i=0;i<3;i++)bx(0.5,0.4,0.5,'#7a5634',1.2,0.2+i*0.4,0.3,g);addCol(sx,sz,1);c.stillG=g;}
 function nearestCamp(p){let b=null,bd=1e9;for(const c of EMP.camps){const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<bd){bd=d;b=c;}}return b;}
 function campName(c){let best='the open desert',bd=260;for(const s of SITE_LIST){const d=Math.hypot(c.x-s.x,c.z-s.z);if(d<bd){bd=d;best=s.name;}}return best;}
-function openCampMenu(c){const up=[0,40,80,150][c.still+1]||0;
+function openCampMenu(c){const up=[0,25,60,120][c.still+1]||0;
   openCustom(`${EMP.name} — camp near ${campName(c)}`,[
     {label:'Rest until morning',price:0,note:'free',act:()=>sleepTo(7)},
-    c.still<3?{label:c.still?`Upgrade the still to level ${c.still+1}`:'Build a moonshine still',price:up,noMult:true,act:()=>{c.still++;buildStill(c);toast('Moonshine',`Still level ${c.still}: about ${c.still} crate${c.still>1?'s':''} every 2 hours.`);}}
+    c.still<3?{label:c.still?`Upgrade the still to level ${c.still+1}`:'Build a moonshine still (3 crates ready at once)',price:up,noMult:true,act:()=>{if(!c.still)c.stock+=3;c.still++;buildStill(c);
+      toast('Moonshine',`Still level ${c.still}: about ${c.still} crate${c.still>1?'s':''} every in-game hour (~${Math.round(40/c.still)} real seconds).`);}}
       :{label:'Still is fully upgraded',price:0,note:'level 3',off:()=>true,act:()=>{}},
     {label:`Load moonshine onto your horse (${c.stock} crates)`,price:0,note:c.stock?'':'none ready',off:()=>!c.stock,act:()=>{P.crates+=c.stock;toast('Loaded up',`${c.stock} crates. Lou at the Rusty Spur buys on the quiet.`);c.stock=0;}},
     {label:`Hire a gun (${liveGang().length}/${gangCap()} riders)`,price:25,noMult:true,off:()=>liveGang().length>=gangCap(),act:()=>hireAtCamp(c)},
     {label:EMP.order==='hold'?'Gang is holding position: call them to ride with you':'Gang rides with you: order them to hold here',price:0,note:'G',act:()=>{setOrder(EMP.order==='hold'?'follow':'hold');closeMenu();}}]);}
-function updateCamps(dt){for(const c of EMP.camps)if(c.still){c.stockT+=dt*24/960;const per=2/(c.still*(ROM.spouse&&c===EMP.camps[0]?1.5:1));while(c.stockT>=per){c.stockT-=per;if(c.stock<12)c.stock++;}}}
+function updateCamps(dt){for(const c of EMP.camps)if(c.still){c.stockT+=dt*24/960;const per=1/(c.still*(ROM.spouses.length&&c===EMP.camps[0]?1.5:1));while(c.stockT>=per){c.stockT-=per;if(c.stock<12)c.stock++;}}}
 function sellShine(){closeMenu();const n=P.crates,m=n*12;P.money+=m;P.crates=0;sfx.coin();toast('Lou counts out the money',`${n} crates of moonshine for $${m}.`);
   if(!EMP.town&&Math.random()<0.15)setTimeout(()=>{toast('A deputy saw the deal','Bootlegging is a crime in Coppervale.');commitCrime('bootlegging',P.pos,null,true);},800);}
 function buyDirt(){closeMenu();const left=Object.keys(SECRETS).filter(k=>!EMP.dirt[k]);if(!left.length){dialog('Lou the Barkeep',['I\'ve told you every secret in this town. Even mine.']);return;}
@@ -1447,7 +1456,8 @@ function onNewDay(){const L=dailyLedger();
   if(P.bounty>0&&!WANTED.active){if(P.bounty<=30){toast('Bounty lapsed',`Nobody's chasing $${P.bounty} anymore. Your record is clean.`);P.bounty=0;}
     else{const b=P.bounty;P.bounty=Math.round(P.bounty*0.85);toast('Bounty cooling',`The price on your head drops from $${b} to $${P.bounty}.`);}}
   LAW.fear*=0.5;if(LAW.refuse&&LAW.fear<6){LAW.refuse=false;toast('New deputies in Fort Ashby','The law is willing to ride against you again.');}
-  if(ROM.spouse){placeSpouse();if(P.day-ROM.wedDay>=3&&ROM.children.length<3&&Math.random()<0.45)setTimeout(birthChild,3000);}
+  // from the day after a wedding, each spouse may bring a child at dawn, up to three each
+  if(ROM.spouses.length){placeSpouse();let k=0;for(const id of ROM.spouses)if(P.day-ROM.wedDay>=1&&ROM.children.length+k<3*ROM.spouses.length&&Math.random()<0.6)setTimeout(birthChild,3000+(k++)*4000);}
   if(L.r||L.b||L.t||L.w){P.money=Math.max(0,P.money+L.net);toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
   if(EMP.town&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
   save();}
@@ -1460,33 +1470,40 @@ const SUITORS={
     gift:'Flowers for a man who smells of hay. You have a sense of humour.',locket:'I\'ll wear it under my shirt. Close to the heart, as they say.'},
   june:{blurb:'a hand at the Delgado Ranch',chat:['Ma Delgado says I work like two men. I say I work like one woman.','I can rope a calf at forty feet. Want to see?','This ranch is the first place that ever felt like mine.'],
     gift:'Prettier than anything that grows on this ranch.',locket:'Nobody ever gave me something meant to keep. I\'ll keep it.'}};
-const ROM={aff:{clara:0,mateo:0,june:0},chatDay:{},spouse:null,wedDay:0,children:[]};
-const KIN_FIRST=['Amos','Bette','Clem','Dora','Ezra','Faye','Gus','Hettie'];
-const CHILD_NAMES=['Eliza','Samuel','Hattie','Otto','Nell','Caleb','Lucy','Wren'];
+const ROM={aff:{clara:0,mateo:0,june:0},chatDay:{},spouse:null,spouses:[],wedDay:0,children:[]};
+const KIN_FIRST=['Amos','Bette','Clem','Dora','Ezra','Faye','Gus','Hettie','Ike','Josie','Levi','Maude'];
+const CHILD_NAMES=['Eliza','Samuel','Hattie','Otto','Nell','Caleb','Lucy','Wren','Jonah','Pearl','Tobias','Rose'];
 const family=[];
 const surname=n=>n.name.split(' ').slice(1).join(' ');
+// chatting is allowed every 4 in-game hours (about 2.5 real minutes); chatDay holds the game hour of the last chat
+const hoursNow=()=>P.day*24+gameHour,chatReady=id=>!(hoursNow()-(ROM.chatDay[id]??-99)<4);
+// You can marry more than one of them; each wedding brings kin and widens the clan.
+const isSpouse=id=>ROM.spouses.includes(id);
+const unwedSuitors=()=>Object.keys(SUITORS).filter(id=>!isSpouse(id));
 function courtMenu(n){const a=Math.round(ROM.aff[n.id]);
-  if(ROM.spouse===n.id){openCustom(`${n.name}, your spouse`,[
+  if(isSpouse(n.id)){openCustom(`${n.name}, your spouse`,[
     {label:'Ask how things are at home',price:0,note:'',act:()=>{closeMenu();dialog(n.name,[ROM.children.length?`${ROM.children.join(' and ')} ${ROM.children.length>1?'are':'is'} asleep. Come sit a while.`:'The camp is quiet. I like it when you\'re back.',EMP.town?'Folks in town still call you the boss. I call you late for supper.':'Be careful out there. I mean it.'])}},
     {label:'Rest together until morning (full health)',price:0,note:'free',act:()=>sleepTo(7)}]);return;}
-  if(ROM.spouse){dialog(n.name,['You\'re married. Go home to your family.']);return;}
   openCustom(`${n.name}, ${SUITORS[n.id].blurb} · affection ${a}/100`,[
-    {label:'Talk a while',price:0,note:ROM.chatDay[n.id]===P.day?'again tomorrow':'+affection',off:()=>ROM.chatDay[n.id]===P.day,act:()=>court(n,'chat')},
-    {label:`Give wildflowers (you have ${P.gifts.flowers})`,price:0,note:'+12',off:()=>!P.gifts.flowers,act:()=>court(n,'flowers')},
-    {label:`Give a silver locket (you have ${P.gifts.locket})`,price:0,note:'+30',off:()=>!P.gifts.locket,act:()=>court(n,'locket')},
+    {label:'Talk a while',price:0,note:chatReady(n.id)?'+35':`again in ${Math.ceil(4-(hoursNow()-ROM.chatDay[n.id]))} h`,off:()=>!chatReady(n.id),act:()=>court(n,'chat')},
+    {label:`Give wildflowers (you have ${P.gifts.flowers})`,price:0,note:'+40',off:()=>!P.gifts.flowers,act:()=>court(n,'flowers')},
+    {label:`Give a silver locket (you have ${P.gifts.locket})`,price:0,note:'+60',off:()=>!P.gifts.locket,act:()=>court(n,'locket')},
     {label:a<100?'Propose marriage (they need to love you first)':P.gifts.ring?'Propose marriage':'Propose marriage (buy a ring at the Mercantile)',price:0,note:a>=100?'♥':'',off:()=>a<100||!P.gifts.ring,act:()=>wedding(n)}]);}
 function court(n,kind){closeMenu();const mult=P.honor<=-50?0.5:1,S=SUITORS[n.id];let g,line;
-  if(kind==='chat'){ROM.chatDay[n.id]=P.day;g=8;line=pick(S.chat);}else if(kind==='flowers'){P.gifts.flowers--;g=12;line=S.gift;}else{P.gifts.locket--;g=30;line=S.locket;}
+  if(kind==='chat'){ROM.chatDay[n.id]=hoursNow();g=35;line=pick(S.chat);}else if(kind==='flowers'){P.gifts.flowers--;g=40;line=S.gift;}else{P.gifts.locket--;g=60;line=S.locket;}
   ROM.aff[n.id]=Math.min(100,ROM.aff[n.id]+g*mult);const lines=[line];if(ROM.aff[n.id]>=100)lines.push('I think I could spend my life with you, if you asked me properly.');
   dialog(n.name,lines);if(mult<1)toast('Your reputation precedes you','A notorious outlaw wins hearts at half the pace.');save();}
 function homeSpot(){const c=EMP.camps[0];return c?{x:c.x-3,z:c.z+4,camp:c}:{x:46,z:-7.4,camp:null};}
-function placeSpouse(){const n=NPC[ROM.spouse];if(!n)return;const h=homeSpot();n.wander=false;n.target=null;n.pos.set(h.x,0,h.z);n.baseYaw=0;n.koT=0;n.fallT=0;n.h.g.rotation.x=0;
-  n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);family.forEach((k,i)=>{k.pos.set(h.x+rand(-3,3),0,h.z+rand(-3,3));});}
+// every spouse lives at home (your first camp, or the hotel), standing a few steps apart
+function placeSpouse(){const h=homeSpot();
+  ROM.spouses.forEach((id,i)=>{const n=NPC[id];if(!n)return;const a=i*2.1;n.wander=false;n.target=null;n.pos.set(h.x+Math.cos(a)*2.5*i,0,h.z+Math.sin(a)*2.5*i);n.baseYaw=0;n.koT=0;n.fallT=0;
+    n.h.g.rotation.x=0;n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);});
+  family.forEach(k=>{k.pos.set(h.x+rand(-4,4),0,h.z+rand(-4,4));});}
 function wedding(n){closeMenu();P.gifts.ring--;const f=$('fade');f.textContent='';f.style.opacity=1;
-  setTimeout(()=>{ROM.spouse=n.id;ROM.wedDay=P.day;P.honor=clamp(P.honor+10,-100,100);placeSpouse();f.style.opacity=0;sfx.sting();
-    banner('Wed at the Coppervale church',`You married ${n.name}`);
-    ensureGangName(()=>{const sn=surname(n);for(let i=0;i<2;i++){const a=spawnAlly(P.pos.x+rand(-5,5),P.pos.z+rand(-5,5),{name:`${KIN_FIRST[(ROM.wedDay+i*3)%KIN_FIRST.length]} ${sn}`});a.kin=true;}
-      toast('Family joins the clan',`Two of ${n.name.split(' ')[0]}'s kin ride with you now. Kin take no wages.`);save();});},1400);}
+  setTimeout(()=>{ROM.spouses.push(n.id);ROM.spouse=ROM.spouse||n.id;ROM.wedDay=P.day;P.honor=clamp(P.honor+10,-100,100);placeSpouse();f.style.opacity=0;sfx.sting();
+    banner('Wed at the Coppervale church',ROM.spouses.length>1?`You married ${n.name}. Your household grows to ${ROM.spouses.length}.`:`You married ${n.name}`);
+    ensureGangName(()=>{const sn=surname(n);for(let i=0;i<3;i++){const a=spawnAlly(P.pos.x+rand(-5,5),P.pos.z+rand(-5,5),{name:`${KIN_FIRST[(ROM.spouses.length*3+i)%KIN_FIRST.length]} ${sn}`});a.kin=true;}
+      toast('Family joins the clan',`Three of ${n.name.split(' ')[0]}'s kin ride with you now. Kin take no wages.`);save();});},1400);}
 function spawnChild(name){const h=makeHuman({shirt:pick(['#c8b898','#8a6a8a','#6a8a9a','#b08060']),pants:'#4a4038',hat:'#8a7050',skin:pick(SKINS),scale:0.55});
   h.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(h.g);const s=homeSpot(),k={name,h,pos:new V3(s.x+rand(-3,3),0,s.z+rand(-3,3)),yaw:0,t:0,target:null,speed:0};family.push(k);return k;}
 function birthChild(){const name=CHILD_NAMES.find(c=>!ROM.children.includes(c))||'Little One';ROM.children.push(name);spawnChild(name);
@@ -1881,7 +1898,7 @@ function save(){if(!running)return false;try{localStorage.setItem(SAVE,JSON.stri
   w:WEAPONS.map(w=>({ammo:w.ammo,reserve:w.reserve,owned:w.owned})),pos:[P.pos.x,P.pos.z],horse:[HORSE.pos.x,HORSE.pos.z],tracked,hp:Math.max(30,P.hp),crates:P.crates,crimes:crimeLog,
   emp:{name:EMP.name,color:EMP.color,order:EMP.order,town:EMP.town,rackets:EMP.rackets,blackmail:EMP.blackmail,dirt:EMP.dirt,
     camps:EMP.camps.map(c=>({x:c.x,z:c.z,still:c.still,stock:c.stock})),gang:liveGang().map(a=>({name:a.name,kin:!!a.kin}))},
-  rom:{aff:ROM.aff,chatDay:ROM.chatDay,spouse:ROM.spouse,wedDay:ROM.wedDay,children:ROM.children},gifts:P.gifts,fog:fogEncode(),savedAt:Date.now()}));return true;}catch(e){return false;}}
+  rom:{aff:ROM.aff,chatDay:ROM.chatDay,spouse:ROM.spouse,spouses:ROM.spouses,wedDay:ROM.wedDay,children:ROM.children},gifts:P.gifts,fog:fogEncode(),savedAt:Date.now()}));return true;}catch(e){return false;}}
 // write the save whenever the tab is hidden or closed, not only on the 30-second timer
 addEventListener('pagehide',()=>save());document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(!s)return false;
@@ -1896,7 +1913,8 @@ function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(!s)ret
   if(s.gifts)Object.assign(P.gifts,s.gifts);
   if(s.fog)fogDecode(s.fog);else revealAll();
   if(s.rom){Object.assign(ROM.aff,s.rom.aff||{});Object.assign(ROM.chatDay,s.rom.chatDay||{});ROM.spouse=s.rom.spouse||null;ROM.wedDay=s.rom.wedDay||0;
-    (s.rom.children||[]).forEach(c=>{ROM.children.push(c);spawnChild(c);});if(ROM.spouse)placeSpouse();}
+    ROM.spouses.push(...(s.rom.spouses||(s.rom.spouse?[s.rom.spouse]:[])));
+    (s.rom.children||[]).forEach(c=>{ROM.children.push(c);spawnChild(c);});if(ROM.spouses.length)placeSpouse();}
   EMP.rankIdx=rankInfo().idx;
   for(const id in QS)if(QS[id].state==='active'){const st=curStage(id);if(st.resume!==undefined){QS[id].stage=st.resume;QS[id].count=0;}curStage(id).start?.();}
   if(QS.coach.state==='active'&&QS.coach.stage>=2){pickups[0].active=false;}
