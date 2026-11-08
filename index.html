@@ -2317,9 +2317,14 @@ $('journal').addEventListener('click',closeModal);$('empire').addEventListener('
 $('bigmap').addEventListener('mousedown',e=>{if(e.target===$('bigmap'))closeModal();});
 $('btnResume').addEventListener('click',()=>{paused=false;$('pause').hidden=true;lockPointer();});
 // export writes the whole save as a .json file; import checks it, stores it, and reloads into it
+// inside the Claude artifact viewer, files go through its download capability; elsewhere a normal download link
+let DL=null;try{window.claude?.use?.('downloads').then(d=>{DL=d;}).catch(()=>{});}catch(e){}
 $('btnExport').addEventListener('click',()=>{if(!save()){$('saveNote').textContent='Saving is blocked in this browser.';return;}
+  const fname=`dust-and-iron-day${P.day}-${new Date().toISOString().slice(0,10)}.json`;
+  if(DL){DL.save({filename:fname,data:localStorage.getItem(SAVE)}).then(()=>{$('saveNote').textContent='Save file downloaded.';})
+    .catch(e=>{$('saveNote').textContent=e&&e.code==='declined'?'Download cancelled.':'This page cannot download files. Play at advaithsajith.github.io/dust-and-iron to export your save.';});return;}
   try{const blob=new Blob([localStorage.getItem(SAVE)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`dust-and-iron-day${P.day}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
+    a.download=fname;document.body.appendChild(a);a.click();a.remove();
     $('saveNote').textContent='Save file downloaded. If nothing appeared, this page blocks downloads: play at advaithsajith.github.io/dust-and-iron to export.';}
   catch(e){$('saveNote').textContent='This page blocks downloads. Play at advaithsajith.github.io/dust-and-iron to export your save.';}});
 $('fileImport').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const s=JSON.parse(t);if(!s.QS||!s.pos)throw 0;
