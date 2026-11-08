@@ -28,7 +28,8 @@ It's 1889 in the Arroyo Territory. You arrive in **Coppervale**, a copper town t
 - **Crime and the law:** robbery, horse theft, bounties, witnesses, and deputies on horseback.
 - **An empire to build:** a gang that rides with you, camps, moonshine, protection rackets, blackmail, and a raid that takes the town.
 - **A life to live:** courtship, marriage, children, and in-laws who join your clan.
-- **A living frontier:** a day–night cycle, deer and wolves, tumbleweeds, and a 1.6 km map with mesas and canyons.
+- **A late game:** a homestead to build and defend, bounties, stagecoach robberies, a gold mine, legendary animals, a rival gang, a U.S. Marshal, and a church whose laws grow the town.
+- **A living frontier:** a day–night cycle, deer and wolves, tumbleweeds, cattle, a ghost town, and a 1.6 km map with mesas and canyons.
 
 ---
 
@@ -76,11 +77,37 @@ If you forget the steps, ask Lou at the bar. The camp ledger (**E** at the fire)
 
 **The settler.** Clara Bright teaches school in town, Mateo Ruiz works the livery, and June Harrow ranches with Ma Delgado. Talk to them (**E**, then **Talk a while**: +35, every few in-game hours) and bring gifts from the Mercantile: wildflowers ($3, +40) or a silver locket ($15, +60). Two or three of those reach 100 affection. Then buy a gold ring ($40) and choose **Propose marriage**. You can marry all three. Each wedding brings three of your spouse's kin into your gang (they ride free), raises your gang limit by three, and from the next morning children start arriving.
 
+### After the story: running the territory
+
+Once Iron Hollow falls, the game keeps going.
+
+- **The homestead.** Your first camp becomes your home. Open its ledger (**E** at the fire) and choose **Build on the homestead**: a log cabin, a ranch house, a barn with cattle, a bunkhouse, a workshop, a smokehouse, a watchtower with a rifleman, and a palisade wall. The farm, the cattle and daily cattle drives pay; the tower, the wall and riders left on guard (**G**) keep raiders out.
+- **More ways to earn.** Bounties from the board beside the jailhouse, stagecoaches with strongboxes on the roads, the Lucky Strike gold mine (buy the claim at the bank, then dig), two legendary animals with valuable pelts, and the Western Trading Post out west, which buys moonshine and hides away from the law.
+- **Better gear.** Hank the Outfitter sells a duster that soaks up damage, a saddle that halves gallop stamina, and gun upgrades.
+- **Rivals.** The Vance Syndicate moves into Dry Creek and Iron Hollow. Wipe out a hideout to seize it as an outpost ($40 a day). They raid your homestead now and then, so build defenses.
+- **Kill the sheriff and the law sends a U.S. Marshal.** Beat him and the law never comes back.
+- **Children grow up.** After three days your children ride with the clan for free.
+
+### The church
+
+Talk to **Reverend Amos Pike** at the church door, east of the main street. Endow the church for $400, or lean on him with three of your gang (free if you already own the town). Then pass laws from the pulpit:
+
+| Law | What it does |
+|---|---|
+| **Be fruitful and multiply** | New families settle in town every morning, your spouses bear up to five children each, and children grow up in two days |
+| **A day's labour for the homestead** | Homestead buildings cost 30% less, and the town's labour pays $3 a head each day (up to $60) |
+| **The tithe** | $2 a day for every townsperson |
+| **Expand Coppervale** | Two stages of three new buildings each, with four new families each time |
+| **Blessed spirits** | Lou pays $17 a crate for moonshine instead of $12 |
+| **Absolution** | Confess once a day to wipe up to $200 of bounty |
+| **The flock takes up arms** | Once a day, up to two townsfolk join your gang for free |
+
 ### Tips
 
 - **Never ride out broke and empty.** If you run out of bullets and money at the same time, you can't hunt or fight your way back. Keep a box of cartridges in reserve.
 - **Your horse is your escape.** A gallop outruns wolves and outlaws on foot. Whistle with **H** if you've left it behind.
 - **The game saves itself** every 20 seconds and whenever you pause or close the tab. Choose **Continue** on the title screen to pick up where you left off.
+- **Keep a copy of your save.** Saves live in your browser, separately for each site you play on. Pause and choose **Export save to a file** to download a backup, and **Import a save file** to load it again, on this site or another one. Starting a new game keeps the old save as a backup instead of deleting it.
 
 ---
 
