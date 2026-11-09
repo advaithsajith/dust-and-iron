@@ -23,7 +23,7 @@ const g0 = api.liveGang().length; for (let i = g0; i < 16; i++) { api.ROM.spouse
 for (let i = 0; i < 16 && api.liveGang().length < api.gangCap(); i++) { api.openCampMenu(camp); api.buy(pickItem('Hire a gun')); flush(); }
 ok(api.liveGang().length >= 10, `gang of ${api.liveGang().length} (cap ${api.gangCap()})`);
 // the menu
-api.openJobs(); ok(api.menu?.custom?.title.startsWith('Gang work'), api.menu.custom.title + ` Â· ${items().length} rows`);
+api.openJobs(); ok(api.menu?.custom?.title.startsWith('Gang work'), api.menu.custom.title + ` · ${items().length} rows`);
 const plan = { runner: 1, bounty: 2, hunter: 1, robber: 1, racket: 1, guard: 2, foreman: 2, recruit: 1 };
 for (const [k, n] of Object.entries(plan)) for (let i = 0; i < n; i++) { api.openJob(k); api.buy(0); }
 api.closeMenu();
@@ -37,7 +37,7 @@ P.pos.set(0, 0, 0); camp.stock = 12;
 const m0 = P.money, r0 = Object.keys(EMP.rackets).length, b0 = P.bounty;
 for (let h = 0; h < 24; h++) step(40);
 ok(camp.stock <= 2, `runners emptied the camp (stock ${camp.stock})`);
-const today = api.WORK.today; ok(true, 'earned in 24 h: ' + Object.entries(today).map(([k, v]) => `${k} $${v}`).join(', ') + ` Â· money ${m0} -> ${P.money}`);
+const today = api.WORK.today; ok(true, 'earned in 24 h: ' + Object.entries(today).map(([k, v]) => `${k} $${v}`).join(', ') + ` · money ${m0} -> ${P.money}`);
 ok((today.runner || 0) > 0 && (today.hunter || 0) > 0, 'runner and hunter earned');
 ok(Object.keys(EMP.rackets).length > r0, `racketeer added rackets: ${r0} -> ${Object.keys(EMP.rackets).length}`);
 ok(api.liveGang().length >= 10, `recruiter kept the gang growing: ${api.liveGang().length}`);

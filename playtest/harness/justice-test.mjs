@@ -38,7 +38,7 @@ api.hogtie(tgt); ok(P.prisoner && !api.outlaws.includes(tgt), `prisoner taken: $
 api.EMP.town = true; P.pos.set(g.x + 2, 0, g.z + 5); step(0.3);
 const fi = api.findInteract(); ok(fi && fi.label.startsWith('Hang'), `gallows prompt: "${fi?.label}"`);
 const m1 = P.money; fi.act(); ok(api.HANG.active && !P.prisoner, 'hanging started');
-step(18); ok(api.HANG.dropped && P.money > m1, `trap dropped Â· +$${P.money - m1} Â· hanged ${api.LATE.hanged}`);
+step(18); ok(api.HANG.dropped && P.money > m1, `trap dropped · +$${P.money - m1} · hanged ${api.LATE.hanged}`);
 const watchers = api.HANG.crowd.filter(n => api.d2(n.pos, g) < 20).length; ok(watchers >= 3, `${watchers} townsfolk gathered to watch`);
 step(90); ok(!api.HANG.active, 'gallows cleared afterwards');
 // the town's own hanging and a pardon

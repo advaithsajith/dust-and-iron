@@ -112,6 +112,20 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### Side quests
+
+Eight side quests are open from the start. Look for the gold **!** over the person offering one, and track them in the journal (**J**).
+
+| Quest | Who asks | What happens |
+|---|---|---|
+| The Widow's Ring | Martha Hendricks, Coppervale | Road agents beyond Sunset Arch took her husband's ring |
+| Bad Medicine | Doc Hargrove | A quack in Red Rock is poisoning miners with his "elixir" |
+| Little Wanderers | Clara Bright | Two schoolchildren went to Dry Bones on a dare, and the wolves are out |
+| The Card Sharp | Lou at the Rusty Spur | Catch Gentleman Jack Bly cheating, then settle it in the street |
+| Rustled | Eli Barlow, Delgado Ranch | Track the rustlers who drove off Ma Delgado's steers |
+| The Prospector's Map | Tom Whitlock, Trading Post | Follow three stone cairns to a lost cache of Spanish gold |
+| The Ghosts of Dry Bones | Hazel Moon | Lights in the ghost town after dark (wait there with **Z**) |
+| The Kansas Kid | Nora Quinn | A telegram says a famous gunman rides down the north road today |
 ### War: conquering the territory's towns
 
 Three towns lie beyond Coppervale: **Red Rock** (a copper boom town on the east road, held by Copper Company guards), **San Lázaro** (an adobe mission town to the west, guarded by rurales) and **Fort Ashby** (the federal fort in the south-east, behind a log palisade).

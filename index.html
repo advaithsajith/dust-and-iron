@@ -790,9 +790,9 @@ function spawnPeople(){
   spawnNPC('ma','Ma Delgado',SITES.ranch.x,SITES.ranch.z+3.6,{shirt:'#8a4a5a',dress:'#5a3a4a',hat:'#c9b58a',hair:'#aaa',skin:'#a8714f',
     lines:['Wipe your boots before you come up on my porch.','My boys will be back with the herd by the first frost.']});
   spawnNPC(null,'Otis Bell',-10,-7.6,{shirt:'#d6c9a6',vest:'#6a4a2a',pants:'#3d3a35',bowler:true,hat:'#3a2a1e',beard:'#6a4a2a',shop:'store'});
-  spawnNPC(null,'Lou the Barkeep',-34,-7.6,{shirt:'#e0d8c8',vest:'#7a2a1a',pants:'#2e2a26',bowler:true,hat:'#222',beard:'#3a2010',shop:'saloon'});
+  spawnNPC('lou','Lou the Barkeep',-34,-7.6,{shirt:'#e0d8c8',vest:'#7a2a1a',pants:'#2e2a26',bowler:true,hat:'#222',beard:'#3a2010',shop:'saloon'});
   spawnNPC(null,'Mrs. Winslow',40,-7.6,{shirt:'#4a5a7a',dress:'#3a4a6a',hat:'#7a6a8a',hair:'#6a3a1a',skin:'#d9a585',shop:'hotel'});
-  spawnNPC(null,'Doc Hargrove',-28,7.6,{shirt:'#ddd',coat:'#2a2a2a',pants:'#2a2a2a',bowler:true,hat:'#222',beard:'#bbb',shop:'doctor',yaw:Math.PI});
+  spawnNPC('doc','Doc Hargrove',-28,7.6,{shirt:'#ddd',coat:'#2a2a2a',pants:'#2a2a2a',bowler:true,hat:'#222',beard:'#bbb',shop:'doctor',yaw:Math.PI});
   const outfits=[{shirt:'#7a6a50',pants:'#4a4038'},{shirt:'#a05a3a',pants:'#3a3530',vest:'#3a2a1a'},{shirt:'#5a6a7a',pants:'#3a3a3a',coat:'#5a4535'},
     {shirt:'#c8b898',dress:'#7a5a3a',hair:'#3a2010'},{shirt:'#8a8a6a',pants:'#5a4a3a',beard:'#5a3a20'},{shirt:'#6a3a3a',dress:'#4a2a3a',hair:'#1a1008'}];
   OUTFITS=outfits;for(let i=0;i<16;i++)spawnCivilian(rand(-70,60),rand(-6,6));for(let i=0;i<6;i++)spawnKid(rand(-60,50),rand(-5,5));for(let i=0;i<2;i++)spawnPeddler(rand(-50,40),rand(-4,4));
@@ -896,8 +896,60 @@ const QDEF={
     {obj:q=>`Kill the wolf pack (${animals.filter(a=>a.tag==='ridge'&&a.dead).length}/5)`,resume:0,target:()=>{const w=animals.find(a=>a.tag==='ridge'&&!a.dead);return w?w.pos:SITES.ridge;},
       on:{kill:(q,d)=>d.tag==='ridge'&&animals.filter(a=>a.tag==='ridge'&&a.dead).length>=5},doneIf:()=>animals.filter(a=>a.tag==='ridge'&&a.dead).length>=5},
     {obj:'Tell Ma Delgado the ridge is clear',talk:'ma',lines:['No more howling at night. Bless you.','Forty dollars. Don\'t argue, take it.']}]},
+  // ---- side quests: available from the start, each with its own giver ----
+  ring:{title:'The Widow\'s Ring',giver:'widow',reward:60,side:true,offer:['You have a kind face. Kinder than most who wear a gun.','Road agents stopped our wagon by Sunset Arch. They shot my Walter and took his wedding ring.',
+      'They\'re still camped out there, bold as brass. I want that ring back. It\'s all I have of him.'],stages:[
+    {obj:'Find the road agents camped beyond Sunset Arch',target:()=>sqAt('ring'),doneIf:()=>sqNear('ring',35),start:()=>sqCamp('ring','sq_ring',4,{bandana:'#3a3a3a'})},
+    {obj:()=>`Kill the road agents (${deadCount('sq_ring')}/4)`,resume:0,target:()=>liveCentroid('sq_ring',sqAt('ring')),on:{kill:(q,d)=>d.tag==='sq_ring'&&deadCount('sq_ring')>=4},doneIf:()=>deadCount('sq_ring')>=4},
+    {obj:'Search the camp for Walter Hendricks\'s ring',start:()=>sqPickup('ring'),target:()=>pickups.find(p=>p.id==='ring').pos,on:{pickup:(q,d)=>d==='ring'}},
+    {obj:'Bring the ring to Martha Hendricks in Coppervale',talk:'widow',lines:['Oh! Oh, Walter\'s ring.','I can\'t pay you what it\'s worth. Take this, and know you did a good thing today.'],end:()=>{P.honor=clamp((P.honor||0)+10,-100,100);}}]},
+  quack:{title:'Bad Medicine',giver:'doc',reward:75,side:true,offer:['Three miners from Red Rock died in my surgery this week. Same symptoms. Same little brown bottle.',
+      '"Professor Quackenbush\'s Miracle Elixir." It\'s lamp oil and arsenic. He sells it off a wagon in Red Rock.','Put a stop to him. However you see fit.'],stages:[
+    {obj:'Ride east to Red Rock',reach:'redrock'},
+    {obj:'Confront Professor Quackenbush by his wagon',talk:'quack',lines:['Step right up, friend! One bottle cures gout, grief and gunshot wounds!','...The doctor sent you? That old fraud. Boys! BOYS!'],
+      end:()=>{sqHide('quack');const t=TOWNS.redrock;for(let i=0;i<2;i++){const e=spawnOutlaw(t.x+12+rand(-4,4),t.z+6+rand(-3,3),'sq_quack',{shirt:'#7a5a3a',bandana:'#5a2a1a'});e.alerted=true;}
+        const b=spawnOutlaw(t.x+14,t.z+8,'sq_quack',{name:'Professor Quackenbush',hp:140,coat:'#4a2a4a',shirt:'#e8e0d0',bowler:true,hat:'#222',bandana:null,boss:false});b.alerted=true;}},
+    {obj:()=>`Deal with the Professor and his men (${deadCount('sq_quack')}/3)`,resume:1,target:()=>liveCentroid('sq_quack',TOWNS.redrock),on:{kill:(q,d)=>d.tag==='sq_quack'&&deadCount('sq_quack')>=3},doneIf:()=>deadCount('sq_quack')>=3},
+    {obj:'Tell Doc Hargrove the Professor is finished',talk:'doc',lines:['Good. That poison won\'t kill anybody else.','Seventy-five dollars, and free patching up whenever you need it this week.'],end:()=>{P.tonics+=3;toast('Doc\'s thanks','Three free health tonics.');}}]},
+  lostkids:{title:'Little Wanderers',giver:'clara',reward:50,side:true,offer:['Tommy Fenn and his sister didn\'t come to school today. Their mother is frantic.',
+      'They were dared to go to Dry Bones, the ghost town south of here. There are wolves in those hills.','Please. Bring them home.'],stages:[
+    {obj:'Search the ghost town of Dry Bones',target:()=>sqAt('lostkids'),doneIf:()=>sqNear('lostkids',30),start:()=>{sqPlaceKid();sqWolves();}},
+    {obj:()=>`Drive off the wolves (${animals.filter(a=>a.tag==='sq_kids'&&a.dead).length}/4)`,resume:0,target:()=>{const w=animals.find(a=>a.tag==='sq_kids'&&!a.dead);return w?w.pos:sqAt('lostkids');},
+      on:{kill:(q,d)=>d.tag==='sq_kids'&&animals.filter(a=>a.tag==='sq_kids'&&a.dead).length>=4},doneIf:()=>animals.filter(a=>a.tag==='sq_kids'&&a.dead).length>=4},
+    {obj:'Find Tommy Fenn hiding in Dry Bones',talk:'lostkid',lines:['Are... are the wolves gone? Mister, I wasn\'t scared. Lucy was scared.','We\'ll go straight home. Promise.'],end:()=>sqKidHome()},
+    {obj:'Tell Clara Bright the children are safe',talk:'clara',lines:['They\'re home! Their mother hasn\'t stopped crying, the happy kind.','You have a good heart under all that dust.'],end:()=>{ROM.aff.clara=Math.min(100,(ROM.aff.clara||0)+30);P.honor=clamp((P.honor||0)+8,-100,100);}}]},
+  sharp:{title:'The Card Sharp',giver:'lou',reward:70,side:true,offer:['See the fella in the fancy waistcoat out front? Gentleman Jack Bly. He\'s cleaned out half my regulars.',
+      'Nobody wins that much honest. Sit down for a hand, catch him at it, and run him out of my saloon.'],stages:[
+    {obj:'Play a hand with Gentleman Jack outside the Rusty Spur',talk:'sharp',lines:['A new face! Five-card draw, friend. Ante\'s a dollar.','...Three aces. Again. Fancy that.','You saw that card, didn\'t you? Well, then. Let\'s settle it in the street.'],
+      end:()=>{sqHide('sharp');const e=spawnOutlaw(-24,-2,'sq_sharp',{name:'Gentleman Jack Bly',hp:160,acc:1.5,coat:'#2a1a3a',vest:'#8a1a2a',shirt:'#eee',hat:'#111',bandana:null});e.alerted=true;e.shootT=1.2;banner('A duel','Gentleman Jack Bly draws',false);}},
+    {obj:'Outdraw Gentleman Jack Bly',resume:0,target:()=>liveCentroid('sq_sharp',{x:-24,z:-2}),on:{kill:(q,d)=>d.tag==='sq_sharp'},doneIf:()=>deadCount('sq_sharp')>=1},
+    {obj:'Tell Lou the card sharp is gone',talk:'lou',lines:['Ha! The whole saloon heard it. Drinks are on the house for a week.','Here\'s seventy, out of Jack\'s own winnings.']}]},
+  rustlers:{title:'Rustled',giver:'eli',reward:80,side:true,offer:['Somebody cut the fence last night and drove off a dozen of Ma\'s best steers.','I tracked them north-east, toward the badlands. Five riders, maybe six.',
+      'Ma can\'t lose that herd. Help me get it back?'],stages:[
+    {obj:'Follow the rustlers\' trail to their hideout',target:()=>sqAt('rustlers'),doneIf:()=>sqNear('rustlers',40),start:()=>{sqCamp('rustlers','sq_rust',5,{bandana:'#6a4a1a'});sqCows();}},
+    {obj:()=>`Kill the rustlers (${deadCount('sq_rust')}/5)`,resume:0,target:()=>liveCentroid('sq_rust',sqAt('rustlers')),on:{kill:(q,d)=>d.tag==='sq_rust'&&deadCount('sq_rust')>=5},doneIf:()=>deadCount('sq_rust')>=5},
+    {obj:'Tell Eli Barlow the herd is safe',talk:'eli',lines:['Every steer, counted twice. Ma\'s going to cry, and then deny it.','Eighty dollars. And you\'re welcome at our table any time.'],end:()=>{ROM.aff.eli=Math.min(100,(ROM.aff.eli||0)+30);}}]},
+  cairns:{title:'The Prospector\'s Map',giver:'tom',reward:120,side:true,offer:['Old Jebediah died last winter. Left me this map and a lot of nonsense about a lost cache.',
+      'Three stone cairns, it says, then dig at the last. I\'m too old for treasure hunting. Half of whatever you find is yours. Call it all yours, actually.'],stages:[
+    {obj:'Find the first stone cairn',target:()=>sqAt('cairn1'),doneIf:()=>sqNear('cairn1',12)},
+    {obj:'Find the second stone cairn',target:()=>sqAt('cairn2'),doneIf:()=>sqNear('cairn2',12)},
+    {obj:'Find the last cairn and dig up the cache',start:()=>sqPickup('cairn3'),target:()=>pickups.find(p=>p.id==='cache').pos,on:{pickup:(q,d)=>d==='cache'}},
+    {obj:'Show Tom Whitlock what you found',talk:'tom',lines:['Gold coins! Spanish, by the look. Old Jeb wasn\'t crazy after all.','Keep it. Every bit. I\'ve got my traps and my quiet.'],end:()=>{const g=Math.round(rand(150,250));P.money+=g;toast('Spanish gold',`+$${g} in old coins.`);}}]},
+  ghosts:{title:'The Ghosts of Dry Bones',giver:'hazel',reward:90,side:true,offer:['The cards keep turning up the Moon and the Tower. Lights in Dry Bones at night. Voices.',
+      'The ghost town has ghosts, people say. I say ghosts don\'t leave boot prints.','Go after dark, between eight at night and four in the morning. See what haunts it.'],stages:[
+    {obj:'Wait in Dry Bones after dark (8 PM to 4 AM)',target:()=>sqAt('ghosts'),doneIf:()=>sqNear('ghosts',40)&&(gameHour>=20||gameHour<4)},
+    {obj:()=>`The "ghosts" are bandits in bedsheets (${deadCount('sq_ghost')}/4)`,resume:0,start:()=>{if(!outlaws.some(e=>e.tag==='sq_ghost'&&!e.dead)){const s=sqAt('ghosts');for(let i=0;i<4;i++){const e=spawnOutlaw(s.x+rand(-14,14),s.z+rand(-14,14),'sq_ghost',{shirt:'#e8e4dc',coat:'#dcd8d0',hat:'#e8e4dc',bandana:'#e8e4dc',vest:null,name:'Ghost'});e.alerted=true;}toast('Boo','White shapes come out of the empty houses, guns first.');}},
+      target:()=>liveCentroid('sq_ghost',sqAt('ghosts')),on:{kill:(q,d)=>d.tag==='sq_ghost'&&deadCount('sq_ghost')>=4},doneIf:()=>deadCount('sq_ghost')>=4},
+    {obj:'Tell Hazel Moon what haunted Dry Bones',talk:'hazel',lines:['Bandits in bedsheets. Ha! The cards have a sense of humour after all.','They were using the old saloon to hide stolen silver. Ninety dollars of it is yours.'],end:()=>{ROM.aff.hazel=Math.min(100,(ROM.aff.hazel||0)+30);}}]},
+  kansas:{title:'The Kansas Kid',giver:'nora',reward:150,side:true,offer:['A telegram came over the wire. Fort Ashby says the Kansas Kid is riding down the north road today.',
+      'Eleven men dead in four states. The reward is a hundred and fifty dollars.','I\'m not supposed to tell anyone. But I thought you\'d want to know.'],stages:[
+    {obj:'Wait for the Kansas Kid at the bend in the north road',target:()=>sqAt('kansas'),doneIf:()=>sqNear('kansas',22)},
+    {obj:'Kill the Kansas Kid and his riders',resume:0,start:()=>{if(!outlaws.some(e=>e.tag==='sq_kansas'&&!e.dead)){const s=sqAt('kansas');for(let i=0;i<3;i++){const e=spawnOutlaw(s.x+rand(-30,30),s.z-45+rand(-6,6),'sq_kansas',{bandana:'#2a4a7a'});e.alerted=true;}
+        const k=spawnOutlaw(s.x,s.z-50,'sq_kansas',{name:'The Kansas Kid',hp:260,acc:1.6,coat:'#6a4a2a',hat:'#d8c8a0',bandana:'#2a4a7a',scale:0.95});k.alerted=true;k.kid2=true;banner('The Kansas Kid','Here he comes',false);}},
+      target:()=>liveCentroid('sq_kansas',sqAt('kansas')),on:{kill:(q,d)=>d.tag==='sq_kansas'&&!outlaws.some(e=>e.tag==='sq_kansas'&&!e.dead)},doneIf:()=>deadCount('sq_kansas')>=4},
+    {obj:'Tell Nora Quinn the Kid is dead',talk:'nora',lines:['You did it! I\'ll wire Fort Ashby myself. Well, my uncle will.','The reward came through. A hundred and fifty dollars, with my compliments.'],end:()=>{ROM.aff.nora=Math.min(100,(ROM.aff.nora||0)+30);}}]},
 };
-const QS={};for(const id in QDEF)QS[id]={state:'locked',stage:0,count:0};
+const QS={};for(const id in QDEF)QS[id]={state:QDEF[id].side?'available':'locked',stage:0,count:0};
 const curStage=id=>QDEF[id].stages[QS[id].stage];
 function objText(id){const st=curStage(id);return typeof st.obj==='function'?st.obj(QS[id]):st.obj;}
 function stageTarget(id){const st=curStage(id);if(st.target)return st.target();if(st.talk)return NPC[st.talk].pos;if(st.reach)return SITES[st.reach];return null;}
@@ -2493,6 +2545,32 @@ function updateSkyLife(dt){for(const g of VULTURES)for(const b of g.children){co
   const day=gameHour>6&&gameHour<19;for(const g of DEVILS){const u=g.userData;g.visible=day;u.t-=dt;if(u.t<0){u.t=rand(30,80);u.vx=rand(-3,3);u.vz=rand(-3,3);}
     g.position.x=clamp(g.position.x+u.vx*dt,-600,600);g.position.z=clamp(g.position.z+u.vz*dt,-600,600);g.position.y=groundY(g.position.x,g.position.z);g.rotation.y+=dt*2.2;}
   smokeT2-=dt;if(smokeT2<0){smokeT2=1.6;for(const k in TOWNS){const t=TOWNS[k];if(Math.hypot(P.pos.x-t.x,P.pos.z-t.z)<320)puff(new V3(t.x-14,groundY(t.x,t.z)+8,t.z-17),0x9a9590,2,0.6,1.4);}}}
+// side quest places, helpers and characters
+const SQ={spots:{}};
+const sqAt=k=>SQ.spots[k];
+const sqNear=(k,r)=>{const s=SQ.spots[k];return !!s&&Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<r;};
+function sqSpotNear(x,z){for(let i=0;i<900;i++){const a=i*2.39996,r=Math.sqrt(i)*7,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;
+  if(landSpotOk(px,pz)&&!LAND.plots.some(p=>Math.hypot(px-p.x,pz-p.z)<90))return {x:px,z:pz};}return {x,z};}
+function placeSideQuests(){const S=SQ.spots;
+  S.ring=sqSpotNear(300,-150);S.rustlers=sqSpotNear(580,330);S.kansas={x:142,z:-160};S.lostkids={x:-30,z:-318};S.ghosts={x:-30,z:-320};
+  S.cairn1=sqSpotNear(-330,-330);S.cairn2=sqSpotNear(-560,-280);S.cairn3=sqSpotNear(-600,-440);
+  for(const k of ['cairn1','cairn2','cairn3']){const s=S[k],y=groundY(s.x,s.z);for(let i=0;i<5;i++){const r=mesh(new THREE.DodecahedronGeometry(0.7-i*0.1,0),'#8a7a6a',s.x+rand(-0.2,0.2),y+0.4+i*0.55,s.z+rand(-0.2,0.2));r.rotation.y=rand(0,TAU);}addCol(s.x,s.z,0.8);}
+  for(const [id,label,k] of [['ring','Walter Hendricks\'s wedding ring','ring'],['cache','an iron-bound cache of Spanish gold','cairn3']]){const s=S[k],g=new THREE.Group();
+    if(id==='ring')bx(0.4,0.2,0.3,'#4a3a2a',0,0.1,0,g);else{bx(0.9,0.6,0.6,'#4a3424',0,0.3,0,g);bx(0.95,0.08,0.65,'#8a8a8a',0,0.5,0,g);}
+    g.position.set(s.x+1.5,groundY(s.x+1.5,s.z),s.z);g.visible=false;scene.add(g);pickups.push({id,label,mesh:g,pos:new V3(s.x+1.5,0,s.z),active:false});}}
+function sqCamp(k,tag,n,o){if(outlaws.some(e=>e.tag===tag&&!e.dead))return;const s=sqAt(k);if(!SQ['fire_'+k]){SQ['fire_'+k]=1;prop('fire',s.x,s.z);prop('tent',s.x+7,s.z-4,0.6);}
+  for(let i=0;i<n;i++){const a=i/n*TAU,r=rand(4,10);spawnOutlaw(s.x+Math.cos(a)*r,s.z+Math.sin(a)*r,tag,o);}}
+function sqPickup(k){const id=k==='ring'?'ring':'cache',p=pickups.find(q=>q.id===id);if(p&&!(QS[k==='ring'?'ring':'cairns'].state==='done')){p.active=true;p.mesh.visible=true;}}
+function sqHide(id){const n=NPC[id];if(!n)return;scene.remove(n.h.g);const i=npcs.indexOf(n);if(i>=0)npcs.splice(i,1);}
+function sqPlaceKid(){const n=NPC.lostkid,s=sqAt('lostkids');if(n){n.pos.set(s.x+3,groundY(s.x+3,s.z+2),s.z+2);n.home.copy(n.pos);n.h.g.position.copy(n.pos);n.cowerT=999;}}
+function sqWolves(){if(animals.some(a=>a.tag==='sq_kids'&&!a.dead))return;const s=sqAt('lostkids');for(let i=0;i<4;i++)spawnAnimal('wolf',s.x+rand(-25,25),s.z+rand(15,30),null,'sq_kids');}
+function sqKidHome(){const n=NPC.lostkid;if(!n)return;n.cowerT=0;n.pos.set(-5,groundY(-5,4),4);n.home.copy(n.pos);n.h.g.position.copy(n.pos);n.wander=true;}
+function sqCows(){if(SQ.cows)return;SQ.cows=1;const s=sqAt('rustlers');fenceRect(s.x-12,s.z+8,14,10);for(let i=0;i<5;i++)LATE.cows.push(makeCow(s.x-12+rand(-4,4),s.z+8+rand(-3,3)));}
+function spawnSideNPCs(){
+  spawnNPC('widow','Martha Hendricks',-14,6.2,{shirt:'#3a3a3a',dress:'#1a1a1a',hat:'#1a1a1a',hair:'#8a8a8a',skin:'#d9a585',yaw:Math.PI});
+  {const t=TOWNS.redrock;const q=spawnNPC('quack','Professor Quackenbush',t.x+12,t.z+5,{shirt:'#e8e0d0',coat:'#4a2a4a',hat:'#222',bowler:true,beard:'#8a6a4a',yaw:-Math.PI/2});q.lines=['Step right up!'];prop('wagon',t.x+15,t.z+7,0.3);}
+  {const k=spawnNPC('lostkid','Tommy Fenn',-4,3,{shirt:'#8a6a8a',pants:'#4a4038',hat:'#8a7050',skin:'#e0b090',scale:0.58,wander:true});k.kid=true;}
+  spawnNPC('sharp','Gentleman Jack Bly',-29,-5.5,{shirt:'#eee',vest:'#8a1a2a',coat:'#2a1a3a',hat:'#111',yaw:0}).lines=['Care for a hand, friend?'];}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
@@ -2521,7 +2599,7 @@ function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d
     for(const a of animals)if(a.dead&&!a.skinned&&a.legend)c(d2(a.pos,P.pos),3,`Skin ${a.legendName}`,()=>skinLegend(a));
     for(const a of animals)if(a.dead&&a.kind==='deer'&&!a.skinned&&!a.legend)c(d2(a.pos,P.pos),2.8,'Skin deer',()=>skin(a));
     for(const h of horses)if(h.dead&&!h.skinned)c(d2(h.pos,P.pos),3,'Skin horse',()=>{h.skinned=true;h.removeT=2.5;P.pelts+=2;sfx.click();toast('Skinned','Two horse hides added to your pack');});
-    for(const p of pickups)if(p.active)c(d2(p.pos,P.pos),2.6,'Pick up '+p.label,()=>{p.active=false;p.mesh.visible=false;sfx.coin();toast('Recovered','The payroll strongbox');questEvent('pickup',p.id);});}
+    for(const p of pickups)if(p.active)c(d2(p.pos,P.pos),2.6,'Pick up '+p.label,()=>{p.active=false;p.mesh.visible=false;sfx.coin();toast('Recovered',p.label[0].toUpperCase()+p.label.slice(1));questEvent('pickup',p.id);});}
   return best;}
 function talkTo(n){
   if(n.dead||n.koT>0)return;n.talkT=4;
@@ -3004,9 +3082,9 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();placePlots();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();placePlots();placeSideQuests();
   freezeStatic();mergeStatic();
-  spawnPeople();spawnTownFolk();spawnDeerHerds();buildMap();buildCompass();
+  spawnPeople();spawnTownFolk();spawnSideNPCs();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
   applyQuality();if(savedFP){firstPerson=true;PH.head.visible=false;}
   built=true;$('loadNote').textContent='';if(hasSave())$('btnCont').hidden=false;

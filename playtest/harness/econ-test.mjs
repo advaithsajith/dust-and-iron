@@ -17,11 +17,11 @@ P.money = 20000; EMP.town = true; api.ROM.spouses.push('clara', 'mateo', 'june')
 const bank = api.npcs.find(n => n.shop === 'bank'); api.talkTo(bank); api.buy(pickItem('Your account')); api.buy(pickItem('Deposit $500')); api.closeMenu();
 ok(api.BANK.bal === 500, `deposited: balance $${api.BANK.bal}`);
 const b0 = api.BANK.bal; P.day++; api.onNewDay(); step(1); ok(api.BANK.bal === b0 + 5, `1% interest: $${b0} -> $${api.BANK.bal}`);
-EMP.town = true; api.talkTo(bank); api.buy(pickItem('Buy out Pruitt')); flush(); ok(api.BANK.own, `own bank Â· money $${P.money}`);
+EMP.town = true; api.talkTo(bank); api.buy(pickItem('Buy out Pruitt')); flush(); ok(api.BANK.own, `own bank · money $${P.money}`);
 const L = api.dailyLedger(); ok(L.k > 0, `depositor fees $${L.k} a day`);
 // town stages 1-5
 for (let i = 0; i < 5; i++) { api.talkTo(bank); const k = pickItem('Finance a new block'); if (k >= 0) api.buy(k); flush(); }
-ok(api.CH.expand === 5, `Coppervale grew ${api.CH.expand} stages Â· congregation ${api.townPop()}`);
+ok(api.CH.expand === 5, `Coppervale grew ${api.CH.expand} stages · congregation ${api.townPop()}`);
 // gang, camp, stash
 P.pos.set(300, 0, -60); step(0.2); let spot = null;
 for (let k = 0; k < 60 && !spot; k++) { const a = k * 0.7, r = 260 + k * 3, x = Math.cos(a) * r, z = Math.sin(a) * r; if (!api.campSpotProblem({ x, z })) spot = { x, z }; }
