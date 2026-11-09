@@ -1181,6 +1181,13 @@ function mapPOIs(){const L=[];
   for(const p of LAND.plots){const o=plotOf(p);L.push({x:p.x,z:p.z,kind:'dot',color:o?EMP.color||'#3f7f35':'#c8b088',always:true,
     label:o?o.type?`${p.name} (${LAND_TYPES[o.type].name})`:`${p.name} (your land)`:`Land for sale: ${p.name}`,
     desc:o?o.type?`Level ${o.level} · pays $${LAND_TYPES[o.type].pay*o.level} a day`:'Ride here and press E at the stake to build':`Deed $${p.price} at the bank's land office, or at the stake`,travel:!!o,free:true,tx:p.x+3,tz:p.z+3});}
+  // Coppervale's own landmarks: the ring, the gallows, the war room and any grand projects
+  {const town=[{x:BOX.ring.x,z:BOX.ring.z,label:'Prize fight ring',desc:'Mickey Doyle\'s bare-knuckle fights. Through the alley between the doctor and the undertaker.'},
+    {x:GALLOWS.x,z:GALLOWS.z,label:'Gallows',desc:'Hang prisoners here once Coppervale is yours.'},
+    ...(GRAND.mansion?[{x:-10,z:-70,label:'Governor\'s Mansion',desc:'Sleep here for health and Focus.'}]:[]),...(GRAND.casino?[{x:60,z:50,label:'Grand Casino',desc:'Blackjack with Lucien.'}]:[]),
+    ...(GRAND.capitol?[{x:-20,z:75,label:'Territorial Capitol',desc:'Seat of the Governor of the Arroyo.'}]:[]),...(GRAND.depot?[{x:-120,z:30,label:'Railroad Depot',desc:'Fast travel is free and instant.'}]:[]),
+    ...(GRAND.statue?[{x:-100,z:0,label:'Your statue',desc:'Bronze, and very flattering.'}]:[])];
+    for(const t of town)L.push({...t,kind:'landmark',always:true});}
   for(const h of HIDEOUTS)if(h.x!==undefined){const st=hidState(h.k),live=P.day>=st.cleared+2;L.push({x:h.x,z:h.z,kind:'dot',color:live?'#a0261c':'#7a6a5a',always:true,label:h.name,desc:live?`${h.gang} hold it, led by ${h.boss}. Clear it for their stash.`:'Cleared. Another gang moves in soon.'});}
   for(const m of LANDMARKS)if(fogAt(m.x,m.z)&&!HIDEOUTS.some(h=>h.name===m.name))L.push({...m,label:m.name,kind:'landmark',always:true});
   for(const k in RIVAL_SITES){const s=SITES[k];if(LATE.rivals.seized[k])L.push({x:s.x+6,z:s.z+6,kind:'dot',color:EMP.color,label:'Your outpost',desc:`${RIVAL_SITES[k]} pays you $40 a day`,always:true});
@@ -2681,7 +2688,9 @@ function buildRing(){const r=BOX.ring,g=new THREE.Group();g.position.set(r.x,gro
   for(const h of [1.2,1.8])for(const [w,d,a,b] of [[8.6,0.06,0,-4.3],[8.6,0.06,0,4.3],[0.06,8.6,-4.3,0],[0.06,8.6,4.3,0]])bx(w,0.06,d,'#e8e0d0',a,h,b,g);
   for(let i=0;i<4;i++)bx(4,0.4,0.8,'#6a4a2c',-6+i*4,0.2,-7,g);for(let i=0;i<4;i++)bx(4,0.4,0.8,'#6a4a2c',-6+i*4,0.2,7,g);
   const sg=new THREE.Mesh(new THREE.PlaneGeometry(4,0.8),new THREE.MeshLambertMaterial({map:signTex('PRIZE FIGHTS','#e8dcc0','#7a1010'),side:THREE.DoubleSide}));sg.position.set(0,3.4,-4.4);g.add(sg);
-  bx(0.15,3.6,0.15,'#4a3424',-1.8,1.8,-4.4,g);bx(0.15,3.6,0.15,'#4a3424',1.8,1.8,-4.4,g);addCol(r.x,r.z,0.1);}
+  bx(0.15,3.6,0.15,'#4a3424',-1.8,1.8,-4.4,g);bx(0.15,3.6,0.15,'#4a3424',1.8,1.8,-4.4,g);addCol(r.x,r.z,0.1);
+  // a sign on the main street points down the alley to the ring
+  signpost(-17.5,9.2,[['PRIZE FIGHTS',Math.PI/2],['THIS WAY',Math.PI/2]]);}
 function spawnPromoter(){const r=BOX.ring;const n=spawnNPC(null,'Mickey Doyle, fight promoter',r.x-6.5,r.z,{shirt:'#e8e0d0',vest:'#3a5a3a',pants:'#2a2a2a',hat:'#3a2a1e',bowler:true,beard:'#8a4a2a',yaw:Math.PI/2});n.promoter=true;n.important=true;}
 function boxMenu(){const opp=BOXERS[Math.min(BOX.rank,BOXERS.length-1)],champ=BOX.rank>=BOXERS.length;
   openCustom(`Prize fights · ${champ?'You are champion of the Arroyo':`next: ${opp.name}`} · ${BOX.wins} wins`,[
