@@ -948,6 +948,15 @@ const QDEF={
         const k=spawnOutlaw(s.x,s.z-50,'sq_kansas',{name:'The Kansas Kid',hp:260,acc:1.6,coat:'#6a4a2a',hat:'#d8c8a0',bandana:'#2a4a7a',scale:0.95});k.alerted=true;k.kid2=true;banner('The Kansas Kid','Here he comes',false);}},
       target:()=>liveCentroid('sq_kansas',sqAt('kansas')),on:{kill:(q,d)=>d.tag==='sq_kansas'&&!outlaws.some(e=>e.tag==='sq_kansas'&&!e.dead)},doneIf:()=>deadCount('sq_kansas')>=4},
     {obj:'Tell Nora Quinn the Kid is dead',talk:'nora',lines:['You did it! I\'ll wire Fort Ashby myself. Well, my uncle will.','The reward came through. A hundred and fifty dollars, with my compliments.'],end:()=>{ROM.aff.nora=Math.min(100,(ROM.aff.nora||0)+30);}}]},
+  rwhorses:{title:'Horses of the Red Water',giver:'toshane',reward:40,side:true,offer:['Horse thieves came in the night and took twelve of our best horses.',
+      'I tracked them west to a dry wash. Five men. My uncles say wait for the army. The army will not come for our horses.','Ride with me, or ride for me. Either way.'],stages:[
+    {obj:'Find the horse thieves\' camp in the dry wash',target:()=>sqAt('rwthief'),doneIf:()=>sqNear('rwthief',35),start:()=>sqCamp('rwthief','sq_hthief',5,{bandana:'#5a3a1a'})},
+    {obj:()=>`Deal with the horse thieves (${deadCount('sq_hthief')}/5)`,resume:0,target:()=>liveCentroid('sq_hthief',sqAt('rwthief')),on:{kill:(q,d)=>d.tag==='sq_hthief'&&deadCount('sq_hthief')>=5},doneIf:()=>deadCount('sq_hthief')>=5},
+    {obj:'Tell Toshane the horses are coming home',talk:'toshane',lines:['Every horse, home. I misjudged you.','My uncles will hear of this. So will the council.'],end:()=>{NATION.rel=Math.min(100,NATION.rel+20);}}]},
+  rwfever:{title:'Fever in the Lodges',giver:'kehala',reward:0,side:true,offer:['A fever has come to the lodges. The children first.','Our healers know the old medicines, but this sickness is new. It came with the wagon trains.',
+      'Your town has a doctor. He will not sell to us. Will he sell to you?'],stages:[
+    {obj:'Ask Doc Hargrove for medicine',talk:'doc',lines:['Fever in the Red Water village? Spots, and a cough? That\'s measles. It kills children who\'ve never met it.','Quinine, willow bark, every clean blanket I have. Thirty dollars. Keep the sick apart from the well, and hurry.'],end:()=>{P.money=Math.max(0,P.money-30);toast('Medicine bought','$30 to Doc Hargrove.');}},
+    {obj:'Bring the medicine to Kehala in the Red Water village',talk:'kehala',lines:['You came back. Not everyone does.','The children who were sickest asked for corn soup today. That is a good sign.'],end:()=>{NATION.rel=Math.min(100,NATION.rel+25);P.honor=clamp((P.honor||0)+8,-100,100);}}]},
 };
 const QS={};for(const id in QDEF)QS[id]={state:QDEF[id].side?'available':'locked',stage:0,count:0};
 const curStage=id=>QDEF[id].stages[QS[id].stage];
@@ -1060,6 +1069,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
   if(Object.keys(LAND.owned).length<LAND.plots.length)hints.push('Buy land deeds at the bank\'s land office. On each plot build a ranch, farm, lumber mill, gang outpost, parlor house or chapel for daily income.');
   if(liveGang().length>=3&&!liveGang().some(a=>jobOf(a)!=='ride'))hints.push('Press N to put your gang to work: runners sell your moonshine, bounty hunters and stage robbers bring in money, and foremen grow your land on their own.');
   if(EMP.town&&Object.keys(TW.owned).length<3)hints.push('Hire mercenaries in the war room (at the jailhouse or the town hall), ride to Red Rock, San Lázaro or Fort Ashby, and talk to whoever runs it: demand surrender, or lay siege.');
+  if(!NATION.left&&!NATION.treaty)hints.push('Visit the Red Water village in the south. Help its people, earn their trust, and make a treaty of friendship with Kehala, speaker of the council.');
   if(!CH.held)hints.push('Take over the church: talk to Reverend Pike at its door, then pass laws from the pulpit to grow the town and put it to work for you.');
   if(!LATE.mine)hints.push('Buy the Lucky Strike Mine claim at the bank ($250) for $40 a day, and dig there yourself.');
   if(LATE.rivals.started&&Object.values(LATE.rivals.held).some(Boolean))hints.push('The Vance Syndicate holds a hideout. Wipe them out there to seize it as an outpost.');
@@ -1075,6 +1085,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
     <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouses.length?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
   <div class="q"><b>Homestead</b><div>${home()?`${HOME_BUILDS.filter(b=>hb(b.k)).map(b=>b.name).join(', ')||'Nothing built yet. Open the camp ledger and choose Build on the homestead.'} · Defense ${homeDefense()}`:'Pitch a camp first; your first camp becomes your homestead.'}</div><div>Farm +$${L.f} · Outposts +$${L.o} · Mine +$${L.m}${LATE.mine?' (yours: dig there for more gold)':''}</div></div>
   <div class="q"><b>Rivals and the law</b><div>${LATE.rivals.started?Object.keys(RIVAL_SITES).map(k=>`${RIVAL_SITES[k]}: ${LATE.rivals.seized[k]?'your outpost':LATE.rivals.held[k]?'held by the Vance Syndicate':'empty'}`).join(' · '):'No rival gangs in the territory yet.'}</div><div>${LAW.forever?'Marshal Crowe is dead. The law will not come back.':LATE.marshal.state==='coming'||LATE.marshal.state==='hunting'?'A U.S. Marshal is coming for you.':LATE.sheriffDead?'The sheriff is dead.':'Sheriff Hale keeps the peace.'}${LATE.bounty?` · Bounty job: ${esc(LATE.bounty.name)} near ${esc(placeName(LATE.bounty))} ($${LATE.bounty.reward})`:''}</div></div>
+  <div class="q"><b>The Red Water People</b><div>${NATION.left?'Marched north off their valley, on a paper you signed. The lodges stand empty.':`Trust ${NATION.rel} · ${NATION.treaty?'a treaty of friendship stands (+$25 a day in trade, and their scouts warn you of plots)':'no treaty yet'}${NATION.crisis==='arrived'?' · <b>Commissioner Pell has a removal order for their valley</b>':NATION.crisis==='army'?' · <b>Soldiers ride for the village</b>':NATION.crisis==='defended'?' · you defended their land':NATION.crisis==='bribe'?' · the removal order is \'lost\', for now':''}`}</div></div>
   <div class="q"><b>Governing</b><div>${ELEC.mayor?`Mayor of Coppervale: ${ELEC.mayor}${ELEC.mayor===REFORMER?' (a reformer: your rackets pay half)':' (your puppet: +$50 a day)'}`:'No mayor elected yet.'}${EMP.town&&ELEC.next>=0?` · next election day ${ELEC.next}, your candidate at ${Math.round(clamp(ELEC.support+(GRAND.capitol?15:0),0,99))}%`:''}</div><div>Grand projects: ${Object.keys(GRAND).map(k=>GRANDS[k].name).join(', ')||'none yet (town hall)'} · festivals held: ${FEST.count} · prize fights won: ${BOX.wins}</div></div>
   <div class="q"><b>Blood on the sand</b><div>${P.stats.kills} downed in all · ${LATE.hideoutsCleared||0} hideouts cleared · ${LATE.encounters||0} road ambushes survived · ${LATE.duelsWon||0} duels won</div><div>Bandit hideouts holding out: ${HIDEOUTS.filter(h=>P.day>=hidState(h.k).cleared+2).map(h=>h.name).join(', ')||'none right now'}</div></div>
   <div class="q"><b>Towns and the army</b><div>${Object.keys(TOWNS).map(k=>`${TOWNS[k].name}: ${TW.owned[k]?`yours, $${tributeOf(k)} a day, garrison ${garrisonOf(k).length}`:'not yours'}`).join(' · ')}</div><div>Army: ${mercs().length}/${armyCap()} mercenaries · war room at the jailhouse or town hall${TW.siege?` · <b>Siege of ${TOWNS[TW.siege.k].name}: wave ${TW.siege.wave+1}</b>`:''}</div></div>
@@ -1269,7 +1280,7 @@ function raycastWorld(o,d,maxD){
   let best={t:maxD,ent:null,head:false,kind:'none'};
   for(let t=1;t<maxD;t+=1.5){if(o.y+d.y*t<groundY(o.x+d.x*t,o.z+d.z*t)){let a=t-1.5,b=t;for(let i=0;i<6;i++){const m=(a+b)/2;if(o.y+d.y*m<groundY(o.x+d.x*m,o.z+d.z*m))b=m;else a=m;}best.t=b;best.kind='ground';break;}}
   ray.set(o,d);for(const b of boxes){const h=ray.intersectBox(b.box3,_hv);if(h){const t=h.distanceTo(o);if(t<best.t){best.t=t;best.kind='wall';}}}
-  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...horses.filter(h=>h.kind==='horse'&&!h.dead&&!h.owned)];
+  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid&&!n.safe),...horses.filter(h=>h.kind==='horse'&&!h.dead&&!h.owned)];
   for(const e of list){if(d2(e.pos,o)>maxD+5)continue;for(const s of hitSpheres(e)){const t=raySphere(o,d,s.c,s.r);if(t>0&&t<best.t){best.t=t;best.ent=e;best.head=!!s.head;best.limb=!!s.limb;best.kind='ent';}}}
   best.point=o.clone().addScaledVector(d,best.t);return best;
 }
@@ -1322,7 +1333,7 @@ function startAssist(){camera.getWorldDirection(_af);let best=0.2,tgt=null;
   if(tgt)P.assist={e:tgt,t:0.16};}
 function startReload(){const w=curW();if(P.reloadT>0||w.ammo>=w.mag||w.reserve<=0)return;P.reloadT=w.reload;sfx.reload();}
 function hitmarker(kill){const h=$('hitmark');h.className='on'+(kill?' kill':'');setTimeout(()=>h.className=kill?'kill':'',60);}
-function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0)||e.kid)return;e.hp-=dmg;puff(pt,0x8a1a10,head?10:6,2.2);
+function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0)||e.kid||e.safe)return;e.hp-=dmg;puff(pt,0x8a1a10,head?10:6,2.2);
   if(e.kind==='npc')return hurtNPC(e,false);
   if(e.kind==='outlaw'){e.flinchT=0.25;e.shootT+=0.3;
     if(e.tag==='law'){if(!WANTED.active&&!e.crimeHit){e.crimeHit=true;commitCrime('assaultLaw',e.pos,null,true);}}
@@ -1334,7 +1345,7 @@ function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0)||e.kid)re
     if(e.tag==='law'){commitCrime('killLaw',e.pos,null,true);onLawKilled(e);}
     questEvent('kill',{type:e.kind,tag:e.tag,boss:e.boss});}
   else if(!ally)hitmarker(false);}
-function hurtNPC(n,punch){if(n.kid){n.hp=100;scare(n);return;}
+function hurtNPC(n,punch){if(n.kid||n.safe){n.hp=100;scare(n);return;}
   if(n.hp<=0){
     if(punch){n.koT=25;n.fallT=0;n.hp=60;hitmarker(false);toast(n.name,'Knocked out cold.');if(!n.assaulted){n.assaulted=true;commitCrime('assault',n.pos,n);}return;}
     hitmarker(true);P.stats.kills++;
@@ -1430,12 +1441,12 @@ function alertFromShot(pos){
 }
 function punch(){if(P.mounted||P.punchT>0||dlg||menu||!P.alive)return;P.punchT=0.4;
   const cf=camFwd();P.yaw=Math.atan2(cf.x,cf.z);let tgt=null,bd=1.9;
-  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();
+  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid&&!n.safe),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();
     if(d<bd&&v.normalize().dot(cf)>0.5){bd=d;tgt=t;}}
   if(!tgt){nz(0.05,900,0.08);return;}
   sfx.punch();cam.shake=Math.max(cam.shake,0.15);
   if(tgt.kind==='npc'){tgt.hp-=rand(30,40);hurtNPC(tgt,true);}else hurt(tgt,25,false,tgt.pos.clone().add(new V3(0,1.4,0)));}
-const canRob=n=>!!n&&!n.kid&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
+const canRob=n=>!!n&&!n.kid&&!n.safe&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
 function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&!isSpouse(n.id)&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
   if(n.id==='pruitt'){m=Math.floor(rand(120,220));t='bankRobbery';line='Don\'t shoot! Take the vault money, all of it!';}
   else if(n.shop){m=Math.floor(rand(25,50));t='storeRobbery';line='All right, all right. Here\'s the till.';}
@@ -1480,7 +1491,7 @@ function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.r
   +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0)+Math.min(40,(LATE.hanged||0)*4)+Object.keys(GRAND).length*20+(GRAND.statue?15:0)+Math.min(50,FEST.count*10);}
 function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:GRAND.capitol?'Governor of the Arroyo':(LAND.lord||territoryControl()>=1)?'Lord of the Arroyo':RANKS[idx][1],next:RANKS[idx+1]};}
 function dailyLedger(){const r=Math.round(Object.keys(EMP.rackets).length*(onJob('racket').length?15:10)*(ELEC.mayor===REFORMER?0.5:1)),b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40+expBuilt().length*10+TOWN.tax*30:0,w=liveGang().filter(a=>!a.kin).length*3+mercs().length*2,
-  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=Math.round(landIncome()*(1+Math.min(3,onJob('foreman').length)*0.1)),k=bankFees(),v=tributeTotal(),j=ransomIncome(),g=grandIncome()+mayorKickback();return {r,b,t,w,f,o,m,c,l,k,v,j,g,net:r+b+t+f+o+m+c+l+k+v+j+g-w};}
+  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=Math.round(landIncome()*(1+Math.min(3,onJob('foreman').length)*0.1)),k=bankFees(),v=tributeTotal(),j=ransomIncome(),g=grandIncome()+mayorKickback(),n=nationIncome();return {r,b,t,w,f,o,m,c,l,k,v,j,g,n,net:r+b+t+f+o+m+c+l+k+v+j+g+n-w};}
 function openCustom(title,items){menu={custom:{title,items}};renderMenu();}
 function closeMenu(){menu=null;renderMenu();}
 function ensureGangName(cb){if(EMP.name)return cb();
@@ -1629,8 +1640,8 @@ function onNewDay(){const L=dailyLedger();
   if(!LAW.forever)LAW.fear*=0.5;if(LAW.refuse&&LAW.fear<6&&!LAW.forever){LAW.refuse=false;toast('New deputies in Fort Ashby','The law is willing to ride against you again.');}
   // from the day after a wedding, each spouse may bring a child at dawn, up to three each
   if(ROM.spouses.length){placeSpouse();let k=0;for(const id of ROM.spouses)if(P.day-ROM.wedDay>=1&&ROM.children.length+k<(hasLaw('fruitful')?5:3)*ROM.spouses.length&&Math.random()<(hasLaw('fruitful')?0.9:0.6))setTimeout(birthChild,3000+(k++)*4000);}
-  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c||L.l||L.k||L.v||L.j||L.g){P.money=Math.max(0,P.money+L.net);
-    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''}${L.l?` · Land $${L.l}`:''}${L.k?` · Bank $${L.k}`:''}${L.v?` · Tribute $${L.v}`:''}${L.j?` · Ransoms $${L.j}`:''}${L.g?` · Grand $${L.g}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
+  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c||L.l||L.k||L.v||L.j||L.g||L.n){P.money=Math.max(0,P.money+L.net);
+    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''}${L.l?` · Land $${L.l}`:''}${L.k?` · Bank $${L.k}`:''}${L.v?` · Tribute $${L.v}`:''}${L.j?` · Ransoms $${L.j}`:''}${L.g?` · Grand $${L.g}`:''}${L.n?` · Red Water trade $${L.n}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
   if(EMP.town&&!LAW.forever&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
   lateNewDay();save();}
 
@@ -1897,23 +1908,23 @@ function updateCows(dt){for(const c of LATE.herd){c.t-=dt;if(c.t<=0){c.t=rand(4,
   for(const c of [...LATE.herd,...LATE.cows]){if(d2(c.pos,P.pos)>180)continue;c.q.g.position.copy(c.pos);c.q.g.rotation.y=c.yaw;animQuad(c.q,c.speed,dt,!c.speed);}}
 let lateT=0,smokeT=0;
 function updateLate(dt){updateFestival(dt);updateSkyLife(dt);updateHanging(dt);updateWorkers(dt);updateAssassins(dt);updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
-  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();updateHideouts();updateEncounters();updateDuels();updateBox();electionTick();
+  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();updateHideouts();updateEncounters();updateDuels();updateBox();electionTick();updateCrisis();
   if(!LATE.rivals.started&&QS.hollow.state==='done'){LATE.startT-=1;if(LATE.startT<=0)startRivals();}
   const c=home();if(c&&c.smokeAt&&d2(c,P.pos)<150&&(smokeT=(smokeT+1)%2)===0)puff(c.smokeAt,0x9a9590,2,0.6,1.4);}
-function lateNewDay(){townsNewDay();for(const p of (LATE.jailed||[]))p.days--;LATE.jailed=(LATE.jailed||[]).filter(p=>p.days>0);bankNewDay();plotNewDay();workDay();churchNewDay();checkControl();scheduleHanging();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
+function lateNewDay(){crisisCheck();townsNewDay();for(const p of (LATE.jailed||[]))p.days--;LATE.jailed=(LATE.jailed||[]).filter(p=>p.days>0);bankNewDay();plotNewDay();workDay();churchNewDay();checkControl();scheduleHanging();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
   if(LATE.rivals.started&&home()&&!((LATE.rivalShaken||0)>P.day)&&Math.random()<(Object.values(LATE.rivals.held).some(Boolean)?0.45:0.15))setTimeout(homeRaid,2500);}
 function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   for(const k in LATE.rivals.held)if(LATE.rivals.held[k]&&!LATE.rivals.seized[k])spawnRivals(k);for(const k in LATE.rivals.seized)if(LATE.rivals.seized[k])plantFlag(SITES[k]);
   if(LATE.bounty)LATE.bounty.spawned=false;
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
-  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();townsInit();grandInit();buildSkyLife();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
+  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();townsInit();grandInit();nationInit();buildSkyLife();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax,calm:TW.calm||0},grand:GRAND,elec:{...ELEC,history:ELEC.history.slice(-10)},fest:{day:FEST.day,count:FEST.count},box:{rank:BOX.rank,wins:BOX.wins},hid:Object.fromEntries(Object.entries(HID).map(([k,v])=>[k,{cleared:v.cleared,count:v.count||0}])),fights:{h:LATE.hideoutsCleared||0,d:LATE.duelsWon||0,e:LATE.encounters||0},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax,calm:TW.calm||0},grand:GRAND,nation:{rel:NATION.rel,treaty:NATION.treaty,crisis:NATION.crisis,crisisDay:NATION.crisisDay,left:NATION.left,giftDay:NATION.giftDay||-1},elec:{...ELEC,history:ELEC.history.slice(-10)},fest:{day:FEST.day,count:FEST.count},box:{rank:BOX.rank,wins:BOX.wins},hid:Object.fromEntries(Object.entries(HID).map(([k,v])=>[k,{cleared:v.cleared,count:v.count||0}])),fights:{h:LATE.hideoutsCleared||0,d:LATE.duelsWon||0,e:LATE.encounters||0},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
   LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}if(s.hid)for(const k in s.hid)HID[k]={...s.hid[k],spawned:false};if(s.fights){LATE.hideoutsCleared=s.fights.h;LATE.duelsWon=s.fights.d;LATE.encounters=s.fights.e;}
-  if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;TW.calm=s.towns.calm||0;}if(s.grand)Object.assign(GRAND,s.grand);if(s.elec)Object.assign(ELEC,s.elec);
+  if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;TW.calm=s.towns.calm||0;}if(s.grand)Object.assign(GRAND,s.grand);if(s.nation)Object.assign(NATION,s.nation);if(s.elec)Object.assign(ELEC,s.elec);
   if(s.fest){FEST.day=s.fest.day;FEST.count=s.fest.count||0;}if(s.box){BOX.rank=s.box.rank||0;BOX.wins=s.box.wins||0;}LATE.jailed=s.jailed||[];if(s.bank)Object.assign(BANK,s.bank);if(s.stash)Object.assign(STASH,s.stash);LATE.plot=s.plot||null;LATE.hangQueue=s.hangQueue||[];LATE.plotsSurvived=s.plotsSurvived||0;
   if(s.style){STYLE.outfit=s.style.outfit||'drifter';Object.assign(STYLE.owned,s.style.owned||{});STYLE.stable=s.style.stable||[];STYLE.horse=s.style.horse||null;STYLE.shaven=!!s.style.shaven;}}
 
@@ -2069,7 +2080,7 @@ function spawnKid(x,z,area){const n=spawnNPC(null,pick(['Boy','Girl','Little one
   hat:Math.random()<0.5?pick(['#8a7050','#6a5a40']):null,hair:pick(['#3a2010','#c8a060','#1a1008']),skin:pick(SKINS),scale:0.58,wander:true});n.kid=true;n.lines=KID_LINES;if(area)n.area=area;return n;}
 // territory control: every holding that matters
 function holdings(){return [{n:'Coppervale',h:!!EMP.town},{n:'The Coppervale church',h:CH.held},{n:'Dry Creek',h:!!LATE.rivals.seized.creek},{n:'Iron Hollow',h:!!LATE.rivals.seized.hollow},
-  {n:'The Lucky Strike Mine',h:!!LATE.mine},...LAND.plots.map(p=>({n:p.name,h:!!plotOf(p)})),...Object.keys(TOWNS).map(k=>({n:TOWNS[k].name,h:!!TW.owned[k]}))];}
+  {n:'The Lucky Strike Mine',h:!!LATE.mine},...LAND.plots.map(p=>({n:p.name,h:!!plotOf(p)})),...Object.keys(TOWNS).map(k=>({n:TOWNS[k].name,h:!!TW.owned[k]})),...(NATION.left?[]:[{n:'A treaty with the Red Water People',h:NATION.treaty}])];}
 function territoryControl(){const h=holdings();return h.filter(x=>x.h).length/h.length;}
 function checkControl(){if(territoryControl()>=1&&!LAND.lord){LAND.lord=true;banner('The Arroyo Territory is yours','Lord of the Arroyo',true);sfx.sting();
   toast('Full control','Every town, church, hideout, mine and acre answers to you.');}}
@@ -2375,7 +2386,7 @@ const PLOTTERS=()=>[...(LATE.rivals.started?['the Vance Syndicate']:[]),'a shopk
 const HIRED=['Deacon Vail','"Lucky" Ned Shaw','Mercy Holloway','The Kansas Kid','Augustus Pike','Jericho Bell','Two-Gun Tillie','Sam "Gravedigger" Cole'];
 function plotNewDay(){if(LATE.plot)return;if(rankInfo().idx<2)return;if(Math.random()>0.35)return;
   const guards=onJob('bodyguard').length,by=pick(PLOTTERS()),at=hoursNow()+rand(4,20);
-  LATE.plot={by,at,kind:Math.random()<0.65?'ambush':'gunman',leader:pick(HIRED),warned:guards>0||Math.random()<0.4};
+  LATE.plot={by,at,kind:Math.random()<0.65?'ambush':'gunman',leader:pick(HIRED),warned:guards>0||(NATION.treaty&&!NATION.left)||Math.random()<0.4};
   if(LATE.plot.warned)toast('Word of a plot',`${guards?'Your bodyguards hear':'You hear'} that ${by} hired ${LATE.plot.leader} to kill you. Watch the roads${LATE.plot.kind==='gunman'?' and the street':''}.`);}
 function updatePlot(){const pl=LATE.plot;if(!pl||pl.sprung||hoursNow()<pl.at||!P.alive||menu||dlg||HANG.active||RAID.active)return;
   const town=Math.hypot(P.pos.x-SITES.town.x,P.pos.z-SITES.town.z)<180;
@@ -2653,7 +2664,7 @@ function animDeath(e,dt){const kind=e.dieKind||'forward',sp=kind==='blown'?1.8:k
 let lastV=-9;
 function kick(){if(P.mounted||P.kickT>0||dlg||menu||!P.alive)return;P.kickT=0.5;
   const cf=camFwd();P.yaw=Math.atan2(cf.x,cf.z);let tgt=null,bd=2.4;
-  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();if(d<bd&&v.normalize().dot(cf)>0.45){bd=d;tgt=t;}}
+  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid&&!n.safe),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();if(d<bd&&v.normalize().dot(cf)>0.45){bd=d;tgt=t;}}
   if(!tgt){nz(0.05,700,0.1);return;}sfx.punch();cam.shake=Math.max(cam.shake,0.25);
   const push=(t,m)=>{tryMove(t.pos,cf.x*m,cf.z*m,0.4,1.3);t.pos.y=groundY(t.pos.x,t.pos.z);};
   if(tgt.kind==='npc'){tgt.hp-=rand(45,60);push(tgt,1.4);hurtNPC(tgt,true);}
@@ -2794,6 +2805,88 @@ function casinoMenu(){openCustom('The Grand Casino · blackjack',[[10,'Bet $10']
 function playHand(b){const draw=()=>Math.min(10,1+Math.floor(Math.random()*13));let me=draw()+draw();while(me<17)me+=draw();let dl=draw()+draw();while(dl<17)dl+=draw();
   const win=me<=21&&(dl>21||me>dl),push=me<=21&&me===dl;if(win){P.money+=b;sfx.coin();}else if(!push)P.money-=b;
   toast(win?'You win':push?'Push':'House wins',`You ${me>21?'bust with '+me:me} · dealer ${dl>21?'busts with '+dl:dl} · ${win?'+':push?'±':'−'}$${push?0:b}`);renderMenu();save();}
+// ---- the Red Water People: a nation with its own leaders, on land others want ----
+const NATION={rel:0,treaty:false,crisis:'none',x:0,z:0,crisisDay:-1,left:false};
+const RW_LINES={
+  wesa:['When I was a girl the buffalo covered these plains like a brown river. The hide hunters came with long rifles, and in ten summers they were gone.',
+    'Three times men in black coats came with papers. Three times we touched the pen. Each paper said "forever." Forever is a short word for them.',
+    'They took my grandson to a school in the east. They cut his hair and gave him a new name. He writes to me in a language I cannot read.',
+    'The copper mine poisons the creek. The corn grows thin. Still, we plant. Planting is a kind of prayer.'],
+  folk:['Our corn grows best by the river. The river is lower every year.','The traders at the post pay fair. The ones in town do not.','My father rode with the scouts at Fort Ashby. They gave him a medal, then took his horse.',
+    'You are welcome at our fire, if you come in peace.','The children ask why the white town grows so fast. I do not know what to tell them.']};
+function placeVillage(){const s=sqSpotNear(240,500);NATION.x=s.x;NATION.z=s.z;const x=s.x,z=s.z;
+  // lodges: earth-covered domes and hide lodges around a central fire, drying racks, cornfields, a corral
+  for(let i=0;i<7;i++){const a=i/7*TAU,r=17+(i%2)*4,lx=x+Math.cos(a)*r,lz=z+Math.sin(a)*r,y=groundY(lx,lz);
+    if(i%2){const d=new THREE.Mesh(new THREE.SphereGeometry(4.2,16,8,0,TAU,0,Math.PI/2),mat('#8a6a48'));d.position.set(lx,y-0.2,lz);d.scale.y=0.7;d.castShadow=true;scene.add(d);bx(1.4,1.6,1.6,'#6a4a2c',lx+Math.cos(a)*-3.8,y+0.8,lz+Math.sin(a)*-3.8).rotation.y=-a;addCol(lx,lz,3.6);}
+    else{const t=new THREE.Mesh(new THREE.ConeGeometry(3,7,10,1,true),new THREE.MeshLambertMaterial({color:'#d8c4a0',side:THREE.DoubleSide,flatShading:true}));t.position.set(lx,y+3.5,lz);t.castShadow=true;scene.add(t);
+      for(let p=0;p<5;p++){const pl=bx(0.08,2,0.08,'#4a3424',lx+Math.cos(p*1.3)*0.3,y+7.5,lz+Math.sin(p*1.3)*0.3);pl.rotation.z=Math.cos(p*1.3)*0.3;pl.rotation.x=Math.sin(p*1.3)*0.3;}
+      const band=new THREE.Mesh(new THREE.CylinderGeometry(2.15,2.55,0.6,10,1,true),new THREE.MeshLambertMaterial({color:i%4?'#8a2a1a':'#2a4a6a',side:THREE.DoubleSide}));band.position.set(lx,y+2.4,lz);scene.add(band);addCol(lx,lz,2.6);}}
+  prop('fire',x,z);for(let i=0;i<6;i++){const a=i/6*TAU;bx(1.6,0.35,0.5,'#5a4030',x+Math.cos(a)*3.2,groundY(x,z)+0.18,z+Math.sin(a)*3.2).rotation.y=-a;}
+  for(let i=0;i<3;i++){const rx=x-8+i*8,rz=z-30,y=groundY(rx,rz);bx(0.15,2,0.15,'#4a3424',rx-1.5,y+1,rz);bx(0.15,2,0.15,'#4a3424',rx+1.5,y+1,rz);bx(3.2,0.1,0.1,'#4a3424',rx,y+1.9,rz);
+    for(let k=0;k<5;k++)bx(0.4,0.9,0.05,'#8a3a2a',rx-1.2+k*0.6,y+1.4,rz);}
+  for(let r=0;r<7;r++)for(let i=0;i<10;i++){const cx=x+28+i*1.8,cz=z-12+r*2.2,y=groundY(cx,cz);bx(0.35,rand(1.4,2),0.35,r%2?'#7a8a3a':'#8a9a42',cx,y+0.9,cz);}
+  fenceRect(x-34,z+8,16,12);
+  LANDMARKS.push({x,z,name:'Red Water village',desc:''});SQ.spots.rwthief=sqSpotNear(x-260,z-40);}
+let rwFolk=[];
+function spawnVillage(){if(NATION.left)return;const x=NATION.x,z=NATION.z,area={x,z,r:30};
+  const dress=()=>({shirt:pick(['#b8986a','#a07a52','#c8a878','#8a6a4a']),vest:Math.random()<0.5?pick(['#8a2a1a','#2a4a6a','#c8a040','#3a6a4a']):null,pants:pick(['#6a4a32','#5a4030']),hat:null,hair:'#1a1008',skin:pick(['#a8714f','#9a6644','#b07a55','#8a5a3a'])});
+  const mk=(id,name,dx,dz,o,extra={})=>{const n=spawnNPC(id,name,x+dx,z+dz,{...dress(),...o});Object.assign(n,extra);n.safe=true;rwFolk.push(n);return n;};
+  mk('kehala','Kehala, speaker of the council',2,2.5,{dress:'#6a3a2a',shirt:'#c8a878',vest:'#2a4a6a',yaw:Math.PI});
+  mk('toshane','Toshane',-3,4,{shirt:'#8a6a4a',vest:'#8a2a1a',yaw:Math.PI*0.8});
+  mk(null,'Old Wesa',4,-3,{dress:'#5a3a2a',hair:'#bbb',yaw:-0.6},{wesa:true,important:true});
+  const ena=mk(null,'Ena, who trades for the village',-6,-4,{shirt:'#c8a878',dress:'#3a5a4a',yaw:0.5},{shop:'village',important:true});
+  for(let i=0;i<11;i++){const n=mk(null,pick(['Red Water villager','Corn farmer','Hunter','Horse herder','Basket weaver']),rand(-22,22),rand(-22,22),Math.random()<0.4?{dress:pick(['#6a3a2a','#3a5a4a','#5a4a6a'])}:{},{wander:true});n.wander=true;n.area=area;n.lines=RW_LINES.folk;}
+  for(let i=0;i<4;i++){const k=spawnKid(x+rand(-15,15),z+rand(-15,15),area);k.safe=true;rwFolk.push(k);}
+  for(let i=0;i<5;i++){const q=makeQuad({scale:1,color:pick(['#e0d8c8','#8a5a34','#3a2a1e']),dark:'#1a1008',mane:'#1a1008',tailC:'#1a1008',saddle:false});q.g.position.set(x-34+rand(-5,5),groundY(x-34,z+8),z+8+rand(-4,4));q.g.rotation.y=rand(0,TAU);scene.add(q.g);}}
+SHOPS.village={title:'Ena\'s trade blankets',items:()=>[
+  {label:'Sell deer hides (fair prices here)',price:-5,act:()=>{},sell:true,off:()=>P.pelts<1},
+  {label:'Herbal medicine (a strong tonic)',price:5,act:()=>{P.tonics++;}},
+  {label:'Smoked buffalo and corn cakes (full health)',price:2,act:()=>{P.hp=100;}},
+  {label:'A painted pony, bred for distance (Appaloosa)',price:150,off:()=>NATION.rel<10,act:()=>buyHorse('appaloosa')},
+  {label:`Trust between you: ${NATION.rel>=60?'deep':NATION.rel>=30?'growing':NATION.rel>=0?'cautious':'broken'} (${NATION.rel})`,price:0,note:'',off:()=>true,act:()=>{}}]};
+function kehalaMenu(n){const items=[
+  {label:'Sit at the fire and talk',price:0,act:()=>{closeMenu();dialog(n.name,[NATION.treaty?'Our treaty holds, friend. That is more than most papers can say.':NATION.rel>=30?'You have done right by us. People notice.':'You carry a gun and a gang. Why should we trust you?',
+    NATION.crisis==='arrived'?'A man named Pell is in your town with a paper that says we must leave this valley. What will you do?':'The town grows every season. Every season it grows toward us.'])}},
+  {label:NATION.treaty?'A treaty of friendship stands between you':`Make a treaty of friendship (trust ${NATION.rel}/30 needed)`,price:0,note:NATION.treaty?'✓':undefined,off:()=>NATION.treaty||NATION.rel<30,act:()=>signTreaty()},
+  {label:'Send them flour, blankets and seed for the winter (+10 trust)',price:100,noMult:true,off:()=>NATION.giftDay===P.day,act:()=>{NATION.giftDay=P.day;NATION.rel=Math.min(100,NATION.rel+10);toast('A gift','The council accepts it, and remembers.');}}];
+  openCustom(`${n.name} · trust ${NATION.rel}`,items);}
+function signTreaty(){closeMenu();NATION.treaty=true;NATION.rel=Math.min(100,NATION.rel+15);P.honor=clamp((P.honor||0)+10,-100,100);
+  dialog('Kehala, speaker of the council',['Then let it be written in your language and remembered in ours.','Our scouts will tell you when men with bad intentions ride near. Trade will flow both ways. And no one of yours will build on this valley.']);
+  banner('A treaty of friendship','The Red Water People',true);sfx.sting();checkControl();save();}
+const nationIncome=()=>NATION.treaty&&!NATION.left?25:0;
+// the land crisis: a removal order arrives
+const COMMISSIONER='Land Commissioner Abner Pell';
+function crisisCheck(){if(NATION.crisis!=='none'||NATION.left||P.day<3)return;
+  if(NATION.rel>=15||QS.rwhorses.state==='done'||QS.rwfever.state==='done'){NATION.crisis='arrived';NATION.crisisDay=P.day;spawnPell();
+    banner('A man from Washington',COMMISSIONER,false);toast('A removal order','A federal land commissioner has come to Coppervale with papers ordering the Red Water People off their valley. Find him by the telegraph office.');save();}}
+function spawnPell(){if(NPC.pell&&npcs.includes(NPC.pell))return;const n=spawnNPC('pell',COMMISSIONER,16,4.5,{shirt:'#eee',coat:'#1a1a1a',vest:'#3a3a3a',hat:'#111',bowler:true,beard:'#8a7a6a',yaw:Math.PI});n.forceMark=true;}
+function pellMenu(n){const ashby=!!TW.owned.ashby;
+  openCustom(`${COMMISSIONER} · Removal Order No. 118`,[
+    {label:'Hear him out',price:0,act:()=>{closeMenu();dialog(n.name,['The Red Water valley is to be opened for settlement. The railroad wants the river crossing.','The tribe will be moved to a reservation three hundred miles north. It is all perfectly legal.','A man of your standing could do well out of this. Sign as the territory\'s witness, and the valley\'s best land is yours to sell.']);}},
+    {label:ashby?'Tear up the order (Fort Ashby is yours: he has no soldiers to enforce it)':'Tear up the order and stand with the Red Water People (the army will send men)',price:0,note:'defend',act:()=>defendValley()},
+    {label:'Pay him to lose the paperwork for a few years',price:500,noMult:true,act:()=>{closeMenu();resolveCrisis('bribe');}},
+    {label:'Sign the order and take the money',price:0,note:'+$1,500',act:()=>{closeMenu();openCustom('Are you sure?',[{label:'Yes. Sign it. The Red Water People will be forced off their land.',price:0,note:'',act:()=>{closeMenu();resolveCrisis('sold');}},{label:'No, not this',price:0,act:closeMenu}]);}}]);}
+function defendValley(){closeMenu();const n=NPC.pell;if(TW.owned.ashby){resolveCrisis('defended');return;}
+  dialog(n.name,['You\'ll regret this. The army doesn\'t take kindly to men who tear up federal paper.']);NATION.crisis='army';
+  const x=NATION.x,z=NATION.z;for(let i=0;i<5;i++){const a=rand(-0.5,0.5)+Math.atan2(-x,-z),r=rand(70,90);const e=spawnOutlaw(x+Math.sin(a)*r,z+Math.cos(a)*r,'rw_army',{name:'Trooper',shirt:'#2a3a6a',pants:'#3a4a7a',hat:'#2a2a3a',bandana:'#e3b14f',acc:1.2,hp:120});e.alerted=false;e.anchor.set(x+Math.sin(a)*40,0,z+Math.cos(a)*40);}
+  const L=spawnOutlaw(x+Math.sin(Math.atan2(-x,-z))*80,z+Math.cos(Math.atan2(-x,-z))*80,'rw_army',{name:'Captain Josiah Rand',shirt:'#2a3a6a',coat:'#1a2a4a',hat:'#1a1a2a',bandana:null,boss:false,hp:200,acc:1.3});L.alerted=false;
+  WP={x,z,label:'Red Water village'};toast('Soldiers ride for the valley','Captain Rand and five troopers are coming to burn the lodges. Get there first.');save();}
+function updateCrisis(){if(NATION.crisis!=='army')return;const left=outlaws.filter(e=>e.tag==='rw_army'&&!e.dead);
+  if(!left.length&&outlaws.some(e=>e.tag==='rw_army'))resolveCrisis('defended');
+  else if(left.length&&Math.hypot(P.pos.x-NATION.x,P.pos.z-NATION.z)<150)for(const e of left)e.alerted=true;}
+function resolveCrisis(how){NATION.crisis=how;if(NPC.pell){scene.remove(NPC.pell.h.g);const i=npcs.indexOf(NPC.pell);if(i>=0)npcs.splice(i,1);}
+  if(how==='defended'){NATION.rel=Math.min(100,NATION.rel+35);P.honor=clamp((P.honor||0)+15,-100,100);banner('The valley stands','The Red Water People keep their land',true);sfx.sting();
+    setTimeout(()=>dialog('Kehala, speaker of the council',['You stood between us and the soldiers. Few would.','Whatever paper they bring next, we will remember this day.']),1500);}
+  else if(how==='bribe'){NATION.rel=Math.min(100,NATION.rel+10);toast('Paperwork lost','Pell leaves on the morning stage. The order will turn up again someday; such orders always do.');}
+  else if(how==='sold'){P.money+=1500;P.stats.earned+=1500;P.honor=clamp((P.honor||0)-40,-100,100);NATION.rel=-100;NATION.treaty=false;NATION.left=true;
+    banner('The valley is cleared','The Red Water People are marched north',false);sfx.sting();
+    dialog('Kehala, speaker of the council',['So. You touched the pen.','We will walk north, as our grandparents walked west. Some of the old ones will not finish the walk.','Remember that you did this. We will.']);
+    const ex=NATION.x+(NATION.x>0?-1:1)*20,ez=NATION.z+260;for(const n of rwFolk){if(n.dead)continue;n.area=null;n.wander=true;n.target=new V3(ex+rand(-8,8),0,ez+rand(-8,8));n.waitT=999;n.leaving=true;}
+    setTimeout(()=>{for(const n of rwFolk){const i=npcs.indexOf(n);if(i>=0){scene.remove(n.h.g);npcs.splice(i,1);}}rwFolk=[];},90000);
+    toast('Headline in the Clarion','"RED WATER VALLEY OPENED FOR SETTLEMENT." On page six, a smaller line: "Tribe removed; several elders reported dead on the march."');}
+  checkControl();save();}
+function nationInit(){if(NATION.left){for(const n of rwFolk){const i=npcs.indexOf(n);if(i>=0){scene.remove(n.h.g);npcs.splice(i,1);}}rwFolk=[];}
+  if(NATION.crisis==='army')NATION.crisis='arrived';if(NATION.crisis==='arrived')spawnPell();}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
@@ -2836,6 +2929,10 @@ function talkTo(n){
   if(n.landBoss){landMenu(n.landBoss);return;}
   if(n.townBoss){townBossMenu(n);return;}
   if(n.promoter){boxMenu();return;}
+  if(n.id==='kehala'){kehalaMenu(n);return;}
+  if(n.id==='pell'){pellMenu(n);return;}
+  if(n.wesa){dialog(n.name,[pick(RW_LINES.wesa)]);return;}
+  if(n.id==='toshane'){dialog(n.name,[NATION.left?'...':NATION.rel>=30?'You are welcome here, friend.':'I am watching you, gunman.']);return;}
   if(n.casino){casinoMenu();return;}
   if(n.kid){dialog(n.name,[pick(KID_LINES)]);return;}
   if(n.peddler){peddlerMenu(n);return;}
@@ -2966,7 +3063,7 @@ function updateNPCs(dt){
     if(d<120)animHuman(n.h,n.speed,dt,false);
     if(handsUp){n.h.armL.rotation.set(-Math.PI+0.25,0,0.2);n.h.armR.rotation.set(-Math.PI+0.25,0,-0.2);}
     if(n.marker){const avail=Object.keys(QS).some(id=>QS[id].state==='available'&&QDEF[id].giver===n.id),
-      turnin=Object.keys(QS).some(id=>QS[id].state==='active'&&curStage(id).talk===n.id);n.marker.visible=avail||turnin;
+      turnin=Object.keys(QS).some(id=>QS[id].state==='active'&&curStage(id).talk===n.id);n.marker.visible=avail||turnin||!!n.forceMark;
       n.marker.position.y=2.55+Math.sin(clock.elapsedTime*3)*0.08;}
   }
   // clear old bodies and bring new folks into town while the player is away
@@ -3310,9 +3407,9 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();buildRing();placePlots();placeSideQuests();placeHideouts();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();buildRing();placePlots();placeVillage();placeSideQuests();placeHideouts();
   freezeStatic();mergeStatic();
-  spawnPeople();spawnTownFolk();spawnSideNPCs();spawnPromoter();spawnDeerHerds();buildMap();buildCompass();
+  spawnPeople();spawnTownFolk();spawnSideNPCs();spawnPromoter();spawnVillage();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
   applyQuality();if(savedFP){firstPerson=true;PH.head.visible=false;}
   built=true;$('loadNote').textContent='';if(hasSave())$('btnCont').hidden=false;

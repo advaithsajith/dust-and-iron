@@ -8,7 +8,7 @@ const P = api.P, QS = api.QS, QDEF = api.QDEF;
 const step = s => { for (let i = 0; i < s * 20; i++) { api.clock.elapsedTime += 0.05; api.tick(0.05); P.hp = 100; globalThis.__SIM.clock.advance(50); } };
 const flush = () => { for (let i = 0; i < 30 && (api.dlg || api.menu); i++) { if (api.dlg) api.advanceDlg(); else api.closeMenu(); step(0.3); } };
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
-const side = Object.keys(QDEF).filter(k => QDEF[k].side);
+const side = Object.keys(QDEF).filter(k => QDEF[k].side && !k.startsWith('rw'));
 ok(side.length === 8 && side.every(k => QS[k].state === 'available'), `${side.length} side quests available: ${side.map(k => QDEF[k].title).join(', ')}`);
 for (const k of side) {
   const giver = api.NPC[QDEF[k].giver]; P.pos.set(giver.pos.x + 1.5, 0, giver.pos.z); step(0.3);

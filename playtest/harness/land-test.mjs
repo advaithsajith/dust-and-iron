@@ -14,7 +14,7 @@ P.money = 20000;
 ok(LAND.plots.length === 8, 'plots: ' + LAND.plots.map(p => `${p.name} (${Math.round(p.x)},${Math.round(p.z)}) $${p.price}`).join(' · '));
 const near = []; for (const p of LAND.plots) for (const b of api.boxes) if (p.x > b.minX - 20 && p.x < b.maxX + 20 && p.z > b.minZ - 20 && p.z < b.maxZ + 20) near.push(p.name);
 ok(near.length === 0, 'no plot overlaps existing buildings ' + near.join(','));
-const kids = api.npcs.filter(n => n.kid && !n.townOf && !n.id), adults = api.npcs.filter(n => !n.important && !n.kid && !n.area && !n.peddler);
+const kids = api.npcs.filter(n => n.kid && !n.townOf && !n.id && !n.safe), adults = api.npcs.filter(n => !n.important && !n.kid && !n.area && !n.peddler);
 ok(kids.length === 6 && adults.length >= 16, `town has ${adults.length} pedestrians and ${kids.length} children`);
 // shoot at a kid: no harm, no crime
 const k = kids[0]; api.hurt(k, 999, false, k.pos.clone()); ok(!k.dead && P.bounty === 0, 'children cannot be harmed');
@@ -33,7 +33,7 @@ api.buy(pickItem('Expand to level 2')); flush(); ok(api.plotOf(parlor).level ===
 const L = api.dailyLedger(); ok(L.l > 300, `land pays $${L.l} a day · gang cap ${api.gangCap()}`);
 // control
 const miss = api.holdings().filter(h => !h.h).map(h => h.n); ok(true, `control ${Math.round(api.territoryControl() * 100)}%, missing: ${miss.join(', ')}`);
-api.EMP.town = true; api.CH.held = true; api.LATE.mine = true; api.LATE.rivals.seized.creek = true; api.LATE.rivals.seized.hollow = true; for (const k in api.TOWNS) api.TW.owned[k] = { day: 1 };
+api.EMP.town = true; api.CH.held = true; api.LATE.mine = true; api.LATE.rivals.seized.creek = true; api.LATE.rivals.seized.hollow = true; for (const k in api.TOWNS) api.TW.owned[k] = { day: 1 }; api.NATION.treaty = true;
 step(3); ok(api.territoryControl() === 1 && api.rankInfo().name === 'Lord of the Arroyo', `full control: ${api.rankInfo().name}`);
 // workers stay on their land
 step(30); const strays = api.npcs.filter(n => n.area && Math.hypot(n.pos.x - n.area.x, n.pos.z - n.area.z) > n.area.r + 8);

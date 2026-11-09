@@ -112,6 +112,16 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### The Red Water People
+
+In the valley south of Coppervale lives the Red Water People, a fictional nation with its own council, farmers, hunters and horse herders. Their village has hide lodges and earth lodges, cornfields and a horse corral. They are people with their own leaders and their own stake in the land, not targets: no one in the village can be harmed.
+
+- **Earn their trust.** Help Toshane recover the horses thieves stole, and get Doc Hargrove's medicine to the lodges when measles comes off the wagon trains. Trade hides with Ena at fair prices, or send supplies for the winter. Old Wesa will tell you what the last forty years have been like for her people.
+- **Make a treaty of friendship** with Kehala, speaker of the council, once trust is high enough: trade pays you $25 a day, and their scouts warn you of every plot against your life.
+- **The removal order.** Once you know them, a federal land commissioner arrives in Coppervale with papers ordering the Red Water People off their valley so the railroad can have the river crossing. You decide:
+  - **Tear up the order** and defend the valley when the army sends soldiers to clear it (if Fort Ashby is yours, there are no soldiers to send);
+  - **Pay him to lose the paperwork**, for a few years at least;
+  - or **sign it and take the money**. The game lets you, and it shows you what that means.
 ### Fists, festivals, elections and grand projects
 
 - **Fighting up close.** Men fall differently depending on how they're hit: backwards, face-first, spinning, to their knees, slumping from a headshot, or thrown back by a close shotgun blast. **V** punches; **Shift+V**, or **V** twice quickly, kicks hard enough to knock a man back.
