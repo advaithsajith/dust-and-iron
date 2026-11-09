@@ -60,6 +60,7 @@ The game needs a **keyboard and mouse**. Click the game to capture the mouse; **
 | **J** | Journal | **M** | Map |
 | **K** | Your empire | **B** | Pitch a camp (out in the desert) |
 | **G** | Gang: follow me / hold here | **T** | Aim assist on or off |
+| **N** | Gang work: assign jobs | | |
 
 ### Four ways to play
 
@@ -104,6 +105,23 @@ Eight plots of land across the territory are for sale. Buy a deed at the bank's 
 Each business expands to level 3, adding income and workers who live on the land. You can now run six camps instead of three. The empire screen (**K**) shows your **territory control**: hold Coppervale, its church, both Vance hideouts, the mine and all eight plots to become **Lord of the Arroyo**.
 
 Coppervale is busier too: more townsfolk, and children who run and play in the street. Children can't be harmed.
+
+### Gang work
+
+Press **N** (or use the camp ledger) to put riders on jobs that run on their own while you're elsewhere:
+
+| Job | What they do |
+|---|---|
+| Moonshine runner | Hauls crates from every camp and sells them: $10 a crate, $15 with Blessed spirits |
+| Bounty hunter | About one contract a day each, for 80% of the reward. Sometimes comes back wounded |
+| Land foreman | +10% land income each (up to three). With **auto-expand** on, buys deeds, builds and upgrades businesses and the homestead with money above a reserve you set |
+| Racketeer | Signs up one unprotected business a day, and every racket pays $5 more |
+| Hunter | Sells hides, about $30 a day each |
+| Recruiter | Brings in a new rider most days, while there's room |
+| Homestead guard | Stands guard at home: +2 defense each, and shoots raiders |
+| Stagecoach robber | About $100 a day each, but your bounty creeps up |
+
+Workers still draw wages and count toward your gang size; call them back at any time. Every few hours a note tells you what they earned.
 
 ### Haggling, prisoners and the gallows
 
