@@ -53,7 +53,7 @@ The game needs a **keyboard and mouse**. Click the game to capture the mouse; **
 | **W A S D** | Move (on horseback, **A**/**D** steer) | **Shift** | Sprint / gallop |
 | **Mouse** | Look | **Right-click** | Aim |
 | **Left-click** | Fire (hold for repeat fire) | **R** | Reload |
-| **1 2 3** / wheel | Revolver, rifle, shotgun | **V** | Punch |
+| **1 2 3** / wheel | Revolver, rifle, shotgun | **V** | Punch (**Shift+V** or double-tap: kick) |
 | **E** | Talk, loot, skin, rob (while aiming) | **F** | Mount, dismount or steal a horse |
 | **H** | Whistle for your horse | **Q** | Focus: click to mark, **Q** again to fire |
 | **X** | Drink a tonic | **C** | First / third person |
@@ -112,6 +112,13 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### Fists, festivals, elections and grand projects
+
+- **Fighting up close.** Men fall differently depending on how they're hit: backwards, face-first, spinning, to their knees, slumping from a headshot, or thrown back by a close shotgun blast. **V** punches; **Shift+V**, or **V** twice quickly, kicks hard enough to knock a man back.
+- **The boxing ring** stands south of the main street. Mickey Doyle runs bare-knuckle prize fights against five opponents, from Farmhand Gus to Big Bear Kowalski, with purses from $20 to $300 and side bets on yourself. No guns in the ring, and losing a fight doesn't kill you.
+- **Festivals.** Throw one from the town hall or the war room ($300): visitors arrive from every town, bunting and lanterns go up, a parade with a band, flag bearers, riders and dancers marches down the main street at noon while the town lines the road, and fireworks fill the sky after dark. Visitors spend money, and conquered towns stay content for three days.
+- **Rigged elections.** Coppervale votes for mayor every week. Back a puppet candidate, then give speeches, buy whiskey for voters, buy the newspaper, send your gang to watch the polls, stuff the ballot box (risky), or pay the reform candidate, Judge Harmon Vale, to drop out. A puppet mayor kicks back $50 a day; a reformer halves your rackets. In conquered towns you can install a puppet mayor for more tribute and fewer revolts.
+- **Grand projects** at the town hall: a bronze statue of you, the **Governor's Mansion** (a great white house with columns, and a bed), the **Grand Casino** (with blackjack), the **Railroad Depot** (free, instant fast travel), and the domed **Territorial Capitol**, which makes you Governor of the Arroyo.
 ### More people to fight
 
 - **Six bandit hideouts** across the map: Rattlesnake Gulch, Bone Canyon, Widow's Peak, Coyote Hole, Black Mesa and Dead Man's Draw. Each holds 6–8 outlaws and a named leader, and shows on the map as a red dot. Clear one for the gang's stash and ammunition; two days later a new gang moves in.

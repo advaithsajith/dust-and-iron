@@ -1075,6 +1075,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
     <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouses.length?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
   <div class="q"><b>Homestead</b><div>${home()?`${HOME_BUILDS.filter(b=>hb(b.k)).map(b=>b.name).join(', ')||'Nothing built yet. Open the camp ledger and choose Build on the homestead.'} · Defense ${homeDefense()}`:'Pitch a camp first; your first camp becomes your homestead.'}</div><div>Farm +$${L.f} · Outposts +$${L.o} · Mine +$${L.m}${LATE.mine?' (yours: dig there for more gold)':''}</div></div>
   <div class="q"><b>Rivals and the law</b><div>${LATE.rivals.started?Object.keys(RIVAL_SITES).map(k=>`${RIVAL_SITES[k]}: ${LATE.rivals.seized[k]?'your outpost':LATE.rivals.held[k]?'held by the Vance Syndicate':'empty'}`).join(' · '):'No rival gangs in the territory yet.'}</div><div>${LAW.forever?'Marshal Crowe is dead. The law will not come back.':LATE.marshal.state==='coming'||LATE.marshal.state==='hunting'?'A U.S. Marshal is coming for you.':LATE.sheriffDead?'The sheriff is dead.':'Sheriff Hale keeps the peace.'}${LATE.bounty?` · Bounty job: ${esc(LATE.bounty.name)} near ${esc(placeName(LATE.bounty))} ($${LATE.bounty.reward})`:''}</div></div>
+  <div class="q"><b>Governing</b><div>${ELEC.mayor?`Mayor of Coppervale: ${ELEC.mayor}${ELEC.mayor===REFORMER?' (a reformer: your rackets pay half)':' (your puppet: +$50 a day)'}`:'No mayor elected yet.'}${EMP.town&&ELEC.next>=0?` · next election day ${ELEC.next}, your candidate at ${Math.round(clamp(ELEC.support+(GRAND.capitol?15:0),0,99))}%`:''}</div><div>Grand projects: ${Object.keys(GRAND).map(k=>GRANDS[k].name).join(', ')||'none yet (town hall)'} · festivals held: ${FEST.count} · prize fights won: ${BOX.wins}</div></div>
   <div class="q"><b>Blood on the sand</b><div>${P.stats.kills} downed in all · ${LATE.hideoutsCleared||0} hideouts cleared · ${LATE.encounters||0} road ambushes survived · ${LATE.duelsWon||0} duels won</div><div>Bandit hideouts holding out: ${HIDEOUTS.filter(h=>P.day>=hidState(h.k).cleared+2).map(h=>h.name).join(', ')||'none right now'}</div></div>
   <div class="q"><b>Towns and the army</b><div>${Object.keys(TOWNS).map(k=>`${TOWNS[k].name}: ${TW.owned[k]?`yours, $${tributeOf(k)} a day, garrison ${garrisonOf(k).length}`:'not yours'}`).join(' · ')}</div><div>Army: ${mercs().length}/${armyCap()} mercenaries · war room at the jailhouse or town hall${TW.siege?` · <b>Siege of ${TOWNS[TW.siege.k].name}: wave ${TW.siege.wave+1}</b>`:''}</div></div>
   <div class="q"><b>Money put away</b><div>Bank account $${BANK.bal} (${Math.round(bankRate()*100)}% a day${BANK.earned?`, $${BANK.earned} interest so far`:''})${BANK.own?' · You own the bank: +$'+bankFees()+' a day in fees':''} · Gang stash $${STASH.money}</div><div>${LATE.plot&&LATE.plot.warned?`Someone wants you dead: ${LATE.plot.by} hired ${LATE.plot.leader}.`:LATE.plotsSurvived?`You have survived ${LATE.plotsSurvived} attempt${LATE.plotsSurvived>1?'s':''} on your life.`:''}</div></div>
@@ -1236,13 +1237,13 @@ function mapTravelHover(){const p=MV.hover;if(p&&p.travel)fastTravel(p);else toa
 function canTravel(){if(WANTED.active)return 'Not while the law is after you.';if(RAID.active)return 'Not in the middle of a raid.';
   if(outlaws.some(e=>!e.dead&&e.alerted&&e.tag!=='law'&&d2(e.pos,P.pos)<90))return 'Not in the middle of a fight.';return null;}
 function advanceHours(h){gameHour+=h;if(gameHour>=24){gameHour-=24;P.day++;onNewDay();}}
-function fastTravel(p){if(CH.expand>=5)p={...p,free:true};const why=canTravel();if(why){toast('Can\'t travel',why);return;}
+function fastTravel(p){if(CH.expand>=5||GRAND.depot)p={...p,free:true};const why=canTravel();if(why){toast('Can\'t travel',why);return;}
   if(!p.free&&P.money<3){toast('Not enough money','A stage ticket costs $3.');return;}
   if(!p.free)P.money-=3;closeModal();const f=$('fade');f.textContent='';f.style.opacity=1;
   setTimeout(()=>{if(P.mounted)dismount(true);const a=rand(0,TAU);P.pos.set(p.tx+Math.cos(a)*2,0,p.tz+Math.sin(a)*2);resolve(P.pos,0.4);P.pos.y=groundY(P.pos.x,P.pos.z);
     HORSE.pos.set(P.pos.x+2.5,0,P.pos.z+1.5);resolve(HORSE.pos,1.1);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);HORSE.speed=0;HORSE.called=false;
     if(EMP.order!=='hold')for(const g of EMP.gang)if(!g.dead){if(g.mounted)dismountLaw(g);g.pos.set(P.pos.x+rand(-6,6),0,P.pos.z+rand(-6,6));resolve(g.pos,0.5);}
-    advanceHours(2);camPivot=null;updateShadowProxies(true);reveal(P.pos.x,P.pos.z,160);f.style.opacity=0;toast('Arrived',`${p.label}${p.free?'':' · $3 stage fare'}`);save();},700);}
+    advanceHours(GRAND.depot?0:2);camPivot=null;updateShadowProxies(true);reveal(P.pos.x,P.pos.z,160);f.style.opacity=0;toast('Arrived',`${p.label}${p.free?'':' · $3 stage fare'}`);save();},700);}
 const compassEls=[];
 function buildCompass(){const c=$('compass');const L=['N','NE','E','SE','S','SW','W','NW'];for(let i=0;i<24;i++){const el=document.createElement('span');const a=i/24*TAU;
   if(i%3===0){el.textContent=L[i/3];el.className=i%6===0?'c':'';}else{el.textContent='|';el.className='t';}c.appendChild(el);compassEls.push({el,a});}
@@ -1284,7 +1285,7 @@ const curW=()=>WEAPONS[P.weapon];
 const tipFor=()=>[PH.gunTip,PH.rifleTip,PH.shotTip][P.weapon];
 function shotSpread(){const w=curW();return w.spread*(P.aiming?1:2.5)*(P.speed>3&&!P.mounted?1.8:1)*(P.mounted&&HORSE.speed>2?1.6:1)+P.bloom;}
 function fire(target){
-  const w=curW();if(P.fireCd>0||P.reloadT>0||!P.alive||dlg||menu)return;
+  const w=curW();if(P.fireCd>0||P.reloadT>0||!P.alive||dlg||menu)return;if(BOX.active){if(!P.boxWarnT||clock.elapsedTime-P.boxWarnT>2){P.boxWarnT=clock.elapsedTime;toast('No guns in the ring','Fists and boots only. V to punch, Shift+V to kick.');}return;}
   if(w.ammo<=0){sfx.click();P.fireCd=0.25;if(w.reserve>0)startReload();else if(!w.warned){w.warned=true;toast('Out of ammo','Buy more at Bell\'s Mercantile.');}return;}
   w.ammo--;P.fireCd=w.rate;P.fireHold=0.9;
   // turn to face the shot first, so the muzzle is where the player expects it
@@ -1327,7 +1328,7 @@ function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0)||e.kid)re
     if(e.tag==='law'){if(!WANTED.active&&!e.crimeHit){e.crimeHit=true;commitCrime('assaultLaw',e.pos,null,true);}}
     else for(const o of outlaws)if(o.tag===e.tag&&!o.dead)o.alerted=true;}
   else if(e.kind==='deer')e.fearT=10;else if(e.kind==='horse')e.fearT=6;else e.alerted=true;
-  if(e.hp<=0){if(e.mounted)dismountLaw(e);e.dead=true;e.fallT=0;P.stats.kills++;
+  if(e.hp<=0){if(e.mounted)dismountLaw(e);e.dead=true;e.fallT=0;pickDeath(e,head,ally);P.stats.kills++;
     if(!ally){if(head)P.stats.heads++;P.focus=Math.min(100,P.focus+12);hitmarker(true);if(head&&e.kind==='outlaw')toast('Headshot','');}
     if(e.boss)banner('',`${e.name} is dead`,true);
     if(e.tag==='law'){commitCrime('killLaw',e.pos,null,true);onLawKilled(e);}
@@ -1441,7 +1442,7 @@ function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&!isSpouse(n.id)&&ROM
   else{m=Math.floor(rand(3,14));t='robbery';line=pick(['Please, it\'s all I have!','Take it and go!','You\'ll hang for this.']);}
   P.money+=m;P.stats.robbed=(P.stats.robbed||0)+m;sfx.coin();toast(n.name,`“${line}” (+$${m})`);scare(n);commitCrime(t,n.pos,n);}
 function lootNPC(n){n.looted=true;const m=Math.floor(rand(1,9));P.money+=m;sfx.coin();toast('Searched the body',`$${m}`);commitCrime('looting',n.pos,null);}
-function damagePlayer(n,from){if(!P.alive)return;P.hp-=n*(1-(P.armor||0));P.lastHurt=clock.elapsedTime;cam.shake=Math.max(cam.shake,0.35);vignetteT=0.6;sfx.hurt();if(P.hp<=0)die();}
+function damagePlayer(n,from){if(!P.alive)return;if(BOX.active&&P.hp-n*(1-(P.armor||0))<=8){P.hp=8;boxEnd(false);return;}P.hp-=n*(1-(P.armor||0));P.lastHurt=clock.elapsedTime;cam.shake=Math.max(cam.shake,0.35);vignetteT=0.6;sfx.hurt();if(P.hp<=0)die();}
 function enemyShoot(e,d){
   (e.mounted?e.hq.g:e.h.g).updateMatrixWorld(true);const tip=e.h.gunTip.getWorldPosition(new V3());const chest=P.pos.clone();chest.y+=P.mounted?2.4:1.3;
   let ch=(0.55-d*0.006)*e.acc*(e.mounted?0.7:1);if(P.speed>5||HORSE.speed>8&&P.mounted)ch*=0.55;if(focusOn)ch*=0.6;if(P.aiming&&!P.mounted)ch*=0.9;ch=clamp(ch,0.05,0.75);
@@ -1476,10 +1477,10 @@ const RAID={active:false,wave:0,next:0};
 const liveGang=()=>EMP.gang.filter(a=>!a.dead);
 const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+ROM.spouses.length*3+(hb('bunk')?4:0)+LAND.plots.reduce((s,p)=>{const o=plotOf(p);return s+(o&&o.type==='outpost'?1+o.level*2:0);},0);
 function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.reduce((s,c)=>s+c.still*10,0)+Object.keys(EMP.rackets).length*10+Object.keys(EMP.blackmail).length*12+(EMP.town?60:0)
-  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0)+Math.min(40,(LATE.hanged||0)*4);}
-function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:(LAND.lord||territoryControl()>=1)?'Lord of the Arroyo':RANKS[idx][1],next:RANKS[idx+1]};}
-function dailyLedger(){const r=Object.keys(EMP.rackets).length*(onJob('racket').length?15:10),b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40+expBuilt().length*10+TOWN.tax*30:0,w=liveGang().filter(a=>!a.kin).length*3+mercs().length*2,
-  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=Math.round(landIncome()*(1+Math.min(3,onJob('foreman').length)*0.1)),k=bankFees(),v=tributeTotal(),j=ransomIncome();return {r,b,t,w,f,o,m,c,l,k,v,j,net:r+b+t+f+o+m+c+l+k+v+j-w};}
+  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0)+Math.min(40,(LATE.hanged||0)*4)+Object.keys(GRAND).length*20+(GRAND.statue?15:0)+Math.min(50,FEST.count*10);}
+function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:GRAND.capitol?'Governor of the Arroyo':(LAND.lord||territoryControl()>=1)?'Lord of the Arroyo':RANKS[idx][1],next:RANKS[idx+1]};}
+function dailyLedger(){const r=Math.round(Object.keys(EMP.rackets).length*(onJob('racket').length?15:10)*(ELEC.mayor===REFORMER?0.5:1)),b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40+expBuilt().length*10+TOWN.tax*30:0,w=liveGang().filter(a=>!a.kin).length*3+mercs().length*2,
+  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=Math.round(landIncome()*(1+Math.min(3,onJob('foreman').length)*0.1)),k=bankFees(),v=tributeTotal(),j=ransomIncome(),g=grandIncome()+mayorKickback();return {r,b,t,w,f,o,m,c,l,k,v,j,g,net:r+b+t+f+o+m+c+l+k+v+j+g-w};}
 function openCustom(title,items){menu={custom:{title,items}};renderMenu();}
 function closeMenu(){menu=null;renderMenu();}
 function ensureGangName(cb){if(EMP.name)return cb();
@@ -1497,7 +1498,7 @@ function recruit(n){closeMenu();ensureGangName(()=>{const i=npcs.indexOf(n);if(i
 function hireAtCamp(c){closeMenu();ensureGangName(()=>{const a=spawnAlly(c.x+rand(-4,4),c.z+rand(-4,4));toast(`${a.name} joins ${EMP.name}`,'They\'ll ride with you.');save();});}
 function nearestAlly(p,r){let b=null,bd=r;for(const a of EMP.gang){if(a.dead||(jobOf(a)!=='ride'&&jobOf(a)!=='guard'&&jobOf(a)!=='bodyguard'))continue;const d=d2(a.pos,p);if(d<bd){bd=d;b=a;}}return b;}
 function pickAllyTarget(a){let best=null,bd=55;
-  for(const e of outlaws){if(e.dead||e.surrender)continue;const d=d2(e.pos,a.pos);
+  for(const e of outlaws){if(e.dead||e.surrender||e.tag==='boxer'||e.tag==='duel')continue;const d=d2(e.pos,a.pos);
     if(e.tag==='law'?!(WANTED.active||RAID.active):!(e.alerted||d<30))continue;if(d<bd){bd=d;best=e;}}
   for(const w of animals)if(w.kind==='wolf'&&!w.dead&&w.alerted){const d=d2(w.pos,a.pos);if(d<bd){bd=d;best=w;}}
   return best;}
@@ -1628,8 +1629,8 @@ function onNewDay(){const L=dailyLedger();
   if(!LAW.forever)LAW.fear*=0.5;if(LAW.refuse&&LAW.fear<6&&!LAW.forever){LAW.refuse=false;toast('New deputies in Fort Ashby','The law is willing to ride against you again.');}
   // from the day after a wedding, each spouse may bring a child at dawn, up to three each
   if(ROM.spouses.length){placeSpouse();let k=0;for(const id of ROM.spouses)if(P.day-ROM.wedDay>=1&&ROM.children.length+k<(hasLaw('fruitful')?5:3)*ROM.spouses.length&&Math.random()<(hasLaw('fruitful')?0.9:0.6))setTimeout(birthChild,3000+(k++)*4000);}
-  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c||L.l||L.k||L.v||L.j){P.money=Math.max(0,P.money+L.net);
-    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''}${L.l?` · Land $${L.l}`:''}${L.k?` · Bank $${L.k}`:''}${L.v?` · Tribute $${L.v}`:''}${L.j?` · Ransoms $${L.j}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
+  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c||L.l||L.k||L.v||L.j||L.g){P.money=Math.max(0,P.money+L.net);
+    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''}${L.l?` · Land $${L.l}`:''}${L.k?` · Bank $${L.k}`:''}${L.v?` · Tribute $${L.v}`:''}${L.j?` · Ransoms $${L.j}`:''}${L.g?` · Grand $${L.g}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
   if(EMP.town&&!LAW.forever&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
   lateNewDay();save();}
 
@@ -1895,8 +1896,8 @@ function updateCows(dt){for(const c of LATE.herd){c.t-=dt;if(c.t<=0){c.t=rand(4,
     if(c.speed)tryMove(c.pos,Math.sin(c.yaw)*c.speed*dt,Math.cos(c.yaw)*c.speed*dt,0.7,1.2);c.pos.y=groundY(c.pos.x,c.pos.z);}
   for(const c of [...LATE.herd,...LATE.cows]){if(d2(c.pos,P.pos)>180)continue;c.q.g.position.copy(c.pos);c.q.g.rotation.y=c.yaw;animQuad(c.q,c.speed,dt,!c.speed);}}
 let lateT=0,smokeT=0;
-function updateLate(dt){updateSkyLife(dt);updateHanging(dt);updateWorkers(dt);updateAssassins(dt);updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
-  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();updateHideouts();updateEncounters();updateDuels();
+function updateLate(dt){updateFestival(dt);updateSkyLife(dt);updateHanging(dt);updateWorkers(dt);updateAssassins(dt);updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
+  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();updateHideouts();updateEncounters();updateDuels();updateBox();electionTick();
   if(!LATE.rivals.started&&QS.hollow.state==='done'){LATE.startT-=1;if(LATE.startT<=0)startRivals();}
   const c=home();if(c&&c.smokeAt&&d2(c,P.pos)<150&&(smokeT=(smokeT+1)%2)===0)puff(c.smokeAt,0x9a9590,2,0.6,1.4);}
 function lateNewDay(){townsNewDay();for(const p of (LATE.jailed||[]))p.days--;LATE.jailed=(LATE.jailed||[]).filter(p=>p.days>0);bankNewDay();plotNewDay();workDay();churchNewDay();checkControl();scheduleHanging();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
@@ -1905,14 +1906,15 @@ function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   for(const k in LATE.rivals.held)if(LATE.rivals.held[k]&&!LATE.rivals.seized[k])spawnRivals(k);for(const k in LATE.rivals.seized)if(LATE.rivals.seized[k])plantFlag(SITES[k]);
   if(LATE.bounty)LATE.bounty.spawned=false;
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
-  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();townsInit();buildSkyLife();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
+  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();townsInit();grandInit();buildSkyLife();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax},hid:Object.fromEntries(Object.entries(HID).map(([k,v])=>[k,{cleared:v.cleared,count:v.count||0}])),fights:{h:LATE.hideoutsCleared||0,d:LATE.duelsWon||0,e:LATE.encounters||0},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax,calm:TW.calm||0},grand:GRAND,elec:{...ELEC,history:ELEC.history.slice(-10)},fest:{day:FEST.day,count:FEST.count},box:{rank:BOX.rank,wins:BOX.wins},hid:Object.fromEntries(Object.entries(HID).map(([k,v])=>[k,{cleared:v.cleared,count:v.count||0}])),fights:{h:LATE.hideoutsCleared||0,d:LATE.duelsWon||0,e:LATE.encounters||0},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
   LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}if(s.hid)for(const k in s.hid)HID[k]={...s.hid[k],spawned:false};if(s.fights){LATE.hideoutsCleared=s.fights.h;LATE.duelsWon=s.fights.d;LATE.encounters=s.fights.e;}
-  if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;}LATE.jailed=s.jailed||[];if(s.bank)Object.assign(BANK,s.bank);if(s.stash)Object.assign(STASH,s.stash);LATE.plot=s.plot||null;LATE.hangQueue=s.hangQueue||[];LATE.plotsSurvived=s.plotsSurvived||0;
+  if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;TW.calm=s.towns.calm||0;}if(s.grand)Object.assign(GRAND,s.grand);if(s.elec)Object.assign(ELEC,s.elec);
+  if(s.fest){FEST.day=s.fest.day;FEST.count=s.fest.count||0;}if(s.box){BOX.rank=s.box.rank||0;BOX.wins=s.box.wins||0;}LATE.jailed=s.jailed||[];if(s.bank)Object.assign(BANK,s.bank);if(s.stash)Object.assign(STASH,s.stash);LATE.plot=s.plot||null;LATE.hangQueue=s.hangQueue||[];LATE.plotsSurvived=s.plotsSurvived||0;
   if(s.style){STYLE.outfit=s.style.outfit||'drifter';Object.assign(STYLE.owned,s.style.owned||{});STYLE.stable=s.style.stable||[];STYLE.horse=s.style.horse||null;STYLE.shaven=!!s.style.shaven;}}
 
 // the church: take the pulpit, then pass laws from it
@@ -2149,7 +2151,7 @@ function startHanging(name,kind,player){if(HANG.active)return;HANG.active=true;H
   for(const n of npcs)if(n.kid&&d2(n.pos,GALLOWS)<80){n.target=new V3(rand(20,50),0,rand(-5,5));}
   banner('A hanging in Coppervale',`${name} · ${kind}`,false);}
 function updateHanging(dt){if(!HANG.active)return;HANG.t+=dt;const h=HANG.body;
-  for(const n of HANG.crowd)if(!n.dead&&n.watch&&d2(n.pos,n.target)<1)n.yaw=angLerp(n.yaw,Math.atan2(GALLOWS.x-n.pos.x,GALLOWS.z-n.pos.z),0.1);
+  for(const n of HANG.crowd)if(!n.dead&&n.watch&&n.target&&d2(n.pos,n.target)<1)n.yaw=angLerp(n.yaw,Math.atan2(GALLOWS.x-n.pos.x,GALLOWS.z-n.pos.z),0.1);
   if(HANG.t>15&&!HANG.dropped){HANG.dropped=true;HANG.trap.rotation.z=1.4;HANG.trap.position.x=-0.6;h.g.position.y=1.15;sfx.click&&sfx.click();
     const isPlayer=HANG.player;let line=`${HANG.name} is dead.`;
     if(isPlayer){const p=isPlayer;LATE.hanged=(LATE.hanged||0)+1;const tips=Math.round(rand(10,30))+(p.boss?40:0)+(p.bounty?Math.round(p.bounty*1.5):0);P.money+=tips;P.stats.earned+=tips;
@@ -2406,6 +2408,8 @@ const BPURP={
   'BARBER':{keeper:'Sal the Barber',title:'Sal\'s Barbershop',items:()=>[{label:STYLE.shaven?'Let the beard grow back':'Clean shave',price:2,act:()=>{STYLE.shaven=!STYLE.shaven;wearOutfit(STYLE.outfit);toast('A new face',STYLE.shaven?'Smooth as a baby.':'The beard is back.');}},
     {label:'Hot towel and a straight razor (+2 honor)',price:3,act:()=>{P.honor=clamp((P.honor||0)+2,-100,100);}}]},
   'TOWN HALL':{keeper:'Clerk Ambrose Teal',title:'Coppervale Town Hall',items:()=>[{label:'The war room: hire mercenaries and conquer towns',price:0,act:openWar},
+    {label:`Election office: ${ELEC.puppet||'pick a candidate'} vs ${REFORMER}`,price:0,act:openElection},{label:FEST.day>=P.day?'A festival is already planned':'Throw a festival: visitors, a parade, fireworks',price:300,noMult:true,off:()=>FEST.day>=P.day,act:scheduleFestival},
+    {label:'Grand projects: a governor\'s mansion, a capitol, a casino, a railroad',price:0,act:openGrand},
     {label:`Town taxes: ${['low','normal','high'][TOWN.tax]} (change)`,price:0,note:`+$${TOWN.tax*30}/day`,act:()=>{TOWN.tax=(TOWN.tax+1)%3;toast('Taxes set',['Low: folks are happy.','Normal: $30 more a day.','High: $60 more a day, but conquered towns grumble.'][TOWN.tax]);renderMenu();}}]},
   'GENERAL STORE':{keeper:'Ned Pulaski',title:'Pulaski\'s General Store',items:()=>[{label:'Crate of 60 revolver rounds',price:15,act:()=>WEAPONS[0].reserve+=60},
     {label:'Crate of 50 rifle rounds',price:25,act:()=>WEAPONS[1].reserve+=50,off:()=>!WEAPONS[1].owned},{label:'Case of 30 shotgun shells',price:16,act:()=>WEAPONS[2].reserve+=30,off:()=>!WEAPONS[2].owned},
@@ -2500,11 +2504,16 @@ function openWar(){const own=Object.keys(TW.owned).length;
     ...Object.entries(TOWNS).map(([k,t])=>{const o=TW.owned[k],g=garrisonOf(k).length;
       return {label:o?`${t.name}: yours, $${tributeOf(k)} a day, garrison ${g}. Station a soldier there`:`${t.name}: held by ${t.leader} (${t.waves*t.per+1} defenders). Set a waypoint`,price:0,note:o?'+1':'',
         off:()=>o&&!riders().length,act:()=>{if(o){const a=riders().sort((x,y)=>(y.merc?1:0)-(x.merc?1:0))[0];a.post=k;setJob(a,'garrison');toast('Garrison',`${a.name} holds ${t.name}.`);openWar();save();}else{WP={x:t.x,z:t.z,label:t.name};closeMenu();toast('Waypoint set',`${t.name}. Talk to ${t.leader} with your army beside you.`);}}};}),
+    {label:`Election office: ${ELEC.puppet||'pick a candidate'} vs ${REFORMER}`,price:0,act:openElection},
+    {label:FEST.day>=P.day?'A festival is already planned':'Throw a festival in Coppervale',price:300,noMult:true,off:()=>FEST.day>=P.day,act:scheduleFestival},
+    {label:'Grand projects',price:0,act:openGrand},
     {label:'Call every garrison home',price:0,note:'',off:()=>!onJob('garrison').length,act:()=>{for(const a of onJob('garrison'))setJob(a,'ride');toast('Garrisons recalled','They ride with you again.');openWar();save();}}]);}
 const garrisonOf=k=>onJob('garrison').filter(a=>a.post===k);
-const tributeOf=k=>TOWNS[k].tribute+garrisonOf(k).length*10;
+const tributeOf=k=>Math.round((TOWNS[k].tribute+garrisonOf(k).length*10)*(TW.owned[k]&&TW.owned[k].puppet?1.25:1)*(GRAND.capitol?1.2:1));
 function townBossMenu(n){const k=n.townBoss,t=TOWNS[k];
   if(TW.owned[k]){openCustom(`${t.leader} · ${t.name} answers to you`,[{label:'Hear how the town fares',price:0,act:()=>{closeMenu();dialog(t.leader,[`${t.name} pays its tribute, $${tributeOf(k)} a day. ${garrisonOf(k).length?`Your ${garrisonOf(k).length} soldiers keep the peace.`:'Without soldiers here, some folks talk of rising up.'}`]);}},
+    {label:TW.owned[k].puppet?`Your puppet, ${TW.owned[k].puppet}, runs ${t.name}`:`Install a puppet mayor in ${t.name} (+25% tribute, far fewer revolts)`,price:TW.owned[k].puppet?0:200,noMult:true,off:()=>!!TW.owned[k].puppet,
+      act:()=>{TW.owned[k].puppet=pick(['Mayor Silas Pratt','Mayor Honoria Beale','Alcalde Tomás Vega','Mayor Ezra Coombs','Major Wendell Fisk']);closeMenu();toast('A puppet in office',`${TW.owned[k].puppet} will rule ${t.name} in your name.`);save();}},
     {label:'Open the war room',price:0,act:openWar}]);return;}
   const army=armyNear(t.x,t.z),need=4;
   openCustom(`${t.leader}, ${t.title}`,[{label:'Talk',price:0,act:()=>{closeMenu();dialog(t.leader,t.lines);}},
@@ -2530,7 +2539,7 @@ function conquer(k,peaceful){const t=TOWNS[k];TW.owned[k]={day:P.day};plantTownF
   checkControl();save();}
 function plantTownFlag(k){if(TW.flags[k])return;const t=TOWNS[k],g=new THREE.Group();g.position.set(t.x-6,groundY(t.x-6,t.z),t.z);scene.add(g);bx(0.18,7,0.18,'#4a3424',0,3.5,0,g);bx(2.2,1.3,0.05,EMP.color,1.1,6.2,0,g);TW.flags[k]=g;}
 function dropTownFlag(k){const g=TW.flags[k];if(g){scene.remove(g);delete TW.flags[k];}}
-function townsNewDay(){for(const k in TW.owned){const g=garrisonOf(k).length,risk=Math.max(0,0.12-0.04*g+(TOWN.tax===2?0.05:0));
+function townsNewDay(){for(const k in TW.owned){const g=garrisonOf(k).length,risk=Math.max(0,0.12-0.04*g+(TOWN.tax===2?0.05:0)-(TW.owned[k].puppet?0.06:0)-((TW.calm||0)>P.day?0.12:0));
   if(Math.random()<risk){delete TW.owned[k];dropTownFlag(k);toast(`${TOWNS[k].name} has risen up`,'With no soldiers to stop them, they tore down your flag. Take it back with your army.');}}}
 const tributeTotal=()=>Object.keys(TW.owned).reduce((s,k)=>s+tributeOf(k),0);
 function townsInit(){for(const k in TW.owned)plantTownFlag(k);for(const b of expBuilt())spawnKeeper(b);}
@@ -2627,6 +2636,164 @@ function updateDuels(){if(DUEL.on){const e=DUEL.on;if(e.dead){DUEL.on=null;DUEL.
   const a=P.yaw+rand(-0.5,0.5),x=P.pos.x+Math.sin(a)*16,z=P.pos.z+Math.cos(a)*16;
   const e=spawnOutlaw(x,z,'duel',{name:pick(DUELISTS),hp:150,acc:1.6,coat:pick(['#2a1a1a','#3a2a1e','#1a1a2a']),bandana:null,hat:'#111'});e.alerted=false;e.yaw=Math.atan2(P.pos.x-x,P.pos.z-z);
   DUEL.on=e;DUEL.drawAt=clock.elapsedTime+5;banner('A challenge',`${e.name} calls you out`,false);toast('Duel','"Count of five, stranger." Draw first, or aim at him with Q and fire.');}
+// ---- death animations: men die differently depending on how they're hit ----
+function pickDeath(e,head,ally){const d=d2(e.pos,P.pos);e.dieDir=(()=>{const x=e.pos.x-P.pos.x,z=e.pos.z-P.pos.z,L=Math.hypot(x,z)||1;return {x:x/L,z:z/L};})();
+  e.dieKind=head?'head':e.kicked||(!ally&&P.weapon===2&&d<14)?'blown':pick(['back','forward','spin','knees','back','forward']);}
+function animDeath(e,dt){const kind=e.dieKind||'forward',sp=kind==='blown'?1.8:kind==='knees'?1.1:kind==='head'?2.2:2.4;e.fallT=Math.min(1,e.fallT+dt*sp);
+  const k=e.fallT,ease=k*k*(3-2*k),g=e.h.g,dir=e.dieDir||{x:0,z:1};let push=0,y=0;g.rotation.set(0,e.yaw||g.rotation.y,0);
+  if(kind==='forward'){g.rotation.x=-Math.PI/2*ease;y=0.15*ease;}
+  else if(kind==='back'){g.rotation.x=Math.PI/2*ease;push=0.7*ease;y=0.15*ease;}
+  else if(kind==='spin'){g.rotation.y=(e.yaw||0)+2.6*ease;g.rotation.z=Math.PI/2*ease;y=0.15*ease;}
+  else if(kind==='knees'){if(k<0.5){const q=k/0.5;e.h.legL.rotation.x=e.h.legR.rotation.x=-1.5*q;y=-0.42*q;}else{const q=(k-0.5)/0.5;g.rotation.x=-Math.PI/2*q;y=-0.42+0.57*q;}}
+  else if(kind==='blown'){push=2.6*ease;y=Math.sin(k*Math.PI)*0.9+0.15*ease;g.rotation.x=Math.PI/2*Math.min(1,ease*1.3);}
+  else if(kind==='head'){y=-0.35*ease;g.rotation.z=1.45*ease;e.h.legL.rotation.x=e.h.legR.rotation.x=-0.9*Math.min(1,k*2);}
+  g.position.set(e.pos.x+dir.x*push,e.pos.y+y,e.pos.z+dir.z*push);
+  if(k>=1&&push&&!e.pushed){e.pushed=true;e.pos.x+=dir.x*push;e.pos.z+=dir.z*push;g.position.set(e.pos.x,e.pos.y+y,e.pos.z);}}
+// ---- kicks: V while sprinting, or V twice quickly ----
+let lastV=-9;
+function kick(){if(P.mounted||P.kickT>0||dlg||menu||!P.alive)return;P.kickT=0.5;
+  const cf=camFwd();P.yaw=Math.atan2(cf.x,cf.z);let tgt=null,bd=2.4;
+  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();if(d<bd&&v.normalize().dot(cf)>0.45){bd=d;tgt=t;}}
+  if(!tgt){nz(0.05,700,0.1);return;}sfx.punch();cam.shake=Math.max(cam.shake,0.25);
+  const push=(t,m)=>{tryMove(t.pos,cf.x*m,cf.z*m,0.4,1.3);t.pos.y=groundY(t.pos.x,t.pos.z);};
+  if(tgt.kind==='npc'){tgt.hp-=rand(45,60);push(tgt,1.4);hurtNPC(tgt,true);}
+  else{tgt.kicked=true;hurt(tgt,tgt.melee?32:40,false,tgt.pos.clone().add(new V3(0,1.1,0)));if(!tgt.dead){push(tgt,1.6);tgt.flinchT=0.6;tgt.kicked=false;}}}
+function pressV(){const now=clock.elapsedTime;if(K.ShiftLeft||now-lastV<0.45)kick();else punch();lastV=now;}
+// ---- the boxing ring ----
+const BOX={active:false,ring:{x:-22,z:40},rank:0,opp:null,bet:0,wins:0};
+const BOXERS=[{name:'Farmhand Gus',hp:90,dmg:[4,7],spd:3.0,purse:20,o:{shirt:'#c8b898',pants:'#4a4038'}},{name:'Iron Mike Kearney',hp:130,dmg:[5,9],spd:3.3,purse:40,o:{shirt:'#8a8a8a',pants:'#2a2a2a'}},
+  {name:'The Butcher of Red Rock',hp:170,dmg:[6,11],spd:3.5,purse:80,o:{shirt:'#a02a2a',pants:'#3a2a1a',beard:'#3a2010'}},{name:'Gentleman Jim Corrigan',hp:200,dmg:[7,12],spd:4.2,purse:150,o:{shirt:'#e8e0d0',pants:'#1a1a2a'}},
+  {name:'Big Bear Kowalski',hp:280,dmg:[9,15],spd:3.8,purse:300,o:{shirt:'#5a3a2a',pants:'#2a2a2a',beard:'#5a3a20',scale:1.15}}];
+function buildRing(){const r=BOX.ring,g=new THREE.Group();g.position.set(r.x,groundY(r.x,r.z),r.z);scene.add(g);
+  bx(9,0.5,9,'#8a6a48',0,0.25,0,g);bx(8.6,0.05,8.6,'#c8b088',0,0.52,0,g);
+  for(const [a,b] of [[-4.3,-4.3],[4.3,-4.3],[4.3,4.3],[-4.3,4.3]])bx(0.25,2,0.25,'#a02020',a,1.25,b,g);
+  for(const h of [1.2,1.8])for(const [w,d,a,b] of [[8.6,0.06,0,-4.3],[8.6,0.06,0,4.3],[0.06,8.6,-4.3,0],[0.06,8.6,4.3,0]])bx(w,0.06,d,'#e8e0d0',a,h,b,g);
+  for(let i=0;i<4;i++)bx(4,0.4,0.8,'#6a4a2c',-6+i*4,0.2,-7,g);for(let i=0;i<4;i++)bx(4,0.4,0.8,'#6a4a2c',-6+i*4,0.2,7,g);
+  const sg=new THREE.Mesh(new THREE.PlaneGeometry(4,0.8),new THREE.MeshLambertMaterial({map:signTex('PRIZE FIGHTS','#e8dcc0','#7a1010'),side:THREE.DoubleSide}));sg.position.set(0,3.4,-4.4);g.add(sg);
+  bx(0.15,3.6,0.15,'#4a3424',-1.8,1.8,-4.4,g);bx(0.15,3.6,0.15,'#4a3424',1.8,1.8,-4.4,g);addCol(r.x,r.z,0.1);}
+function spawnPromoter(){const r=BOX.ring;const n=spawnNPC(null,'Mickey Doyle, fight promoter',r.x-6.5,r.z,{shirt:'#e8e0d0',vest:'#3a5a3a',pants:'#2a2a2a',hat:'#3a2a1e',bowler:true,beard:'#8a4a2a',yaw:Math.PI/2});n.promoter=true;n.important=true;}
+function boxMenu(){const opp=BOXERS[Math.min(BOX.rank,BOXERS.length-1)],champ=BOX.rank>=BOXERS.length;
+  openCustom(`Prize fights · ${champ?'You are champion of the Arroyo':`next: ${opp.name}`} · ${BOX.wins} wins`,[
+    {label:`Fight ${opp.name}${champ?' (a rematch)':''}. Bare knuckles, no guns. Purse $${champ?150:opp.purse}`,price:5,noMult:true,off:()=>BOX.active||P.mounted,act:()=>startBout(0)},
+    {label:`Fight, and bet $25 on yourself (pays double)`,price:30,noMult:true,off:()=>BOX.active||P.mounted,act:()=>startBout(25)},
+    {label:`Fight, and bet $100 on yourself (pays double)`,price:105,noMult:true,off:()=>BOX.active||P.mounted,act:()=>startBout(100)},
+    {label:'Ask how it works',price:0,act:()=>{closeMenu();dialog('Mickey Doyle',['Guns stay holstered. V to punch, Shift and V, or V twice quick, to kick.','Knock him down, you win the purse. Get knocked down, you lose your stake. Step out of the ring and you forfeit.'])}}]);}
+function startBout(bet){closeMenu();const r=BOX.ring,def=BOXERS[Math.min(BOX.rank,BOXERS.length-1)];BOX.active=true;BOX.bet=bet;
+  P.pos.set(r.x-2.5,0,r.z-2.5);P.pos.y=groundY(P.pos.x,P.pos.z)+0.5;P.hp=100;P.stamina=100;
+  const e=spawnOutlaw(r.x+2.5,r.z+2.5,'boxer',{...def.o,name:def.name,hp:def.hp,coat:null,vest:null,bandana:null,hat:'#5a4a3a',scale:def.o.scale});e.h.gun.visible=false;e.melee=true;e.box=def;e.alerted=true;e.punchCD=1.5;e.anchor.set(r.x,0,r.z);
+  BOX.opp=e;for(const n of npcs)if(!n.dead&&!n.important&&!n.kid&&!n.area&&d2(n.pos,r)<160){const a=rand(0,TAU);n.target=new V3(r.x+Math.cos(a)*7,0,r.z+Math.sin(a)*7);n.waitT=40;n.boxFan=true;}
+  banner('Prize fight',`${def.name}${bet?` · $${bet} on yourself`:''}`,false);}
+function meleeAI(e,dt){const r=BOX.ring,d=d2(e.pos,P.pos),toP=Math.atan2(P.pos.x-e.pos.x,P.pos.z-e.pos.z);e.yaw=angLerp(e.yaw,toP,1-Math.exp(-8*dt));let spd=0;
+  if(e.flinchT>0)e.flinchT-=dt;else if(d>1.5){spd=e.box.spd;tryMove(e.pos,Math.sin(e.yaw)*spd*dt,Math.cos(e.yaw)*spd*dt,0.4,1.4);if(Math.hypot(e.pos.x-r.x,e.pos.z-r.z)>4){e.pos.x=r.x+(e.pos.x-r.x)*0.98;e.pos.z=r.z+(e.pos.z-r.z)*0.98;}}
+  e.punchCD-=dt;if(d<=1.7&&e.punchCD<=0&&e.flinchT<=0){e.punchCD=rand(0.8,1.4);e.pT=0.35;damagePlayer(rand(e.box.dmg[0],e.box.dmg[1]),e);sfx.punch();}
+  e.pos.y=groundY(e.pos.x,e.pos.z)+0.5;e.h.g.position.copy(e.pos);e.h.g.rotation.y=e.yaw;animHuman(e.h,spd,dt,e.pT>0);
+  if(e.pT>0){e.pT-=dt;const q=clamp(e.pT/0.35,0,1);e.h.armR.rotation.set(-Math.PI/2*Math.sin(q*Math.PI),0,0);}else e.h.armR.rotation.set(-0.9,0,0.2);e.h.armL.rotation.set(-1.1,0,-0.2);}
+function boxEnd(won,why){const e=BOX.opp,def=e?e.box:null;BOX.active=false;BOX.opp=null;for(const n of npcs)if(n.boxFan){n.boxFan=false;n.target=null;}
+  if(e){setTimeout(()=>{const i=outlaws.indexOf(e);if(i>=0){scene.remove(e.h.g);outlaws.splice(i,1);}},5000);if(!e.dead){const i=outlaws.indexOf(e);if(i>=0){scene.remove(e.h.g);outlaws.splice(i,1);}}}
+  if(won){const purse=BOX.rank>=BOXERS.length?150:def.purse,pay=purse+BOX.bet*2;P.money+=pay;P.stats.earned+=pay;BOX.wins++;BOX.rank++;
+    banner('Knockout!',`${def.name} is down · +$${pay}`,true);sfx.coin();if(BOX.rank===BOXERS.length)toast('Champion','You are the bare-knuckle champion of the Arroyo Territory.');}
+  else banner(why||'Knocked down','You lose the fight',false);save();}
+function updateBox(){if(!BOX.active)return;const e=BOX.opp,r=BOX.ring;if(!e)return;
+  if(e.dead){boxEnd(true);return;}if(Math.hypot(P.pos.x-r.x,P.pos.z-r.z)>7){boxEnd(false,'You stepped out of the ring');return;}}
+// ---- festivals and parades ----
+const FEST={day:-1,started:false,visitors:[],deco:null,parade:null,paraded:false,fireT:0,count:0};
+function scheduleFestival(){closeMenu();FEST.day=gameHour<10?P.day:P.day+1;FEST.started=false;FEST.paraded=false;toast('A festival is coming',`${FEST.day===P.day?'Today':'Tomorrow'}: visitors from every town, a parade at noon, fireworks after dark.`);save();}
+function buildDeco(){if(FEST.deco)return FEST.deco;const g=new THREE.Group();scene.add(g);const cols=['#c83a2a','#e8c040','#2a5aa0','#e8e0d0','#3a8a3a'];
+  for(let x=-80;x<=100+(CH.expand||0)*0;x+=20){const y=groundY(x,0);for(let i=0;i<16;i++){const z=-7+i*0.95,sag=Math.sin(i/15*Math.PI)*1.2;const f=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.45,3),mat(cols[(((i+Math.round(x/20))%5)+5)%5]));f.rotation.x=Math.PI;f.position.set(x,y+6.2-sag,z);g.add(f);}
+    bx(0.04,0.04,15,'#e8e0d0',x,y+6.4,0,g).visible=true;}
+  for(let x=-70;x<=90;x+=16){const y=groundY(x,7.8);const l=new THREE.Mesh(new THREE.SphereGeometry(0.25,8,6),new THREE.MeshBasicMaterial({color:0xffb050}));l.position.set(x,y+3.2,7.8);g.add(l);const l2=l.clone();l2.position.z=-7.8;g.add(l2);}
+  g.visible=false;FEST.deco=g;return g;}
+function startFestival(){FEST.started=true;FEST.count++;buildDeco().visible=true;P.honor=clamp((P.honor||0)+5,-100,100);
+  const from=['Red Rock','San Lázaro','Fort Ashby','the Delgado Ranch','Dry Creek'];
+  for(let i=0;i<14;i++){const n=spawnCivilian(rand(-80,90),rand(-6,6));n.name=`Visitor from ${pick(from)}`;n.visitor=true;FEST.visitors.push(n);}
+  banner('Festival in Coppervale','Visitors pour in from every town',true);sfx.sting();}
+function makeMarcher(o){const h=makeHuman(o);scene.add(h.g);return h;}
+function startParade(){const P2=[];const add=(h,off,kind)=>P2.push({h,off,kind});
+  for(let i=0;i<2;i++){const h=makeMarcher({shirt:'#e8e0d0',coat:'#2a3a6a',hat:'#1a1a1a'});const pole=bx(0.08,3.4,0.08,'#4a3424',0,1.7,0.3,null);h.armR.add(pole);pole.position.set(0,-0.3,0.15);
+    const flag=bx(1.2,0.7,0.03,i?EMP.color:'#c83a2a',0.6,1.3,0,null);pole.add(flag);add(h,0+i*1.2,'flag');}
+  for(let i=0;i<4;i++){const h=makeMarcher({shirt:'#e8e0d0',coat:'#a02020',pants:'#1a1a1a',hat:'#1a1a1a',bowler:true});const drum=mesh(cylG(0.28,0.28,0.3,10),'#d8c8a0',0,0.95,0.32,null);drum.rotation.x=Math.PI/2;h.torso.add(drum);drum.position.set(0,0.1,0.3);add(h,4+i*1.1,'drum');}
+  for(let i=0;i<4;i++){const q=makeQuad({scale:1,color:pick(['#e8e2d6','#1e1a18','#8a5a34']),dark:'#1a1008',mane:'#1a1008',tailC:'#1a1008',saddle:true});scene.add(q.g);
+    const r=makeHuman({shirt:'#e8e0d0',vest:'#e3b14f',hat:'#1a1a1a',bandana:EMP.color});q.g.add(r.g);r.g.position.set(0,1.05,0.05);r.legL.rotation.set(-0.7,0,-0.35);r.legR.rotation.set(-0.7,0,0.35);P2.push({q,h:r,off:10+i*3.2,kind:'horse'});}
+  for(let i=0;i<5;i++){const h=makeMarcher({shirt:pick(['#e8c8d8','#c8402a','#e8c040']),dress:pick(['#a02a4a','#2a5aa0','#3a8a3a']),hair:pick(['#1a1008','#c8a060']),hat:null});add(h,24+i*1.3,'dance');}
+  {const h=makeMarcher({shirt:'#eee',coat:'#1a1a1a',hat:'#111',beard:'#7a7a7a'});add(h,32,'mayor');}
+  FEST.parade={x:-100,list:P2};FEST.paraded=true;banner('The parade','Down the main street of Coppervale',true);
+  for(const n of npcs)if(!n.dead&&!n.important&&!n.area&&!n.kid&&Math.random()<0.8){n.target=new V3(rand(-70,90),0,Math.random()<0.5?-8.5:8.5);n.waitT=45;n.paradeFan=true;}}
+function updateParade(dt){const p=FEST.parade;if(!p)return;p.x+=1.6*dt;
+  for(const m of p.list){const x=p.x-m.off,z=m.kind==='horse'?0:((m.off*7)%5)-2.5,y=groundY(x,z);
+    if(m.q){m.q.g.position.set(x,y,z);m.q.g.rotation.y=Math.PI/2;animQuad(m.q,1.6,dt,false);}
+    else{m.h.g.position.set(x,y,z);m.h.g.rotation.y=Math.PI/2+(m.kind==='dance'?Math.sin(clock.elapsedTime*3+m.off)*0.8:0);animHuman(m.h,1.6,dt,m.kind==='flag');
+      if(m.kind==='flag')m.h.armR.rotation.set(-2.6,0,0);if(m.kind==='drum'){m.h.armL.rotation.set(-1.2+Math.sin(clock.elapsedTime*10)*0.4,0,0);m.h.armR.rotation.set(-1.2-Math.sin(clock.elapsedTime*10)*0.4,0,0);}
+      if(m.kind==='dance')m.h.g.position.y=y+Math.abs(Math.sin(clock.elapsedTime*5+m.off))*0.25;}}
+  if(p.x>140){for(const m of p.list){scene.remove(m.q?m.q.g:m.h.g);}FEST.parade=null;for(const n of npcs)if(n.paradeFan){n.paradeFan=false;n.target=null;}}}
+const FW_COLS=[0xff4040,0xffd040,0x40a0ff,0xff80ff,0x80ff80,0xffffff];
+function updateFestival(dt){updateParade(dt);if(FEST.day!==P.day){if(FEST.started&&FEST.day<P.day)endFestival();return;}
+  if(!FEST.started&&gameHour>=8)startFestival();if(FEST.started&&!FEST.paraded&&gameHour>=12&&gameHour<16)startParade();
+  if(FEST.started&&gameHour>=20.5&&gameHour<23.5){FEST.fireT-=dt;if(FEST.fireT<=0){FEST.fireT=rand(0.6,1.4);const x=rand(-60,80),z=rand(-30,30);
+    puff(new V3(x,groundY(x,z)+rand(45,70),z),pick(FW_COLS),26,9,1.6);if(d2(P.pos,{x,z})<300)sfx.gun(140,0);}}}
+function endFestival(){FEST.started=false;FEST.day=-1;if(FEST.deco)FEST.deco.visible=false;const spent=FEST.visitors.filter(n=>!n.dead).length*15;
+  for(const n of FEST.visitors){const i=npcs.indexOf(n);if(i>=0){scene.remove(n.h.g);npcs.splice(i,1);}}FEST.visitors=[];
+  P.money+=spent;P.stats.earned+=spent;TW.calm=P.day+3;toast('The festival is over',`Visitors spent $${spent} in your town. Conquered towns stay content for three days.`);save();}
+// ---- elections: rigged, of course ----
+const ELEC={next:-1,support:40,puppet:null,mayor:null,speechDay:-1,endorsed:false,stuffed:false,withdrew:false,history:[]};
+const REFORMER='Judge Harmon Vale';
+const PUPPETS=['Clerk Ambrose Teal','Widow Pratt','Otis Bell','Your cousin Clem'];
+function electionTick(){if(!EMP.town)return;if(ELEC.next<0){ELEC.next=P.day+3;return;}if(P.day>ELEC.next)ELEC.next=P.day;
+  if(P.day===ELEC.next&&gameHour>=12&&ELEC.countedDay!==P.day)countVotes();}
+function countVotes(){ELEC.countedDay=P.day;const pup=ELEC.puppet||PUPPETS[0];ELEC.puppet=pup;const s=clamp(ELEC.support+(GRAND.capitol?15:0),0,99);
+  const win=ELEC.withdrew||Math.random()*100<s;ELEC.mayor=win?pup:REFORMER;ELEC.history.push({day:P.day,win,s:Math.round(s)});
+  if(win)banner('Election day',`${pup} is mayor of Coppervale${s>80?' by a suspicious landslide':''}`,true);else banner('Election day',`${REFORMER} wins. Reform has come to Coppervale.`,false);
+  toast(win?'Your mayor':'A reform mayor',win?'The mayor\'s office kicks back $50 a day to you.':'Your rackets pay half until the next election, in seven days.');
+  ELEC.next=P.day+7;ELEC.support=40+Math.round((P.honor||0)/10)+(FEST.count?5:0);ELEC.endorsed=false;ELEC.stuffed=false;ELEC.withdrew=false;save();}
+function openElection(){if(ELEC.next<0)ELEC.next=P.day+3;const pup=ELEC.puppet;const s=Math.round(clamp(ELEC.support+(GRAND.capitol?15:0),0,99));
+  if(!pup){openCustom('Pick your candidate for mayor',PUPPETS.map(n=>({label:`Back ${n}`,price:0,act:()=>{ELEC.puppet=n;toast('Your candidate',`${n} runs for mayor, with your money behind them.`);openElection();}})));return;}
+  const near=liveGang().filter(a=>a.h.g.visible&&d2(a.pos,P.pos)<30).length;
+  openCustom(`Election on day ${ELEC.next} · ${pup} ${s}% vs ${REFORMER}${ELEC.mayor?` · mayor now: ${ELEC.mayor}`:''}`,[
+    {label:'Give a campaign speech for your candidate (+5)',price:0,note:ELEC.speechDay===P.day?'tomorrow':'',off:()=>ELEC.speechDay===P.day,act:()=>{ELEC.speechDay=P.day;ELEC.support+=5;closeMenu();dialog(pup,['Friends! Neighbours! A vote for me is a vote for order, prosperity, and not asking questions!']);}},
+    {label:'Hand out free whiskey and dollar bills (+12)',price:100,noMult:true,act:()=>{ELEC.support+=12;toast('Bought and paid for','The saloons are full of grateful voters.');openElection();}},
+    {label:'Buy the Clarion\'s endorsement (+10)',price:150,noMult:true,off:()=>ELEC.endorsed,act:()=>{ELEC.endorsed=true;ELEC.support+=10;toast('Front page',`"${pup.toUpperCase()}: THE ONLY CHOICE"`);openElection();}},
+    {label:`Send your gang to "watch" the polling place (+15, −5 honor; ${near}/3 riders here)`,price:0,off:()=>near<3,act:()=>{ELEC.support+=15;P.honor=clamp((P.honor||0)-5,-100,100);toast('Voters intimidated','Folks vote the right way with your boys watching.');openElection();}},
+    {label:'Stuff the ballot box (+20, risky)',price:50,noMult:true,off:()=>ELEC.stuffed,act:()=>{ELEC.stuffed=true;if(Math.random()<0.25){ELEC.support-=15;P.honor=clamp((P.honor||0)-10,-100,100);toast('Caught!','A clerk saw the extra ballots. Scandal: −15.');}else{ELEC.support+=20;toast('Ballots stuffed','Three hundred votes from the cemetery.');}openElection();}},
+    {label:`Pay ${REFORMER} to drop out (50% he takes it)`,price:400,noMult:true,off:()=>ELEC.withdrew,act:()=>{if(Math.random()<0.5){ELEC.withdrew=true;toast('He withdraws','"For health reasons." Your candidate runs unopposed.');}else{ELEC.support-=10;toast('He went to the papers','"BOSS TRIES TO BUY THE JUDGE." −10.');}openElection();}}]);}
+const mayorKickback=()=>EMP.town&&ELEC.mayor&&ELEC.mayor!==REFORMER?50:0;
+// ---- grand projects: buildings fit for a governor ----
+const GRAND={};
+const GRANDS={
+  statue:{name:'A bronze statue of you',price:800,pay:0,desc:'At the west entrance to Coppervale. +15 influence.'},
+  mansion:{name:'The Governor\'s Mansion',price:3000,pay:50,desc:'A great white house with columns, north of the main street. +$50 a day, and the finest bed in the territory.'},
+  casino:{name:'The Grand Casino',price:2500,pay:60,desc:'Cards and dice for the whole territory. The house takes $60 a day, and you can play.'},
+  depot:{name:'The Railroad Depot',price:4000,pay:80,desc:'A rail line west of town. Freight pays $80 a day, and fast travel becomes free and instant.'},
+  capitol:{name:'The Territorial Capitol',price:5000,pay:100,desc:'A domed capitol south of town. +$100 a day, +20% tribute, +15 to every election, and the title of Governor.'}};
+function openGrand(){openCustom('Grand projects',Object.entries(GRANDS).map(([k,G])=>({label:GRAND[k]?`${G.name} (built)`:`${G.name}: ${G.desc}`,price:GRAND[k]?0:G.price,noMult:true,note:GRAND[k]?'✓':undefined,off:()=>!!GRAND[k],
+  act:()=>{GRAND[k]=P.day;buildGrand(k);closeMenu();banner('A grand project',`${G.name} stands complete`,true);sfx.sting();checkControl();save();}})));}
+function column(g,x,z,h){mesh(cylG(0.45,0.5,h,12),'#f2efe8',x,h/2+0.6,z,g);bx(1.1,0.3,1.1,'#e8e4dc',x,h+0.75,z,g);bx(1.1,0.3,1.1,'#e8e4dc',x,0.75,z,g);}
+function buildGrand(k){const W='#f4f1ea',T='#d8d2c4';
+  if(k==='statue'){const x=-100,z=0,g=new THREE.Group();g.position.set(x,groundY(x,z),z);scene.add(g);bx(3,1.2,3,'#8a877e',0,0.6,0,g);bx(2.2,1.6,2.2,'#a8a498',0,2,0,g);
+    const h=makeHuman({shirt:'#8a6a3a',coat:'#7a5a2a',pants:'#6a4a22',hat:'#6a4a22',skin:'#8a6a3a',beard:'#6a4a22',bandana:EMP.color});h.g.scale.setScalar(1.7);h.g.position.y=2.8;h.gun.visible=true;h.armR.rotation.set(-2.6,0,0.2);g.add(h.g);addCol(x,z,1.7);}
+  if(k==='mansion'){const x=-10,z=-70,g=building({x,z,w:30,d:14,h:9,color:W,trim:T,rot:0,porch:false,wins:6,gable:true,roofH:3,roofC:'#5a5a62'});
+    for(const sx of [-1,1])building({x:x+sx*20,z:z,w:10,d:12,h:6,color:W,trim:T,rot:0,porch:false,wins:2,gable:true,roofH:2.2,roofC:'#5a5a62'});
+    for(let i=0;i<6;i++)column(g,-7.5+i*3,8.6,8);bx(18,0.6,4.5,'#e8e4dc',0,0.3,9,g);const tri=new THREE.Shape();tri.moveTo(-9.5,0);tri.lineTo(9.5,0);tri.lineTo(0,3);tri.closePath();
+    const pd=mesh(new THREE.ExtrudeGeometry(tri,{depth:0.8,bevelEnabled:false}),W,0,9,8.2,g);bx(19,0.5,1,T,0,8.9,8.6,g);
+    const fg=new THREE.Group();fg.position.set(x,groundY(x,z+22),z+22);scene.add(fg);bx(0.15,9,0.15,'#d8d2c4',0,4.5,0,fg);bx(2,1.2,0.05,EMP.color,1,8.2,0,fg);addCol(x,z+22,0.3);
+    for(let i=-4;i<=4;i++){if(Math.abs(i)<1)continue;bx(0.12,1.3,0.12,'#2a2a2a',x+i*5,groundY(x+i*5,z+18)+0.65,z+18);}bx(42,0.08,0.08,'#2a2a2a',x,groundY(x,z+18)+1.2,z+18);}
+  if(k==='casino'){const x=60,z=50,g=building({x,z,w:24,d:16,h:10,color:'#7a1a2a',trim:'#e3b14f',rot:Math.PI,front:true,frontH:3,sign:'GRAND CASINO',signBg:'#1a0a10',signFg:'#e3b14f',wins:4});
+    for(let i=0;i<8;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,6),new THREE.MeshBasicMaterial({color:i%2?0xffd060:0xff6040}));l.position.set(-10.5+i*3,12.2,8.4);g.add(l);}
+    if(OUTFITS.length&&!npcs.some(n=>n.casino)){const n=spawnNPC(null,'Lucien, the croupier',x,z-9.8,{shirt:'#eee',vest:'#1a1a1a',pants:'#1a1a1a',hat:'#111',bowler:true,yaw:Math.PI});n.casino=true;n.important=true;}}
+  if(k==='depot'){const x=-120,z=30,g=building({x,z,w:22,d:10,h:6,color:'#7a3a2a',trim:'#3a2a1a',rot:0,front:true,sign:'ARROYO & PACIFIC RAILROAD',porch:true});
+    const tz=z+12,y0=groundY(x,tz);for(let i=-40;i<=40;i+=1.6)bx(0.3,0.15,2.6,'#5a4030',x+i,groundY(x+i,tz)+0.08,tz);for(const s of [-0.75,0.75])bx(82,0.15,0.12,'#5a5a5a',x,y0+0.22,tz+s);
+    const lg=new THREE.Group();lg.position.set(x+18,groundY(x+18,tz),tz);scene.add(lg);bx(9,2.4,2.4,'#1a1a1a',0,1.9,0,lg);const boiler=mesh(cylG(1.1,1.1,6,12),'#2a2a2a',1,2.6,0,lg);boiler.rotation.z=Math.PI/2;
+    mesh(cylG(0.4,0.6,1.8,10),'#1a1a1a',3.2,4.4,0,lg);bx(3,3.2,2.6,'#3a1a1a',-3.2,2.6,0,lg);for(const wx of [-3,-0.5,2,3.6])for(const s of [-1.2,1.2]){const wh=mesh(cylG(0.7,0.7,0.2,12),'#8a1a1a',wx,0.7,s,lg);wh.rotation.x=Math.PI/2;}
+    bx(10,2.6,2.4,'#6a4a2a',-11,1.7,0,lg);addCol(x+18,tz,3);addCol(x+7,tz,3);}
+  if(k==='capitol'){const x=-20,z=75,g=building({x,z,w:30,d:20,h:11,color:W,trim:T,rot:Math.PI,porch:false,wins:6});
+    mesh(cylG(5.5,6,4,24),W,0,13,0,g);const dome=new THREE.Mesh(new THREE.SphereGeometry(6,24,12,0,TAU,0,Math.PI/2),mat('#c8b070'));dome.position.y=15;g.add(dome);
+    mesh(cylG(0.8,1,2.4,12),W,0,22,0,g);bx(0.15,3,0.15,'#2a2a2a',0,24.6,0,g);bx(1.6,1,0.04,EMP.color,0.8,25.4,0,g);
+    for(let i=0;i<8;i++)column(g,-10.5+i*3,11.6,9);bx(26,0.6,5,'#e8e4dc',0,0.3,12,g);for(let i=0;i<4;i++)bx(26,0.25,1,'#e8e4dc',0,0.12+(3-i)*0.25,15+i*0.8,g);
+    const tri=new THREE.Shape();tri.moveTo(-12.5,0);tri.lineTo(12.5,0);tri.lineTo(0,3.5);tri.closePath();mesh(new THREE.ExtrudeGeometry(tri,{depth:0.8,bevelEnabled:false}),W,0,10.4,11.4,g);}}
+function grandInit(){for(const k in GRAND)buildGrand(k);}
+const grandIncome=()=>Object.keys(GRAND).reduce((s,k)=>s+GRANDS[k].pay,0);
+function casinoMenu(){openCustom('The Grand Casino · blackjack',[[10,'Bet $10'],[50,'Bet $50'],[200,'Bet $200']].map(([b,l])=>({label:`${l} on a hand of blackjack`,price:0,off:()=>P.money<b,act:()=>playHand(b)})).concat([{label:'Leave the table',price:0,act:closeMenu}]));}
+function playHand(b){const draw=()=>Math.min(10,1+Math.floor(Math.random()*13));let me=draw()+draw();while(me<17)me+=draw();let dl=draw()+draw();while(dl<17)dl+=draw();
+  const win=me<=21&&(dl>21||me>dl),push=me<=21&&me===dl;if(win){P.money+=b;sfx.coin();}else if(!push)P.money-=b;
+  toast(win?'You win':push?'Push':'House wins',`You ${me>21?'bust with '+me:me} · dealer ${dl>21?'busts with '+dl:dl} · ${win?'+':push?'±':'−'}$${push?0:b}`);renderMenu();save();}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
@@ -2634,6 +2801,7 @@ function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d
   if(!P.mounted)for(const cp of EMP.camps)c(Math.hypot(cp.x-P.pos.x,cp.z-P.pos.z),5,'Camp ledger',()=>openCampMenu(cp));
   c(Math.hypot(P.pos.x+64.5,P.pos.z+7.6),3.2,'Read the bounty board',openBoard);
   if(EMP.town&&!P.mounted)c(Math.hypot(P.pos.x+58,P.pos.z+9.4),3,'The war room (hire mercenaries, conquer towns)',openWar);
+  if(GRAND.mansion&&!P.mounted)c(Math.hypot(P.pos.x+10,P.pos.z+52),5,'Sleep in the Governor\'s Mansion (health and Focus)',()=>{P.focus=100;sleepTo(7);});
   if(P.aiming){let t=null,td=11;for(const e of outlaws)if(canDemand(e)){const d=d2(e.pos,P.pos);if(d<td){td=d;t=e;}}if(t)return {label:`Demand ${t.name||'the outlaw'} surrender`,act:()=>demandSurrender(t)};}
   if(!P.mounted)for(const e of outlaws)if(e.surrender&&!e.dead)c(d2(e.pos,P.pos),3,`Tie up ${e.name||'the outlaw'}`,()=>hogtie(e));
   {const gd=Math.hypot(P.pos.x-GALLOWS.x,P.pos.z-GALLOWS.z),he=LATE.hangEvent;
@@ -2667,6 +2835,8 @@ function talkTo(n){
   if(n.church){churchMenu(n);return;}
   if(n.landBoss){landMenu(n.landBoss);return;}
   if(n.townBoss){townBossMenu(n);return;}
+  if(n.promoter){boxMenu();return;}
+  if(n.casino){casinoMenu();return;}
   if(n.kid){dialog(n.name,[pick(KID_LINES)]);return;}
   if(n.peddler){peddlerMenu(n);return;}
   if(n.area){dialog(n.name,[pick(n.lines||AMBIENT)]);return;}
@@ -2747,6 +2917,7 @@ function updatePlayer(dt){
   }
   poseArms(aimPose);
   if(P.punchT>0){P.punchT-=dt;const k=clamp(P.punchT/0.4,0,1);PH.armR.rotation.set(-Math.PI/2*Math.sin(k*Math.PI),0,0);}
+  if(P.kickT>0){P.kickT-=dt;const k=clamp(P.kickT/0.5,0,1);PH.legR.rotation.set(-1.8*Math.sin(k*Math.PI),0,0);PH.torso.rotation.x=0.25*Math.sin(k*Math.PI);}
   if(!K.ShiftLeft||!has)P.stamina=Math.min(100,P.stamina+22*dt);
   if(clock.elapsedTime-P.lastHurt>6&&P.alive)P.hp=Math.min(100,P.hp+3*dt);
   if(focusOn&&!FOCUS.firing){P.focus-=14*(dt/timeScale);if(P.focus<=0){P.focus=0;focusRelease();}}
@@ -2818,7 +2989,8 @@ function updateOutlaws(dt){
       else{e.h.g.position.copy(e.pos);e.h.g.rotation.y=e.yaw;animHuman(e.h,e.speed,dt,false);}
       continue;}
     if(e.surrender&&!e.dead){e.h.armL.rotation.set(-Math.PI+0.25,0,0.2);e.h.armR.rotation.set(-Math.PI+0.25,0,-0.2);e.yaw=angLerp(e.yaw,Math.atan2(P.pos.x-e.pos.x,P.pos.z-e.pos.z),1-Math.exp(-4*dt));e.h.g.rotation.y=e.yaw;continue;}
-    if(e.dead){if(e.fallT<1){e.fallT=Math.min(1,e.fallT+dt*2.5);e.h.g.rotation.x=-Math.PI/2*e.fallT;e.h.g.position.y=e.pos.y+0.15*e.fallT;}continue;}
+    if(e.dead){if(e.fallT<1)animDeath(e,dt);continue;}
+    if(e.melee){meleeAI(e,dt);continue;}
     if(d>350)continue;
     if(e.tag==='law')e.alerted=WANTED.active;
     e.losT-=dt;if(e.losT<=0){e.losT=0.5;const a=e.pos.clone();a.y+=e.mounted?2.6:1.6;const b=P.pos.clone();b.y+=P.mounted?2.4:1.4;e.los=terrainLOS(a,b);}
@@ -3097,7 +3269,7 @@ addEventListener('keydown',e=>{if(!running)return;if(['Space','Tab','KeyQ'].incl
     case 'KeyH':sfx.whistle();if(!P.mounted){if(d2(HORSE.pos,P.pos)>300){const a=rand(0,TAU);HORSE.pos.set(P.pos.x+Math.sin(a)*60,0,P.pos.z+Math.cos(a)*60);resolve(HORSE.pos,1.1);}HORSE.called=true;}break;
     case 'KeyR':startReload();break;
     case 'Digit1':case 'Digit2':case 'Digit3':{const i=+e.code.slice(5)-1;if(WEAPONS[i].owned)switchWeapon(i);else toast('Not owned',`Buy the ${WEAPONS[i].name.toLowerCase()} at Bell's Mercantile.`);break;}
-    case 'KeyV':punch();break;
+    case 'KeyV':pressV();break;
     case 'KeyB':tryMakeCamp();break;
     case 'KeyG':if(!liveGang().length)toast('No gang yet','Build a camp (B), then recruit townsfolk or hire guns at the camp.');else setOrder(EMP.order==='hold'?'follow':'hold');break;
     case 'KeyK':openModal('empire');break;
@@ -3138,9 +3310,9 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();placePlots();placeSideQuests();placeHideouts();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();buildRing();placePlots();placeSideQuests();placeHideouts();
   freezeStatic();mergeStatic();
-  spawnPeople();spawnTownFolk();spawnSideNPCs();spawnDeerHerds();buildMap();buildCompass();
+  spawnPeople();spawnTownFolk();spawnSideNPCs();spawnPromoter();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
   applyQuality();if(savedFP){firstPerson=true;PH.head.visible=false;}
   built=true;$('loadNote').textContent='';if(hasSave())$('btnCont').hidden=false;
