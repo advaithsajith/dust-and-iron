@@ -88,6 +88,23 @@ Once Iron Hollow falls, the game keeps going.
 - **Kill the sheriff and the law sends a U.S. Marshal.** Beat him and the law never comes back.
 - **Children grow up.** After three days your children ride with the clan for free.
 
+### Land and territory control
+
+Eight plots of land across the territory are for sale. Buy a deed at the bank's **land office**, or ride to a FOR SALE stake and press **E**. Then build a business on it:
+
+| Business | Pays a day | What else |
+|---|---|---|
+| Cattle ranch | $45 | A barn, a corral and cattle |
+| Homestead farm | $30 | Crops, a windmill and a farming family |
+| Lumber mill | $55 | |
+| Gang outpost | $20 | Room for three more riders, two more per level |
+| Parlor house | $60 | A madam and her girls; your gang spends its wages there, and you can stay the night |
+| Chapel | $25 | Its own preacher and congregation; hear a sermon for honor |
+
+Each business expands to level 3, adding income and workers who live on the land. You can now run six camps instead of three. The empire screen (**K**) shows your **territory control**: hold Coppervale, its church, both Vance hideouts, the mine and all eight plots to become **Lord of the Arroyo**.
+
+Coppervale is busier too: more townsfolk, and children who run and play in the street. Children can't be harmed.
+
 ### The church
 
 Talk to **Reverend Amos Pike** at the church door, east of the main street. Endow the church for $400, or lean on him with three of your gang (free if you already own the town). Then pass laws from the pulpit:

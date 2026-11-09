@@ -773,7 +773,7 @@ function spawnPeople(){
   spawnNPC(null,'Doc Hargrove',-28,7.6,{shirt:'#ddd',coat:'#2a2a2a',pants:'#2a2a2a',bowler:true,hat:'#222',beard:'#bbb',shop:'doctor',yaw:Math.PI});
   const outfits=[{shirt:'#7a6a50',pants:'#4a4038'},{shirt:'#a05a3a',pants:'#3a3530',vest:'#3a2a1a'},{shirt:'#5a6a7a',pants:'#3a3a3a',coat:'#5a4535'},
     {shirt:'#c8b898',dress:'#7a5a3a',hair:'#3a2010'},{shirt:'#8a8a6a',pants:'#5a4a3a',beard:'#5a3a20'},{shirt:'#6a3a3a',dress:'#4a2a3a',hair:'#1a1008'}];
-  OUTFITS=outfits;for(let i=0;i<11;i++)spawnCivilian(rand(-70,60),rand(-6,6));
+  OUTFITS=outfits;for(let i=0;i<16;i++)spawnCivilian(rand(-70,60),rand(-6,6));for(let i=0;i<6;i++)spawnKid(rand(-60,50),rand(-5,5));
   spawnNPC(null,'Clerk Tibbs',12,7.6,{shirt:'#cfc6b0',vest:'#2a3a4a',pants:'#2a2a2a',bowler:true,hat:'#333',shop:'telegraph',yaw:Math.PI});
   spawnNPC(null,'Hank the Outfitter',34,7.6,{shirt:'#a08a6a',vest:'#3a2a1a',pants:'#3a342c',hat:'#4a3a28',beard:'#8a7a6a',shop:'outfitter',yaw:Math.PI});
   {const rot=Math.atan2(13,-17),x=-252+Math.sin(rot)*6.4,z=-98+Math.cos(rot)*6.4;spawnNPC(null,'Ezra at the Trading Post',x,z,{shirt:'#c8b898',vest:'#5a3a22',hat:'#8a7050',beard:'#5a4a3a',shop:'trading',yaw:rot});}
@@ -915,7 +915,8 @@ const SHOPS={
   bank:{title:'Coppervale Bank',items:()=>[
     {label:'Ask how business is',price:0,note:'',act:()=>{closeMenu();dialog('Elias Pruitt',[EMP.town?'Business is whatever you say it is now, I suppose.':'Copper built this town. Copper and other people\'s money.']);}},
     {label:LATE.mine?'You own the Lucky Strike mine claim':'Buy the Lucky Strike mine claim (miners pay $40 a day; dig gold yourself)',price:LATE.mine?0:250,noMult:true,note:LATE.mine?'✓':undefined,off:()=>LATE.mine,
-      act:()=>{LATE.mine=true;closeMenu();banner('Lucky Strike Mine','The claim is yours',true);toast('Your gold mine','It\'s in the west face of the big mesa east of the north road. Ride there and press E at the entrance to dig.');save();}}]},
+      act:()=>{LATE.mine=true;closeMenu();checkControl();banner('Lucky Strike Mine','The claim is yours',true);toast('Your gold mine','It\'s in the west face of the big mesa east of the north road. Ride there and press E at the entrance to dig.');save();}},
+    {label:`Land office: deeds across the territory (${Object.keys(LAND.owned).length}/${LAND.plots.length} yours)`,price:0,note:'',act:openLandOffice}]},
   outfitter:{title:'Hank\'s Outfitters',items:()=>{const u=LATE.up,up=(k,f)=>()=>{u[k]=1;applyUpgrades();toast('Fitted out',f);};return [
     {label:'Leather duster: take 25% less damage',price:90,off:()=>!!u.duster,act:up('duster','You take a quarter less damage from every bullet and bite.')},
     {label:'Reinforced saddle: your horse tires half as fast',price:70,off:()=>!!u.saddle,act:up('saddle','Gallop twice as long.')},
@@ -966,6 +967,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
   if(unwedSuitors().length)hints.push(`Court ${unwedSuitors().map(id=>NPC[id].name).join(', ')}. Two or three chats or gifts (wildflowers, a silver locket) win a heart; then propose with a gold ring. You can marry more than one, and every wedding brings three kin into your clan.`);
   if(EMP.camps.length&&!hb('cabin'))hints.push('Open the camp ledger and choose Build on the homestead: a cabin, then a ranch house, a barn, a watchtower and a palisade.');
   if(!LATE.bounty)hints.push('Read the bounty board outside the jailhouse for paid jobs, or wait on a road for the stagecoach.');
+  if(Object.keys(LAND.owned).length<LAND.plots.length)hints.push('Buy land deeds at the bank\'s land office. On each plot build a ranch, farm, lumber mill, gang outpost, parlor house or chapel for daily income.');
   if(!CH.held)hints.push('Take over the church: talk to Reverend Pike at its door, then pass laws from the pulpit to grow the town and put it to work for you.');
   if(!LATE.mine)hints.push('Buy the Lucky Strike Mine claim at the bank ($250) for $40 a day, and dig there yourself.');
   if(LATE.rivals.started&&Object.values(LATE.rivals.held).some(Boolean))hints.push('The Vance Syndicate holds a hideout. Wipe them out there to seize it as an outpost.');
@@ -974,13 +976,15 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
   <div style="font-size:14px;color:#6a4a2a;margin-bottom:8px">Rank: <b>${r.name}</b> · Influence ${r.inf}${r.next?` · ${r.next[0]} needed for ${r.next[1]}`:' · the territory is yours'}</div>
   <div class="q"><b>Daily ledger, paid at dawn</b><div>Rackets +$${L.r} · Blackmail +$${L.b} · Town +$${L.t} · Wages −$${L.w} · <b style="font-family:inherit;font-size:inherit">Net ${L.net>=0?'+':'−'}$${Math.abs(L.net)}</b></div></div>
   <div class="q"><b>Gang (${g.length}/${gangCap()})</b><div>${g.map(a=>`${esc(a.name)} (${Math.round(a.hp)} hp)`).join(', ')||'Nobody rides with you yet.'}</div><div>Orders: ${EMP.order==='hold'?'holding position':'riding with you'} · press G to switch</div></div>
-  <div class="q"><b>Camps (${EMP.camps.length}/3)</b><div>${EMP.camps.map(c=>`Near ${campName(c)}: still ${c.still?'level '+c.still:'not built'}, ${c.stock} crates ready`).join('<br>')||'No camps yet.'}</div><div>Moonshine on your horse: ${P.crates} crates</div></div>
+  <div class="q"><b>Camps (${EMP.camps.length}/6)</b><div>${EMP.camps.map(c=>`Near ${campName(c)}: still ${c.still?'level '+c.still:'not built'}, ${c.stock} crates ready`).join('<br>')||'No camps yet.'}</div><div>Moonshine on your horse: ${P.crates} crates</div></div>
   <div class="q"><b>Protection rackets</b><div>${list(EMP.rackets,k=>BUSINESS[k])}</div></div>
   <div class="q"><b>Blackmail</b><div>Paying: ${list(EMP.blackmail,k=>SECRETS[k].who)}</div><div>Secrets you know: ${list(EMP.dirt,k=>`${SECRETS[k].who} (${SECRETS[k].short})`)}</div></div>
   <div class="q"><b>Family</b><div>${ROM.spouses.length?`Married to ${ROM.spouses.map(id=>NPC[id].name).join(' and ')}. They live at ${EMP.camps.length?'your first camp and help run its still':'the Grand Hotel'}.`:'Unmarried.'}${unwedSuitors().length?' Courting: '+unwedSuitors().map(k=>`${NPC[k].name} ${Math.round(ROM.aff[k])}/100`).join(' · '):''}</div>
     <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouses.length?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
   <div class="q"><b>Homestead</b><div>${home()?`${HOME_BUILDS.filter(b=>hb(b.k)).map(b=>b.name).join(', ')||'Nothing built yet. Open the camp ledger and choose Build on the homestead.'} · Defense ${homeDefense()}`:'Pitch a camp first; your first camp becomes your homestead.'}</div><div>Farm +$${L.f} · Outposts +$${L.o} · Mine +$${L.m}${LATE.mine?' (yours: dig there for more gold)':''}</div></div>
   <div class="q"><b>Rivals and the law</b><div>${LATE.rivals.started?Object.keys(RIVAL_SITES).map(k=>`${RIVAL_SITES[k]}: ${LATE.rivals.seized[k]?'your outpost':LATE.rivals.held[k]?'held by the Vance Syndicate':'empty'}`).join(' · '):'No rival gangs in the territory yet.'}</div><div>${LAW.forever?'Marshal Crowe is dead. The law will not come back.':LATE.marshal.state==='coming'||LATE.marshal.state==='hunting'?'A U.S. Marshal is coming for you.':LATE.sheriffDead?'The sheriff is dead.':'Sheriff Hale keeps the peace.'}${LATE.bounty?` · Bounty job: ${esc(LATE.bounty.name)} near ${esc(placeName(LATE.bounty))} ($${LATE.bounty.reward})`:''}</div></div>
+  <div class="q"><b>Territory control: ${Math.round(territoryControl()*100)}%</b><div>${(()=>{const h=holdings(),miss=h.filter(x=>!x.h).map(x=>x.n);return miss.length?`Not yet yours: ${miss.join(', ')}.`:'Every holding in the Arroyo answers to you.';})()}</div></div>
+  <div class="q"><b>Land (${Object.keys(LAND.owned).length}/${LAND.plots.length} deeds) · +$${L.l} a day</b><div>${LAND.plots.filter(plotOf).map(p=>{const o=plotOf(p);return `${p.name}: ${o.type?`${LAND_TYPES[o.type].name}, level ${o.level}`:'nothing built yet'}`;}).join('<br>')||'No land yet. Buy deeds at the bank\'s land office, or ride to a FOR SALE stake.'}</div></div>
   <div class="q"><b>The church</b><div>${CH.held?`Your pulpit. Congregation ${townPop()} · pays $${churchIncome()} a day. Laws: ${CHURCH_LAWS.filter(l=>hasLaw(l.k)).map(l=>l.name).join(', ')||'none passed yet'}${CH.expand?` · town expanded ${CH.expand}×`:''}`:'Reverend Pike preaches his own sermons. Endow the church ($400) or lean on him with your gang to take the pulpit.'}</div></div>
   <div class="q"><b>Coppervale</b><div>${EMP.town?'Yours. Your colours fly over the jailhouse, crimes in town go unreported, and the town pays $40 a day. Keep 4+ riders or a posse may take it back.':'Held by Sheriff Hale.'}</div></div>
   <h2 style="font-size:22px;margin-top:16px">Next moves</h2>${hints.map(h=>`<div class="q">${h}</div>`).join('')||'<div class="q">You run the territory. Spend it well.</div>'}
@@ -1066,6 +1070,9 @@ function mapPOIs(){const L=[];
     else if(n.suitor&&fogAt(n.pos.x,n.pos.z))L.push({x:n.pos.x,z:n.pos.z,kind:'heart',label:n.name,desc:isSpouse(id)?'Your spouse':`Affection ${Math.round(ROM.aff[id])}/100`,small:true});}
   for(const z of DEER_ZONES)if(fogAt(z.x,z.z))L.push({x:z.x,z:z.z,kind:'hunt',label:'Hunting ground',desc:'Deer graze here. Walk in slowly on foot.',small:true});
   if(fogAt(74,-30))L.push({x:74,z:-30,kind:'landmark',label:CH.held?'Your church':'Coppervale Church',desc:CH.held?`Your pulpit. ${Object.keys(CH.laws).length} laws passed.`:'Reverend Pike preaches here. The pulpit can be bought, or taken.',always:true});
+  for(const p of LAND.plots){const o=plotOf(p);L.push({x:p.x,z:p.z,kind:'dot',color:o?EMP.color||'#3f7f35':'#c8b088',always:true,
+    label:o?o.type?`${p.name} (${LAND_TYPES[o.type].name})`:`${p.name} (your land)`:`Land for sale: ${p.name}`,
+    desc:o?o.type?`Level ${o.level} · pays $${LAND_TYPES[o.type].pay*o.level} a day`:'Ride here and press E at the stake to build':`Deed $${p.price} at the bank's land office, or at the stake`,travel:!!o,free:true,tx:p.x+3,tz:p.z+3});}
   for(const m of LANDMARKS)if(fogAt(m.x,m.z))L.push({...m,label:m.name,kind:'landmark',always:true});
   for(const k in RIVAL_SITES){const s=SITES[k];if(LATE.rivals.seized[k])L.push({x:s.x+6,z:s.z+6,kind:'dot',color:EMP.color,label:'Your outpost',desc:`${RIVAL_SITES[k]} pays you $40 a day`,always:true});
     else if(LATE.rivals.held[k])L.push({x:s.x+6,z:s.z+6,kind:'dot',color:'#a0261c',label:'Vance hideout',desc:'Kill every Vance man here to seize it',always:true});}
@@ -1164,7 +1171,7 @@ function raycastWorld(o,d,maxD){
   let best={t:maxD,ent:null,head:false,kind:'none'};
   for(let t=1;t<maxD;t+=1.5){if(o.y+d.y*t<groundY(o.x+d.x*t,o.z+d.z*t)){let a=t-1.5,b=t;for(let i=0;i<6;i++){const m=(a+b)/2;if(o.y+d.y*m<groundY(o.x+d.x*m,o.z+d.z*m))b=m;else a=m;}best.t=b;best.kind='ground';break;}}
   ray.set(o,d);for(const b of boxes){const h=ray.intersectBox(b.box3,_hv);if(h){const t=h.distanceTo(o);if(t<best.t){best.t=t;best.kind='wall';}}}
-  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0)),...horses.filter(h=>h.kind==='horse'&&!h.dead&&!h.owned)];
+  const list=[...outlaws.filter(e=>!e.dead),...animals.filter(a=>!a.dead),...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...horses.filter(h=>h.kind==='horse'&&!h.dead&&!h.owned)];
   for(const e of list){if(d2(e.pos,o)>maxD+5)continue;for(const s of hitSpheres(e)){const t=raySphere(o,d,s.c,s.r);if(t>0&&t<best.t){best.t=t;best.ent=e;best.head=!!s.head;best.limb=!!s.limb;best.kind='ent';}}}
   best.point=o.clone().addScaledVector(d,best.t);return best;
 }
@@ -1217,7 +1224,7 @@ function startAssist(){camera.getWorldDirection(_af);let best=0.2,tgt=null;
   if(tgt)P.assist={e:tgt,t:0.16};}
 function startReload(){const w=curW();if(P.reloadT>0||w.ammo>=w.mag||w.reserve<=0)return;P.reloadT=w.reload;sfx.reload();}
 function hitmarker(kill){const h=$('hitmark');h.className='on'+(kill?' kill':'');setTimeout(()=>h.className=kill?'kill':'',60);}
-function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0))return;e.hp-=dmg;puff(pt,0x8a1a10,head?10:6,2.2);
+function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0)||e.kid)return;e.hp-=dmg;puff(pt,0x8a1a10,head?10:6,2.2);
   if(e.kind==='npc')return hurtNPC(e,false);
   if(e.kind==='outlaw'){e.flinchT=0.25;e.shootT+=0.3;
     if(e.tag==='law'){if(!WANTED.active&&!e.crimeHit){e.crimeHit=true;commitCrime('assaultLaw',e.pos,null,true);}}
@@ -1229,7 +1236,7 @@ function hurt(e,dmg,head,pt,ally){if(e.dead||(e.kind==='npc'&&e.koT>0))return;e.
     if(e.tag==='law'){commitCrime('killLaw',e.pos,null,true);onLawKilled(e);}
     questEvent('kill',{type:e.kind,tag:e.tag,boss:e.boss});}
   else if(!ally)hitmarker(false);}
-function hurtNPC(n,punch){
+function hurtNPC(n,punch){if(n.kid){n.hp=100;scare(n);return;}
   if(n.hp<=0){
     if(punch){n.koT=25;n.fallT=0;n.hp=60;hitmarker(false);toast(n.name,'Knocked out cold.');if(!n.assaulted){n.assaulted=true;commitCrime('assault',n.pos,n);}return;}
     hitmarker(true);P.stats.kills++;
@@ -1325,12 +1332,12 @@ function alertFromShot(pos){
 }
 function punch(){if(P.mounted||P.punchT>0||dlg||menu||!P.alive)return;P.punchT=0.4;
   const cf=camFwd();P.yaw=Math.atan2(cf.x,cf.z);let tgt=null,bd=1.9;
-  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();
+  for(const t of [...npcs.filter(n=>!n.dead&&!(n.koT>0)&&!n.kid),...outlaws.filter(e=>!e.dead&&!e.mounted)]){const v=t.pos.clone().sub(P.pos);v.y=0;const d=v.length();
     if(d<bd&&v.normalize().dot(cf)>0.5){bd=d;tgt=t;}}
   if(!tgt){nz(0.05,900,0.08);return;}
   sfx.punch();cam.shake=Math.max(cam.shake,0.15);
   if(tgt.kind==='npc'){tgt.hp-=rand(30,40);hurtNPC(tgt,true);}else hurt(tgt,25,false,tgt.pos.clone().add(new V3(0,1.4,0)));}
-const canRob=n=>!!n&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
+const canRob=n=>!!n&&!n.kid&&!n.dead&&!(n.koT>0)&&n.id!=='sheriff'&&n.id!=='ma'&&n.robbedDay!==P.day;
 function rob(n){n.robbedDay=P.day;let m,t,line;if(n.suitor&&!isSpouse(n.id)&&ROM.aff[n.id]){ROM.aff[n.id]=0;toast(`${n.name} will never forgive you`,'Affection lost.');}
   if(n.id==='pruitt'){m=Math.floor(rand(120,220));t='bankRobbery';line='Don\'t shoot! Take the vault money, all of it!';}
   else if(n.shop){m=Math.floor(rand(25,50));t='storeRobbery';line='All right, all right. Here\'s the till.';}
@@ -1367,15 +1374,15 @@ const SECRETS={bank:{who:'Elias Pruitt',short:'skimming the payroll',line:'Pruit
   doctor:{who:'Doc Hargrove',short:'selling laudanum out back',line:'The Doc sells laudanum out the back door to anyone with a dollar.'},
   telegraph:{who:'Clerk Tibbs',short:'reading private telegrams',line:'Tibbs reads every private telegram and sells what he learns.'}};
 const BUSINESS={store:'Bell\'s Mercantile',saloon:'The Rusty Spur',hotel:'Grand Hotel',doctor:'Doc Hargrove',telegraph:'Telegraph Office',bank:'Coppervale Bank',outfitter:'Hank\'s Outfitters',trading:'Western Trading Post'};
-const RANKS=[[0,'Drifter'],[20,'Outlaw'],[50,'Gang Boss'],[100,'Kingpin'],[160,'Don of the Territory']];
+const RANKS=[[0,'Drifter'],[20,'Outlaw'],[50,'Gang Boss'],[100,'Kingpin'],[160,'Don of the Territory'],[280,'Baron of the Arroyo']];
 const RAID={active:false,wave:0,next:0};
 const liveGang=()=>EMP.gang.filter(a=>!a.dead);
-const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+ROM.spouses.length*3+(hb('bunk')?4:0);
+const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+ROM.spouses.length*3+(hb('bunk')?4:0)+LAND.plots.reduce((s,p)=>{const o=plotOf(p);return s+(o&&o.type==='outpost'?1+o.level*2:0);},0);
 function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.reduce((s,c)=>s+c.still*10,0)+Object.keys(EMP.rackets).length*10+Object.keys(EMP.blackmail).length*12+(EMP.town?60:0)
-  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5;}
-function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:RANKS[idx][1],next:RANKS[idx+1]};}
+  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0);}
+function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:(LAND.lord||territoryControl()>=1)?'Lord of the Arroyo':RANKS[idx][1],next:RANKS[idx+1]};}
 function dailyLedger(){const r=Object.keys(EMP.rackets).length*10,b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40:0,w=liveGang().filter(a=>!a.kin).length*3,
-  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome();return {r,b,t,w,f,o,m,c,net:r+b+t+f+o+m+c-w};}
+  f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=landIncome();return {r,b,t,w,f,o,m,c,l,net:r+b+t+f+o+m+c+l-w};}
 function openCustom(title,items){menu={custom:{title,items}};renderMenu();}
 function closeMenu(){menu=null;renderMenu();}
 function ensureGangName(cb){if(EMP.name)return cb();
@@ -1439,11 +1446,12 @@ function updateGang(dt){let slot=0;
 function campSpotProblem(p){if(Math.hypot(p.x-SITES.town.x,p.z-SITES.town.z)<170)return 'Too close to Coppervale. Ride further out.';
   for(const s of SITE_LIST)if(Math.hypot(p.x-s.x,p.z-s.z)<s.r+50)return `Too close to ${s.name}.`;
   for(const c of EMP.camps)if(Math.hypot(p.x-c.x,p.z-c.z)<120)return 'You already have a camp nearby.';
+  for(const q of LAND.plots)if(Math.hypot(p.x-q.x,p.z-q.z)<50)return `That's the ${q.name} land claim.`;
   if(Math.hypot(p.x-POND.x,p.z-POND.z)<POND.r+20)return 'Too close to the water.';
   if(roadDist(p.x,p.z)<8)return 'Too close to the road. Lawmen ride these trails.';
   if(slopeAt(p.x,p.z)>0.35)return 'The ground is too steep here.';return null;}
 function tryMakeCamp(){if(P.mounted){toast('Get down first','Dismount to pitch a camp.');return;}
-  if(EMP.camps.length>=3){toast('Three camps already','That\'s as many as one outfit can run.');return;}
+  if(EMP.camps.length>=6){toast('Six camps already','That\'s as many as one outfit can run. Buy land deeds at the bank to grow further.');return;}
   const why=campSpotProblem(P.pos);if(why){toast('Bad spot',why);return;}
   ensureGangName(()=>openCustom('Pitch a camp',[
     {label:'Camp with a moonshine still, brewing at once (3 crates ready)',price:55,noMult:true,act:()=>{closeMenu();const c=makeCamp(P.pos.x+4,P.pos.z+4,{still:1,stock:3});
@@ -1518,8 +1526,8 @@ function onNewDay(){const L=dailyLedger();
   if(!LAW.forever)LAW.fear*=0.5;if(LAW.refuse&&LAW.fear<6&&!LAW.forever){LAW.refuse=false;toast('New deputies in Fort Ashby','The law is willing to ride against you again.');}
   // from the day after a wedding, each spouse may bring a child at dawn, up to three each
   if(ROM.spouses.length){placeSpouse();let k=0;for(const id of ROM.spouses)if(P.day-ROM.wedDay>=1&&ROM.children.length+k<(hasLaw('fruitful')?5:3)*ROM.spouses.length&&Math.random()<(hasLaw('fruitful')?0.9:0.6))setTimeout(birthChild,3000+(k++)*4000);}
-  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c){P.money=Math.max(0,P.money+L.net);
-    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
+  if(L.r||L.b||L.t||L.w||L.f||L.o||L.m||L.c||L.l){P.money=Math.max(0,P.money+L.net);
+    toast('Empire ledger',`Rackets $${L.r} · Blackmail $${L.b}${L.t?` · Town $${L.t}`:''}${L.f?` · Ranch $${L.f}`:''}${L.o?` · Outposts $${L.o}`:''}${L.m?` · Mine $${L.m}`:''}${L.c?` · Church $${L.c}`:''}${L.l?` · Land $${L.l}`:''} · Wages −$${L.w}  =  ${L.net>=0?'+':'−'}$${Math.abs(L.net)}`);}
   if(EMP.town&&!LAW.forever&&Math.random()<0.35){if(liveGang().length>=4)toast('A posse rode on Coppervale','Your men drove them off.');else applyTown(false);}
   lateNewDay();save();}
 
@@ -1774,25 +1782,25 @@ function updateCows(dt){for(const c of LATE.herd){c.t-=dt;if(c.t<=0){c.t=rand(4,
   for(const c of [...LATE.herd,...LATE.cows]){if(d2(c.pos,P.pos)>180)continue;c.q.g.position.copy(c.pos);c.q.g.rotation.y=c.yaw;animQuad(c.q,c.speed,dt,!c.speed);}}
 let lateT=0,smokeT=0;
 function updateLate(dt){updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
-  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();
+  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();
   if(!LATE.rivals.started&&QS.hollow.state==='done'){LATE.startT-=1;if(LATE.startT<=0)startRivals();}
   const c=home();if(c&&c.smokeAt&&d2(c,P.pos)<150&&(smokeT=(smokeT+1)%2)===0)puff(c.smokeAt,0x9a9590,2,0.6,1.4);}
-function lateNewDay(){churchNewDay();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
+function lateNewDay(){churchNewDay();checkControl();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
   if(LATE.rivals.started&&home()&&Math.random()<(Object.values(LATE.rivals.held).some(Boolean)?0.45:0.15))setTimeout(homeRaid,2500);}
 function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   for(const k in LATE.rivals.held)if(LATE.rivals.held[k]&&!LATE.rivals.seized[k])spawnRivals(k);for(const k in LATE.rivals.seized)if(LATE.rivals.seized[k])plantFlag(SITES[k]);
   if(LATE.bounty)LATE.bounty.spawned=false;
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
-  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();}
+  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord}});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
-  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}}
+  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}}
 
 // the church: take the pulpit, then pass laws from it
-const CH={held:false,how:'',laws:{},expand:0,settlers:0,sermonDay:-1,confessDay:-1};
+const CH={held:false,how:'',laws:{},expand:0,settlers:0,kids:0,sermonDay:-1,confessDay:-1};
 const CHURCH_DOOR={x:74,z:-22.6};
 const CHURCH_LAWS=[
   {k:'fruitful',name:'Be fruitful and multiply',price:150,desc:'New families settle in town every morning, your spouses bear up to five children each, and children grow up in two days.'},
@@ -1805,25 +1813,25 @@ const EXPANSIONS=[
   [{x:58,z:-17,w:10,d:12,h:6,color:'#9a7a58',sign:'BOARDING HOUSE',rot:0},{x:51,z:16,w:10,d:10,h:5,color:'#7a6a50',sign:'FEED & SEED',rot:Math.PI},{x:64,z:16,w:11,d:10,h:5,color:'#a08060',sign:'SCHOOLHOUSE',rot:Math.PI}],
   [{x:92,z:-17,w:12,d:12,h:6,color:'#8a5a3a',sign:'BAKERY',rot:0},{x:80,z:16,w:10,d:10,h:5,color:'#6a5a48',sign:'ASSAY OFFICE',rot:Math.PI},{x:94,z:16,w:11,d:10,h:5,color:'#9a8a6a',sign:'BARBER',rot:Math.PI}]];
 const SETTLER_CAP=24;
-const townPop=()=>npcs.filter(n=>!n.important&&!n.dead).length;
+const townPop=()=>npcs.filter(n=>!n.important&&!n.dead&&!n.area&&!n.kid).length;
 const hasLaw=k=>!!CH.laws[k];
 function churchIncome(){if(!CH.held)return 0;const p=townPop();return (hasLaw('tithe')?p*2:0)+(hasLaw('labour')&&home()?Math.min(60,p*3):0);}
 function ridersNear(r=40){return liveGang().filter(a=>d2(a.pos,P.pos)<r).length;}
 function takeChurch(how){closeMenu();CH.held=true;CH.how=how;
   if(how==='force'){P.honor=clamp((P.honor||0)-10,-100,100);dialog('Reverend Pike',['All right. All right! Put the guns away. It\'s your pulpit.','The Lord will judge us both. Until then, I\'ll read whatever you write.']);}
   else dialog('Reverend Pike',['Four hundred dollars. The roof has leaked since the war.','From this Sunday on, I preach what you tell me to preach.']);
-  banner('The church is yours','Pass laws from the pulpit',true);sfx.sting();save();}
+  banner('The church is yours','Pass laws from the pulpit',true);sfx.sting();checkControl();save();}
 function passLaw(l){closeMenu();CH.laws[l.k]=P.day;banner('A new law from the pulpit',l.name,true);sfx.sting();
   if(l.k==='fruitful')toast('Be fruitful','New families will arrive every morning.');
   save();}
 function expandTown(){closeMenu();const lvl=CH.expand;if(lvl>=EXPANSIONS.length)return;CH.expand++;buildExpansion(lvl);
   for(let i=0;i<4;i++)settle(60+lvl*30,94+lvl*10);banner('Coppervale grows',lvl?'A bakery, an assay office and a barber open at the east end':'A boarding house, a feed store and a schoolhouse go up',true);sfx.sting();save();}
 function buildExpansion(lvl){for(const b of EXPANSIONS[lvl])building({...b,front:true});try{buildMap();}catch(e){}}
-function settle(x0=-60,x1=60,silent){if(townPop()>=11+SETTLER_CAP)return null;CH.settlers++;const n=spawnCivilian(rand(x0,x1),rand(-5,5));n.home.set(n.pos.x,0,n.pos.z);return n;}
+function settle(x0=-60,x1=60,silent){if(townPop()>=16+SETTLER_CAP)return null;CH.settlers++;const n=spawnCivilian(rand(x0,x1),rand(-5,5));n.home.set(n.pos.x,0,n.pos.z);return n;}
 function confess(){closeMenu();CH.confessDay=P.day;const was=P.bounty,cut=Math.min(200,was);P.bounty=Math.max(0,was-cut);P.honor=clamp((P.honor||0)+5,-100,100);
   if(P.bounty===0&&WANTED.active)endChase('Absolved','The law stands down');
   dialog('Reverend Pike',[cut?`Go in peace. And I'll see that $${cut} of that paper goes in the stove.`:'You have nothing on the books to confess. Not that the Lord can see, anyway.']);save();}
-function callFlock(){closeMenu();CH.sermonDay=P.day;const room=gangCap()-liveGang().length;const flock=npcs.filter(n=>!n.important&&!n.dead&&d2(n.pos,P.pos)<140);
+function callFlock(){closeMenu();CH.sermonDay=P.day;const room=gangCap()-liveGang().length;const flock=npcs.filter(n=>!n.important&&!n.dead&&!n.kid&&d2(n.pos,P.pos)<140);
   const k=Math.min(2,room,flock.length);if(k<=0){toast('Nobody steps forward',room<=0?'Your gang is full.':'Bring the flock closer: stand in town.');return;}
   ensureGangName(()=>{for(let i=0;i<k;i++){const n=flock[i],j=npcs.indexOf(n);if(j>=0)npcs.splice(j,1);scene.remove(n.h.g);const a=spawnAlly(n.pos.x,n.pos.z);a.kin=true;}CH.settlers=Math.max(0,CH.settlers-k);
     toast('The faithful ride with you',`${k} of the congregation ${k>1?'join':'joins'} ${EMP.name}, no wages asked.`);save();});}
@@ -1844,14 +1852,115 @@ function churchMenu(n){
   openCustom(`The pulpit · congregation ${townPop()} · church pays $${churchIncome()} a day`,items.slice(0,12));}
 function churchNewDay(){if(!CH.held)return;
   if(hasLaw('fruitful')){const k=Math.floor(rand(1,3));let got=0;for(let i=0;i<k;i++)if(settle(-60,60+CH.expand*30))got++;
+    if(Math.random()<0.6){CH.kids=(CH.kids||0)+1;spawnKid(rand(-60,50+CH.expand*30),rand(-5,5));}
     if(got)toast('New families','Coppervale grows: '+got+(got>1?' families have':' family has')+` settled. Congregation ${townPop()}.`);}}
-function churchInit(){for(let l=0;l<CH.expand;l++)buildExpansion(l);const n=CH.settlers;CH.settlers=0;for(let i=0;i<n;i++)settle(-60,60+CH.expand*30);}
+function churchInit(){for(let l=0;l<CH.expand;l++)buildExpansion(l);const n=CH.settlers;CH.settlers=0;for(let i=0;i<n;i++)settle(-60,60+CH.expand*30);for(let i=0;i<(CH.kids||0);i++)spawnKid(rand(-60,50+CH.expand*30),rand(-5,5));}
+// land deeds: buy plots across the territory, then build a business on each one
+const LAND_SEEDS=[['Coyote Flats',-420,120],['Buzzard Rock',-380,-430],['Red Mesa Bench',150,-540],['Twin Wells',540,-60],
+  ['Cottonwood Draw',470,470],['Willow Bend',60,430],['Sage Hollow',-230,480],['Copper Ridge',-540,-170]];
+const LAND_TYPES={
+  ranch:{name:'Cattle ranch',price:300,pay:45,desc:'Cattle, a barn and hands to work it.',workers:['Ranch hand','Ranch hand','Wrangler'],kids:1},
+  farm:{name:'Homestead farm',price:200,pay:30,desc:'Corn, beans and a family to work them.',workers:['Farmer','Farmer\'s wife','Farmhand'],kids:2},
+  mill:{name:'Lumber mill',price:350,pay:55,desc:'Saws timber for every new building in the territory.',workers:['Mill worker','Mill worker','Sawyer']},
+  outpost:{name:'Gang outpost',price:250,pay:20,desc:'Tents, a lookout and a flag. Room for three more riders.',workers:['Lookout','Lookout']},
+  parlor:{name:'Parlor house',price:400,pay:60,desc:'A brothel with a madam, music and girls upstairs. Your gang spends its wages here.',workers:['Parlor girl','Parlor girl','Parlor girl'],madam:true},
+  chapel:{name:'Chapel',price:250,pay:25,desc:'A little church with its own preacher. Settlers gather around it and tithe.',workers:['Churchgoer','Churchgoer','Churchgoer'],kids:3,preacher:true}};
+const LAND={plots:[],owned:{}};
+const MADAMS=['Madam Rosalind','Madam Delphine','Madam Ottilie','Madam Josephine','Madam Clementine','Madam Pearl','Madam Vivienne','Madam Lavinia'];
+const PREACHERS=['Brother Ezekiel','Pastor Abel Wren','Brother Silas','Pastor Jonah Hale','Brother Micah','Pastor Eli Stone','Brother Amos','Pastor Gideon'];
+function landSpotOk(x,z){if(Math.abs(x)>640||Math.abs(z)>640)return false;if(slopeAt(x,z)>0.3||roadDist(x,z)<14)return false;
+  if(Math.hypot(x-POND.x,z-POND.z)<POND.r+25)return false;for(const s of SITE_LIST)if(Math.hypot(x-s.x,z-s.z)<s.r+60)return false;
+  for(const m of LANDMARKS)if(Math.hypot(x-m.x,z-m.z)<60)return false;if(MINE&&Math.hypot(x-MINE.x,z-MINE.z)<60)return false;
+  for(const k in RIVAL_SITES){const s=SITES[k];if(Math.hypot(x-s.x,z-s.z)<90)return false;}return true;}
+// positions are found the same way every time, so saves line up with the world
+function placePlots(){LAND.plots=[];for(const [name,sx,sz] of LAND_SEEDS){let spot=null;
+  for(let i=0;i<220&&!spot;i++){const a=i*2.39996,r=Math.sqrt(i)*9,x=sx+Math.cos(a)*r,z=sz+Math.sin(a)*r;if(landSpotOk(x,z))spot={x,z};}
+  if(!spot)spot={x:sx,z:sz};LAND.plots.push({name,x:spot.x,z:spot.z,price:150+Math.round(Math.hypot(spot.x,spot.z)/640*100/10)*10,stake:null,npcs:[],model:null});}
+  for(const p of LAND.plots){const g=new THREE.Group();g.position.set(p.x,groundY(p.x,p.z),p.z);scene.add(g);
+    for(const [a,b] of [[-14,-14],[14,-14],[14,14],[-14,14]])bx(0.18,1,0.18,'#6a4a2c',a,0.5,b,g);
+    bx(0.2,2.4,0.2,'#5a4535',0,1.2,0,g);const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.9),new THREE.MeshLambertMaterial({map:signTex('FOR SALE','#e8dcc0','#5a2a14'),side:THREE.DoubleSide}));
+    sg.position.set(0,2.1,0.12);g.add(sg);addCol(p.x,p.z,0.3);p.stake=g;}}
+const plotOf=p=>LAND.owned[p.name];
+function landIncome(){let s=0;for(const p of LAND.plots){const o=plotOf(p);if(!o||!o.type)continue;const t=LAND_TYPES[o.type];
+  s+=t.pay*o.level+(o.type==='parlor'?Math.min(40,liveGang().length*2):0)+(o.type==='chapel'&&hasLaw('tithe')?10:0);}return s;}
+const outpostCount=()=>LAND.plots.filter(p=>plotOf(p)?.type==='outpost').length;
+function buyPlot(p){closeMenu();LAND.owned[p.name]={type:null,level:0,day:P.day};if(p.stake){p.stake.children[p.stake.children.length-1].material.map=signTex(EMP.name?EMP.name.replace(/^The /,'').toUpperCase():'SOLD','#e8dcc0','#5a2a14');}
+  banner('Land deed',`${p.name} is yours`,true);sfx.sting();toast('Build on it','Ride out and press E at the stake, or open the deed from the bank, to put a business on the land.');checkControl();save();}
+function developPlot(p,type){closeMenu();const o=plotOf(p);o.type=type;o.level=1;buildPlot(p);spawnPlotFolk(p);
+  banner(LAND_TYPES[type].name,`Built at ${p.name}`,true);sfx.sting();save();}
+function upgradePlot(p){closeMenu();const o=plotOf(p);o.level++;toast(`${LAND_TYPES[o.type].name} grows`,`${p.name} is now level ${o.level} and pays $${LAND_TYPES[o.type].pay*o.level} a day.`);
+  if(o.type!=='outpost')spawnPlotWorker(p,pick(LAND_TYPES[o.type].workers));save();}
+function landMenu(p){const o=plotOf(p);
+  if(!o){openCustom(`${p.name} · land for sale`,[{label:`Buy the deed to ${p.name}`,price:p.price,noMult:true,act:()=>buyPlot(p)},
+    {label:'Set a waypoint here',price:0,note:'',act:()=>{WP={x:p.x,z:p.z,label:p.name};closeMenu();toast('Waypoint set',p.name);}}]);return;}
+  if(!o.type){openCustom(`${p.name} · your land · build a business`,Object.entries(LAND_TYPES).map(([k,t])=>({label:`${t.name}: ${t.desc} Pays $${t.pay} a day.`,price:t.price,noMult:true,act:()=>developPlot(p,k)})));return;}
+  const t=LAND_TYPES[o.type];
+  openCustom(`${p.name} · ${t.name} · level ${o.level}`,[
+    {label:o.level>=3?'Fully built up':`Expand to level ${o.level+1}: pays $${t.pay*(o.level+1)} a day${o.type==='parlor'?', one more girl':o.type==='outpost'?', +2 riders':', one more worker'}`,
+      price:o.level>=3?0:Math.round(t.price*0.6*o.level),noMult:true,note:o.level>=3?'level 3':undefined,off:()=>o.level>=3,act:()=>upgradePlot(p)},
+    {label:'Set a waypoint here',price:0,note:'',act:()=>{WP={x:p.x,z:p.z,label:p.name};closeMenu();toast('Waypoint set',p.name);}},
+    ...(o.type==='parlor'?[{label:'Spend the night upstairs (health, Focus, morning)',price:15,noMult:true,act:()=>{P.focus=100;sleepTo(7);}}]:[]),
+    ...(o.type==='chapel'?[{label:'Hear the sermon (+5 honor)',price:0,note:'once a day',off:()=>o.sermon===P.day,act:()=>{o.sermon=P.day;P.honor=clamp((P.honor||0)+5,-100,100);closeMenu();dialog(o.preacher||'The preacher',['Blessed are they that build. The Lord sees your fences and your fields.'])}}]:[]),
+    {label:'Collect gossip from the workers',price:0,note:'',act:()=>{closeMenu();dialog(t.name,[pick(PLOT_LINES[o.type])]);}}]);}
+const PLOT_LINES={ranch:['Herd\'s fat this year, boss.','A coyote took a calf last night. Just the one.'],farm:['Corn\'s coming up fine. Rain would help.','The young ones want to see your horse again.'],
+  mill:['We cut enough planks for half of Coppervale this week.','Saw blade\'s dull. Still turns a profit.'],outpost:['Quiet out here. Too quiet, some nights.','Saw Vance riders on the ridge. They kept going.'],
+  parlor:['Your boys came by again. Paid in full, mostly.','A cattle buyer from Fort Ashby asked after you. Spent like a senator.','Piano player wants a raise. I told him to play better first.'],
+  chapel:['Twelve at service on Sunday. Fifteen if you count the dog.','The preacher wants a bell. Everyone wants a bell.']};
+function buildPlot(p){const o=plotOf(p),x=p.x,z=p.z,face=Math.atan2(-x,-z);if(p.model)return;const G=[];
+  const B=(dx,dz,opt)=>{const c=Math.cos(face),s=Math.sin(face);const g=building({...opt,x:x+dx*c+dz*s,z:z-dx*s+dz*c,rot:face+(opt.rot||0)});G.push(g);return g;};
+  const at=(dx,dz)=>{const c=Math.cos(face),s=Math.sin(face);return [x+dx*c+dz*s,z-dx*s+dz*c];};
+  if(o.type==='ranch'){B(0,-4,{w:11,d:8,h:4.5,gable:true,roofH:3,color:'#9a7a52',roofC:'#5a3d2a',wins:2,sign:p.name.toUpperCase()+' RANCH'});
+    B(-16,-8,{w:10,d:12,h:5,gable:true,roofH:4,color:'#8b3a2a',porch:false,wins:0});const [fx,fz]=at(14,4);fenceRect(fx,fz,16,12);
+    for(let i=0;i<5;i++)LATE.cows.push(makeCow(fx+rand(-5,5),fz+rand(-4,4)));}
+  if(o.type==='farm'){B(0,-4,{w:8,d:7,h:3.6,gable:true,roofH:2.4,color:'#8a6a48',roofC:'#4a3424',wins:2});
+    for(let r=0;r<6;r++)for(let i=0;i<8;i++){const [cx,cz]=at(-12+i*1.6,6+r*1.7);bx(0.5,rand(0.8,1.5),0.5,r%2?'#7a8a3a':'#9a9a42',cx,groundY(cx,cz)+0.5,cz);}
+    const [wx,wz]=at(12,-6);windmill(wx,wz);}
+  if(o.type==='mill'){B(0,-4,{w:14,d:9,h:6,gable:true,roofH:3,color:'#7a6048',roofC:'#4a3424',porch:false,wins:2,sign:'LUMBER MILL'});
+    for(let i=0;i<6;i++){const [lx,lz]=at(-10+rand(-2,2),6+i*0.9);const l=mesh(cylG(0.4,0.4,6,8),'#6a4a2c',lx,groundY(lx,lz)+0.4+(i%3)*0.75,lz);l.rotation.z=Math.PI/2;l.rotation.y=face;}
+    for(let i=0;i<4;i++){const [px,pz]=at(8,4+i*1.2);bx(4,0.3,1,'#c8a878',px,groundY(px,pz)+0.15+i*0.05,pz).rotation.y=face;}}
+  if(o.type==='outpost'){for(let i=0;i<4;i++){const a=i/4*TAU+0.4;prop('tent',x+Math.cos(a)*9,z+Math.sin(a)*9,a);}prop('fire',x+2,z+2);plantFlag({x,z});
+    for(let i=0;i<3;i++)prop('crate',x-5+rand(-1,1),z+5+rand(-1,1));}
+  if(o.type==='parlor'){const g=B(0,-5,{w:12,d:10,h:8,color:'#7a2a3a',trim:'#3a1018',wins:3,front:true,frontH:2.4,sign:'PARLOR HOUSE',signBg:'#e8c8b0',signFg:'#6a1020'});
+    for(const sx of [-4,0,4]){const l=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,6),new THREE.MeshBasicMaterial({color:0xff4a3a}));l.position.set(sx,6.2,5.6);g.add(l);}
+    const [wx,wz]=at(6,3);prop('wagon',wx,wz,face);}
+  if(o.type==='chapel'){const g=B(0,-6,{w:7,d:11,h:4.6,color:'#e0d6c2',trim:'#8a7a66',gable:true,roofH:3,roofC:'#6a5040',porch:false,wins:0});
+    bx(2.2,4,2.2,'#e0d6c2',0,6.3,4.5,g);const sp=mesh(new THREE.ConeGeometry(1.7,3.4,4),'#6a5040',0,10,4.5,g);sp.rotation.y=Math.PI/4;
+    bx(0.15,1.2,0.15,'#3a2a20',0,12.2,4.5,g);bx(0.7,0.15,0.15,'#3a2a20',0,12.4,4.5,g);
+    const [cx,cz]=at(10,2);for(let i=0;i<5;i++){const gx=cx+i*1.6,gz=cz;bx(0.6,0.9,0.14,'#8a877e',gx,groundY(gx,gz)+0.45,gz);}}
+  p.model=G;try{buildMap();}catch(e){}}
+function spawnPlotWorker(p,name,o={}){const n=spawnNPC(null,name,p.x+rand(-8,8),p.z+rand(-8,8),{...pick(OUTFITS),skin:pick(SKINS),hat:pick(['#3a2a1e','#6a5a40','#8a7050']),wander:true,...o});
+  n.area={x:p.x,z:p.z,r:16};n.home.set(n.pos.x,0,n.pos.z);n.plot=p;p.npcs.push(n);n.lines=PLOT_LINES[plotOf(p).type];return n;}
+function spawnPlotFolk(p){const o=plotOf(p),t=LAND_TYPES[o.type];
+  for(const w of t.workers)spawnPlotWorker(p,w,o.type==='parlor'?{shirt:pick(['#c84a6a','#e8c8d8','#8a2a4a','#d8a040']),dress:pick(['#a02a4a','#6a1a3a','#c86a8a','#3a1a4a']),hair:pick(['#1a1008','#c8a060','#6a3a1a','#8a2a10']),hat:null,skin:pick(SKINS)}:{});
+  for(let i=1;i<o.level;i++)spawnPlotWorker(p,pick(t.workers));
+  for(let i=0;i<(t.kids||0);i++){const k=spawnKid(p.x+rand(-6,6),p.z+rand(-6,6),{x:p.x,z:p.z,r:14});k.plot=p;p.npcs.push(k);}
+  if(t.madam){const m=spawnNPC(null,MADAMS[LAND_SEEDS.findIndex(s=>s[0]===p.name)]||'The Madam',p.x,p.z+2,{shirt:'#e8d8c8',dress:'#4a0a1a',hair:'#2a1008',hat:'#2a0a14',skin:pick(SKINS)});
+    m.landBoss=p;m.important=true;p.npcs.push(m);o.preacher=m.name;}
+  if(t.preacher){const m=spawnNPC(null,PREACHERS[LAND_SEEDS.findIndex(s=>s[0]===p.name)]||'The Preacher',p.x,p.z+2,{shirt:'#ddd',coat:'#1a1a1a',pants:'#1a1a1a',hat:'#111',beard:'#7a7a7a'});
+    m.landBoss=p;m.important=true;p.npcs.push(m);o.preacher=m.name;}}
+function landInit(){for(const p of LAND.plots){const o=plotOf(p);if(!o)continue;
+  if(p.stake)p.stake.children[p.stake.children.length-1].material.map=signTex(EMP.name?EMP.name.replace(/^The /,'').toUpperCase():'SOLD','#e8dcc0','#5a2a14');
+  if(o.type){buildPlot(p);spawnPlotFolk(p);}}}
+// children: they run about and play, and bullets never touch them
+const KID_LINES=['Mister, is that a real gun?','Ma says I\'m not to talk to outlaws. Are you an outlaw?','I can lasso a fence post! Watch!','When I grow up I\'m gonna have a horse bigger than yours.','Tag, you\'re it!','Got any candy?'];
+function spawnKid(x,z,area){const n=spawnNPC(null,pick(['Boy','Girl','Little one','Kid']),x,z,{shirt:pick(['#c8b898','#8a6a8a','#6a8a9a','#b08060','#a05a3a']),pants:'#4a4038',
+  hat:Math.random()<0.5?pick(['#8a7050','#6a5a40']):null,hair:pick(['#3a2010','#c8a060','#1a1008']),skin:pick(SKINS),scale:0.58,wander:true});n.kid=true;n.lines=KID_LINES;if(area)n.area=area;return n;}
+// territory control: every holding that matters
+function holdings(){return [{n:'Coppervale',h:!!EMP.town},{n:'The Coppervale church',h:CH.held},{n:'Dry Creek',h:!!LATE.rivals.seized.creek},{n:'Iron Hollow',h:!!LATE.rivals.seized.hollow},
+  {n:'The Lucky Strike Mine',h:!!LATE.mine},...LAND.plots.map(p=>({n:p.name,h:!!plotOf(p)}))];}
+function territoryControl(){const h=holdings();return h.filter(x=>x.h).length/h.length;}
+function checkControl(){if(territoryControl()>=1&&!LAND.lord){LAND.lord=true;banner('The Arroyo Territory is yours','Lord of the Arroyo',true);sfx.sting();
+  toast('Full control','Every town, church, hideout, mine and acre answers to you.');}}
+function openLandOffice(){openCustom(`Land office · ${Object.keys(LAND.owned).length} of ${LAND.plots.length} deeds yours`,LAND.plots.map(p=>{const o=plotOf(p);
+  return o?{label:`${p.name}: ${o.type?`${LAND_TYPES[o.type].name}, level ${o.level}`:'yours, nothing built yet'} (set waypoint)`,price:0,note:'✓',act:()=>{WP={x:p.x,z:p.z,label:p.name};closeMenu();toast('Waypoint set',`${p.name}. Press E at the stake to build or expand.`);}}
+    :{label:`Buy the deed to ${p.name}, ${Math.round(Math.hypot(p.x,p.z))} m from town`,price:p.price,noMult:true,act:()=>{buyPlot(p);WP={x:p.x,z:p.z,label:p.name};}};}));}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
     return canRaid()?{label:'Seize Coppervale (starts a raid)',act:startRaid}:{label:'Seize Coppervale (bring 3 gang members)',act:()=>toast('Not enough guns','Bring at least 3 of your gang within 40 m.')};
   if(!P.mounted)for(const cp of EMP.camps)c(Math.hypot(cp.x-P.pos.x,cp.z-P.pos.z),5,'Camp ledger',()=>openCampMenu(cp));
   c(Math.hypot(P.pos.x+64.5,P.pos.z+7.6),3.2,'Read the bounty board',openBoard);
+  if(!P.mounted)for(const p of LAND.plots){const o=plotOf(p);c(Math.hypot(P.pos.x-p.x,P.pos.z-p.z),o?.type?7:4,o?o.type?`${p.name}: ${LAND_TYPES[o.type].name} (level ${o.level})`:`${p.name}: build a business on your land`:`Land for sale: ${p.name} ($${p.price})`,()=>landMenu(p));}
   if(LATE.sheriffDead&&!EMP.town&&!RAID.active)c(Math.hypot(P.pos.x+58,P.pos.z+9),4,canRaid()?'Seize the jailhouse (starts a raid)':'Seize the jailhouse (bring 3 gang members)',
     ()=>canRaid()?startRaid():toast('Not enough guns','Bring at least 3 of your gang within 40 m.'));
   if(MINE&&!P.mounted)c(Math.hypot(P.pos.x-MINE.x,P.pos.z-MINE.z),5,!LATE.mine?'Lucky Strike Mine (buy the claim at the bank)':hoursNow()-LATE.mineDugAt<2?'Dig for gold (rest a while first)':'Dig for gold (1 hour)',
@@ -1874,6 +1983,9 @@ function talkTo(n){
   for(const id in QS){if(QS[id].state==='available'&&QDEF[id].giver===n.id){dialog(n.name,QDEF[id].offer,()=>startQuest(id));return;}}
   if(n.suitor){courtMenu(n);return;}
   if(n.church){churchMenu(n);return;}
+  if(n.landBoss){landMenu(n.landBoss);return;}
+  if(n.kid){dialog(n.name,[pick(KID_LINES)]);return;}
+  if(n.area){dialog(n.name,[pick(n.lines||AMBIENT)]);return;}
   if(n.shop){if(n.robbedDay===P.day){dialog(n.name,['You! Get out of my sight before I fetch the deputies.']);return;}openShop(n.shop);return;}
   if(!n.important){const full=liveGang().length>=gangCap();
     openCustom(n.name,[{label:'Pass the time',price:0,note:'',act:()=>{closeMenu();dialog(n.name,[pick(AMBIENT)]);}},
@@ -1991,8 +2103,8 @@ function updateNPCs(dt){
     else if(n.cowerT>0){n.cowerT-=dt;handsUp=true;n.speed=0;}
     else if(n.talkT>0){n.talkT-=dt;n.yaw=angLerp(n.yaw,Math.atan2(P.pos.x-n.pos.x,P.pos.z-n.pos.z),1-Math.exp(-6*dt));n.speed=0;}
     else if(n.wander){
-      if(!n.target||d2(n.pos,n.target)<0.6){n.speed=0;n.waitT-=dt;if(n.waitT<=0){n.target=new V3(rand(-72,62),0,rand(-6.5,6.5));n.waitT=rand(2,7);}}
-      else{const ty=Math.atan2(n.target.x-n.pos.x,n.target.z-n.pos.z);n.yaw=angLerp(n.yaw,ty,1-Math.exp(-5*dt));n.speed=1.3;
+      if(!n.target||d2(n.pos,n.target)<0.6){n.speed=0;n.waitT-=dt;if(n.waitT<=0){const A=n.area;n.target=A?new V3(A.x+rand(-A.r,A.r),0,A.z+rand(-A.r,A.r)):new V3(rand(-72,62+(CH.expand||0)*30),0,rand(-6.5,6.5));n.waitT=n.kid?rand(0.5,2.5):rand(2,7);}}
+      else{const ty=Math.atan2(n.target.x-n.pos.x,n.target.z-n.pos.z);n.yaw=angLerp(n.yaw,ty,1-Math.exp(-5*dt));n.speed=n.kid?2.6:1.3;
         if(!tryMove(n.pos,Math.sin(n.yaw)*n.speed*dt,Math.cos(n.yaw)*n.speed*dt,0.4,1.4))n.target=null;}
     }else{n.yaw=angLerp(n.yaw,n.baseYaw,1-Math.exp(-2*dt));n.speed=0;}
     n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);n.h.g.rotation.y=n.yaw;
@@ -2005,7 +2117,7 @@ function updateNPCs(dt){
   // clear old bodies and bring new folks into town while the player is away
   civT-=dt;if(civT<=0){civT=10;
     for(let i=npcs.length-1;i>=0;i--){const n=npcs[i];if(n.dead&&n.deadT>60&&d2(n.pos,P.pos)>60){scene.remove(n.h.g);npcs.splice(i,1);}}
-    if(npcs.filter(n=>n.wander&&!n.dead).length<11&&!inTown(P.pos))spawnCivilian(rand(-70,60),rand(-6,6));}
+    if(npcs.filter(n=>n.wander&&!n.dead&&!n.area&&!n.kid).length<16&&!inTown(P.pos))spawnCivilian(rand(-70,60),rand(-6,6));}
 }
 function updateOutlaws(dt){
   for(let i=outlaws.length-1;i>=0;i--){const e=outlaws[i],d=d2(e.pos,P.pos);
@@ -2339,7 +2451,7 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();placePlots();
   freezeStatic();mergeStatic();
   spawnPeople();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
