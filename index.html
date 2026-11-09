@@ -1295,7 +1295,7 @@ function updateWanted(dt){
   if(!WANTED.active){
     // only a bounty worth chasing gets you recognised; petty ones are left to lapse
     if(WANTED.graceT>0)WANTED.graceT-=dt;
-    else if(P.bounty>=50&&P.alive&&!LAW.refuse){
+    else if(P.bounty>=50&&P.alive&&!LAW.refuse&&!LATE.sheriffDead){
       if(inTown(P.pos)&&!EMP.town){WANTED.recogT+=dt;if(!WANTED.warned&&WANTED.recogT>1){WANTED.warned=true;toast('Folks are staring',`There's a $${P.bounty} bounty on you. Pay it at the telegraph office.`);}}
       else{WANTED.recogT=0;WANTED.warned=false;}
       const spotted=outlaws.some(e=>e.tag==='law'&&!e.dead&&!e.fleeing&&e.los&&d2(e.pos,P.pos)<25);
@@ -1310,7 +1310,8 @@ function updateWanted(dt){
   if(LAW.refuse&&!lawAlive())return endChase('Nobody rides against you','The law stayed home');
   if(WANTED.heat<=0)return endChase('The law gave up the chase','They have bigger troubles than you');
   WANTED.reinforceT-=dt;
-  if(WANTED.reinforceT<=0){WANTED.reinforceT=14+LAW.fear*3;if(!LAW.refuse&&lawAlive()<posseSize()&&WANTED.spawned<posseCap())spawnLawNear();}
+  if(WANTED.reinforceT<=0){WANTED.reinforceT=14+LAW.fear*3;if(!LAW.refuse&&!LATE.sheriffDead&&lawAlive()<posseSize()&&WANTED.spawned<posseCap())spawnLawNear();}
+  if(LATE.sheriffDead&&!lawAlive())return endChase('No deputy rides without the sheriff','Only the Marshal is coming now');
   if(WANTED.spawned>=posseCap()&&!lawAlive())return endChase('The posse is spent','No more riders are coming');
   if(WANTED.searchT>18&&d2(P.pos,WANTED.last)>120)endChase('You lost the law','Escaped');
 }
@@ -1713,7 +1714,7 @@ function updateGuards(dt){for(const g of LATE.guards){g.shootT-=dt;let t=null,bd
     if(g.shootT<=0){g.shootT=rand(1.2,2);allyShoot(g,t);}}}}
 // the sheriff's death sticks once the story is over, and the federal law comes looking
 function sheriffKilled(){LATE.sheriffDead=true;LATE.marshal.state='coming';LATE.marshal.due=hoursNow()+6;
-  banner('Word rides to Fort Ashby','Sheriff Ada Hale is dead',true);toast('A U.S. Marshal is coming','In a few hours a federal marshal and his men will ride out to hunt you down.');save();}
+  banner('Word rides to Fort Ashby','Sheriff Ada Hale is dead',true);toast('A U.S. Marshal is coming','No deputy will ride without her. In about 6 in-game hours a federal marshal and his men will find you, wherever you are. Kill him and your bounty dies with him.');save();}
 function despawnMarshal(){const g=LATE.marshal.group;if(!g)return;for(const e of g){const i=outlaws.indexOf(e);if(i>=0&&!e.dead){scene.remove(e.h.g);if(e.hq)scene.remove(e.hq.g);outlaws.splice(i,1);}}LATE.marshal.group=null;}
 function updateMarshal(dt){const M=LATE.marshal;if(M.state==='coming'&&hoursNow()>=M.due){M.state='hunting';M.nextT=0;}
   if(M.state!=='hunting')return;

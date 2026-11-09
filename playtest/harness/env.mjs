@@ -1,4 +1,4 @@
-// Headless environment for running the real game script in Node: minimal DOM stand-ins, a fake WebGL renderer,
+﻿// Headless environment for running the real game script in Node: minimal DOM stand-ins, a fake WebGL renderer,
 // and a virtual clock so the game's setTimeout/setInterval follow simulated time instead of wall time.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -81,7 +81,7 @@ globalThis.__SIM.api={THREE,P,QS,QDEF,curStage,stageTarget,objText,npcs,NPC,outl
   CRIMES,crimeLog,SHOPS,BUSINESS,SECRETS,FOG_N,tick,begin,talkTo,buy,openShop,openCampMenu,tryMakeCamp,makeCamp,startRaid,canRaid,findInteract,fire,punch,rob,startReload,
   advanceDlg,closeMenu,groundY,mount,dismount,nearestHorse,liveGang,gangCap,rankInfo,setFocus,focusMark,focusRelease,fastTravel,mapPOIs,courtMenu,campSpotProblem,
   setOrder,commitCrime,inTown,d2,angDiff,clock,LAW,hurt,lawAlive,posseCap,wantedLevel,onNewDay,spawnLawman,dismountLaw,remountLaw,
-  LATE,CH,CHURCH_LAWS,churchMenu,churchIncome,townPop,hasLaw,home,hb,homeMenu,homeDefense,dailyLedger,openBoard,startCoach,digGold,startRivals,homeRaid,sheriffKilled,
+  LATE,CH,hurtNPC,CHURCH_LAWS,churchMenu,churchIncome,townPop,hasLaw,home,hb,homeMenu,homeDefense,dailyLedger,openBoard,startCoach,digGold,startRivals,homeRaid,sheriffKilled,
   growChildren,birthChild,showEmpire,drawBigMap,mapOpen,save,loadSave,LANDMARKS,boxes,showJournal,
   get HORSE(){return HORSE;},get menu(){return menu;},get dlg(){return dlg;},get gameHour(){return gameHour;},get tracked(){return tracked;},get built(){return built;},
   get running(){return running;},get focusOn(){return focusOn;},get FOCUS(){return FOCUS;}};
