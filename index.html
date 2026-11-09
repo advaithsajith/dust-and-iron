@@ -178,6 +178,7 @@ button.ghost{background:transparent;border-color:var(--paper-dim)}
       <div><span class="k">B</span> pitch a camp in the desert</div>
       <div><span class="k">G</span> gang: follow / hold</div>
       <div><span class="k">N</span> gang work</div>
+      <div><span class="k">Z</span> wait / pass time</div>
       <div><span class="k">K</span> your empire</div>
       <div><span class="k">C</span> first / third person</div>
       <div><span class="k">X</span> drink tonic</div>
@@ -777,6 +778,7 @@ function spawnPeople(){
   OUTFITS=outfits;for(let i=0;i<16;i++)spawnCivilian(rand(-70,60),rand(-6,6));for(let i=0;i<6;i++)spawnKid(rand(-60,50),rand(-5,5));for(let i=0;i<2;i++)spawnPeddler(rand(-50,40),rand(-4,4));
   {const rot=Math.atan2(13,-17);spawnPeddler(-252+Math.sin(rot)*12,-98+Math.cos(rot)*12,{x:-252+Math.sin(rot)*14,z:-98+Math.cos(rot)*14,r:8});}
   spawnNPC(null,'Clerk Tibbs',12,7.6,{shirt:'#cfc6b0',vest:'#2a3a4a',pants:'#2a2a2a',bowler:true,hat:'#333',shop:'telegraph',yaw:Math.PI});
+  spawnNPC(null,'Gus the Stablemaster',-44,7.8,{shirt:'#8a7a5a',vest:'#3a2a1a',pants:'#3a342c',hat:'#6a5038',beard:'#9a8a7a',shop:'livery',yaw:Math.PI});
   spawnNPC(null,'Hank the Outfitter',34,7.6,{shirt:'#a08a6a',vest:'#3a2a1a',pants:'#3a342c',hat:'#4a3a28',beard:'#8a7a6a',shop:'outfitter',yaw:Math.PI});
   {const rot=Math.atan2(13,-17),x=-252+Math.sin(rot)*6.4,z=-98+Math.cos(rot)*6.4;spawnNPC(null,'Ezra at the Trading Post',x,z,{shirt:'#c8b898',vest:'#5a3a22',hat:'#8a7050',beard:'#5a4a3a',shop:'trading',yaw:rot});}
   {const r=spawnNPC(null,'Reverend Amos Pike',CHURCH_DOOR.x,CHURCH_DOOR.z,{shirt:'#ddd',coat:'#1a1a1a',pants:'#1a1a1a',hat:'#111',beard:'#9a9a9a',skin:'#d9a585'});r.church=true;r.important=true;}
@@ -891,9 +893,9 @@ function checkReach(){for(const id in QS){if(QS[id].state!=='active')continue;co
   if(st.reach){const s=SITES[st.reach];if(Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<s.r+15)advance(id);}else if(st.doneIf&&st.doneIf())advance(id);}}
 
 // ---------------- UI ----------------
-function toast(t,s){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b></b><span></span>`;el.firstChild.textContent=t;el.lastChild.textContent=s||'';
+function toast(t,s){if(quiet)return;const el=document.createElement('div');el.className='toast';el.innerHTML=`<b></b><span></span>`;el.firstChild.textContent=t;el.lastChild.textContent=s||'';
   $('toasts').appendChild(el);setTimeout(()=>el.remove(),4200);while($('toasts').children.length>4)$('toasts').firstChild.remove();}
-let bannerT=0;function banner(small,big,loc){$('bannerSmall').textContent=small;$('bannerBig').textContent=big;$('banner').className=loc?'loc':'';$('banner').hidden=false;bannerT=loc?2.6:3.6;}
+let bannerT=0;function banner(small,big,loc){if(quiet)return;$('bannerSmall').textContent=small;$('bannerBig').textContent=big;$('banner').className=loc?'loc':'';$('banner').hidden=false;bannerT=loc?2.6:3.6;}
 function dialog(name,lines,done){dlg={name,lines,i:0,done};renderDlg();}
 function renderDlg(){$('dialog').hidden=!dlg;if(!dlg)return;$('dlgWho').textContent=dlg.name;$('dlgLine').textContent=dlg.lines[dlg.i];}
 function advanceDlg(){if(!dlg)return;dlg.i++;if(dlg.i>=dlg.lines.length){const d=dlg.done;dlg=null;renderDlg();d?.();}else renderDlg();}
@@ -933,7 +935,7 @@ const SHOPS={
     {label:'Long rifle barrel: +30% rifle damage',price:80,off:()=>!!u.barrel||!WEAPONS[1].owned,act:up('barrel','Your rifle hits harder and truer.')},
     {label:'Shotgun choke: tighter spread, longer reach',price:50,off:()=>!!u.choke||!WEAPONS[2].owned,act:up('choke','Your shotgun reaches further.')},
     {label:'Ammunition belt: 20 rounds for every gun you own',price:12,act:()=>{for(const w of WEAPONS)if(w.owned)w.reserve+=20;}},
-    {label:stolenHorseNear()?'Sell the stolen horse tied up outside':'Sell a stolen horse (bring one within 18 m)',price:0,note:'+$60',off:()=>!stolenHorseNear(),act:sellHorse}];}},
+    {label:`Wardrobe: outfits (wearing ${OUTFITS_P[STYLE.outfit].name.split(' (')[0]})`,price:0,note:`${Object.keys(STYLE.owned).length}/${Object.keys(OUTFITS_P).length}`,act:openWardrobe}];}},
   trading:{title:'Western Trading Post',items:()=>[
     {label:'Revolver cartridges ×12',price:5,act:()=>WEAPONS[0].reserve+=12},
     {label:'Rifle cartridges ×10',price:7,act:()=>WEAPONS[1].reserve+=10,off:()=>!WEAPONS[1].owned},
@@ -941,6 +943,11 @@ const SHOPS={
     {label:'Health tonic',price:7,act:()=>P.tonics++},
     {label:'Sell deer hides',price:-4,act:()=>{},sell:true,off:()=>P.pelts<1},
     {label:`Sell moonshine, no deputies out here (${P.crates} crates)`,price:0,note:'$10 a crate',off:()=>!P.crates,act:sellShineQuiet}]},
+  livery:{title:'Coppervale Livery',items:()=>[
+    ...Object.entries(BREEDS).filter(([k])=>k!=='mustang').map(([k,B])=>({label:`Buy ${/^[AEIOU]/.test(B.name)?'an':'a'} ${B.name}: ${B.desc}`,price:B.price,act:()=>buyHorse(k)})),
+    {label:`Ride a horse from your stable (${STYLE.stable.length} kept here)`,price:0,note:'',off:()=>!STYLE.stable.length,act:openStableSwitch},
+    {label:`Groom and dye ${HORSE.name}'s coat`,price:0,note:'$10',act:openCoats},
+    {label:stolenHorseNear()?'Sell the stolen horse tied up outside':'Sell a stolen horse (bring one within 18 m)',price:0,note:'+$60',off:()=>!stolenHorseNear(),act:sellHorse}]},
   hotel:{title:'Grand Hotel',items:()=>[
     {label:'Room for the night (sleep to 7 AM)',price:3,act:()=>sleepTo(7)},
     {label:'Afternoon nap (sleep to 6 PM)',price:2,act:()=>sleepTo(18)}]},
@@ -1383,7 +1390,7 @@ const SECRETS={bank:{who:'Elias Pruitt',short:'skimming the payroll',line:'Pruit
   hotel:{who:'Mrs. Winslow',short:'hiding Crane money',line:'Mrs. Winslow keeps a strongbox of Crane money under the floor of room six.'},
   doctor:{who:'Doc Hargrove',short:'selling laudanum out back',line:'The Doc sells laudanum out the back door to anyone with a dollar.'},
   telegraph:{who:'Clerk Tibbs',short:'reading private telegrams',line:'Tibbs reads every private telegram and sells what he learns.'}};
-const BUSINESS={store:'Bell\'s Mercantile',saloon:'The Rusty Spur',hotel:'Grand Hotel',doctor:'Doc Hargrove',telegraph:'Telegraph Office',bank:'Coppervale Bank',outfitter:'Hank\'s Outfitters',trading:'Western Trading Post'};
+const BUSINESS={store:'Bell\'s Mercantile',saloon:'The Rusty Spur',hotel:'Grand Hotel',doctor:'Doc Hargrove',telegraph:'Telegraph Office',bank:'Coppervale Bank',outfitter:'Hank\'s Outfitters',trading:'Western Trading Post',livery:'Coppervale Livery'};
 const RANKS=[[0,'Drifter'],[20,'Outlaw'],[50,'Gang Boss'],[100,'Kingpin'],[160,'Don of the Territory'],[280,'Baron of the Arroyo']];
 const RAID={active:false,wave:0,next:0};
 const liveGang=()=>EMP.gang.filter(a=>!a.dead);
@@ -1496,6 +1503,7 @@ function openCampMenu(c){const up=[0,25,60,120][c.still+1]||0;
       :{label:'Still is fully upgraded',price:0,note:'level 3',off:()=>true,act:()=>{}},
     {label:`Load moonshine onto your horse (${c.stock} crates)`,price:0,note:c.stock?'':'none ready',off:()=>!c.stock,act:()=>{P.crates+=c.stock;toast('Loaded up',`${c.stock} crates. Lou at the Rusty Spur buys on the quiet.`);c.stock=0;}},
     {label:`Hire a gun (${liveGang().length}/${gangCap()} riders)`,price:25,noMult:true,off:()=>liveGang().length>=gangCap(),act:()=>hireAtCamp(c)},
+    {label:'Change clothes (your wardrobe)',price:0,note:`${Object.keys(STYLE.owned).length} outfits`,act:openWardrobe},
     {label:`Gang work: put riders on jobs (${liveGang().filter(a=>jobOf(a)!=='ride').length} working)`,price:0,note:'N',act:openJobs},
     {label:EMP.order==='hold'?'Gang is holding position: call them to ride with you':'Gang rides with you: order them to hold here',price:0,note:'G',act:()=>{setOrder(EMP.order==='hold'?'follow':'hold');closeMenu();}}]);}
 function updateCamps(dt){for(const c of EMP.camps)if(c.still){c.stockT+=dt*24/960;const per=1/(c.still*(ROM.spouses.length&&c===EMP.camps[0]?1.5:1));while(c.stockT>=per){c.stockT-=per;if(c.stock<12)c.stock++;}}}
@@ -1816,13 +1824,13 @@ function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   for(const k in LATE.rivals.held)if(LATE.rivals.held[k]&&!LATE.rivals.seized[k])spawnRivals(k);for(const k in LATE.rivals.seized)if(LATE.rivals.seized[k])plantFlag(SITES[k]);
   if(LATE.bounty)LATE.bounty.spawned=false;
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
-  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
+  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve}});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},style:{outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
-  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}}
+  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}if(s.style){STYLE.outfit=s.style.outfit||'drifter';Object.assign(STYLE.owned,s.style.owned||{});STYLE.stable=s.style.stable||[];STYLE.horse=s.style.horse||null;}}
 
 // the church: take the pulpit, then pass laws from it
 const CH={held:false,how:'',laws:{},expand:0,settlers:0,kids:0,sermonDay:-1,confessDay:-1};
@@ -1896,10 +1904,13 @@ const PREACHERS=['Brother Ezekiel','Pastor Abel Wren','Brother Silas','Pastor Jo
 function landSpotOk(x,z){if(Math.abs(x)>640||Math.abs(z)>640)return false;if(slopeAt(x,z)>0.3||roadDist(x,z)<14)return false;
   if(Math.hypot(x-POND.x,z-POND.z)<POND.r+25)return false;for(const s of SITE_LIST)if(Math.hypot(x-s.x,z-s.z)<s.r+60)return false;
   for(const m of LANDMARKS)if(Math.hypot(x-m.x,z-m.z)<60)return false;if(MINE&&Math.hypot(x-MINE.x,z-MINE.z)<60)return false;
-  for(const k in RIVAL_SITES){const s=SITES[k];if(Math.hypot(x-s.x,z-s.z)<90)return false;}return true;}
+  for(const k in RIVAL_SITES){const s=SITES[k];if(Math.hypot(x-s.x,z-s.z)<90)return false;}return landReachable(x,z);}
+// a plot must sit on open ground you can ride onto: no mesa tops, no canyon floors
+function landReachable(x,z){const h=groundY(x,z);for(let i=0;i<12;i++)for(const r of [15,30]){const a=i/12*TAU;if(Math.abs(groundY(x+Math.cos(a)*r,z+Math.sin(a)*r)-h)>5)return false;}
+  let open=0;for(let i=0;i<16;i++){const a=i/16*TAU;let ok=true,prev=h;for(let r=4;r<=150;r+=4){const y=groundY(x+Math.cos(a)*r,z+Math.sin(a)*r);if(Math.abs(y-prev)>2.2){ok=false;break;}prev=y;}if(ok)open++;}return open>=10;}
 // positions are found the same way every time, so saves line up with the world
 function placePlots(){LAND.plots=[];for(const [name,sx,sz] of LAND_SEEDS){let spot=null;
-  for(let i=0;i<220&&!spot;i++){const a=i*2.39996,r=Math.sqrt(i)*9,x=sx+Math.cos(a)*r,z=sz+Math.sin(a)*r;if(landSpotOk(x,z))spot={x,z};}
+  for(let i=0;i<900&&!spot;i++){const a=i*2.39996,r=Math.sqrt(i)*9,x=sx+Math.cos(a)*r,z=sz+Math.sin(a)*r;if(landSpotOk(x,z))spot={x,z};}
   if(!spot)spot={x:sx,z:sz};LAND.plots.push({name,x:spot.x,z:spot.z,price:150+Math.round(Math.hypot(spot.x,spot.z)/640*100/10)*10,stake:null,npcs:[],model:null});}
   for(const p of LAND.plots){const g=new THREE.Group();g.position.set(p.x,groundY(p.x,p.z),p.z);scene.add(g);
     for(const [a,b] of [[-14,-14],[14,-14],[14,14],[-14,14]])bx(0.18,1,0.18,'#6a4a2c',a,0.5,b,g);
@@ -2142,6 +2153,78 @@ function updateGuard(a,dt){const c=home();if(!c){setJob(a,'ride');return;}
   const t=a.target;if(t&&!t.dead){a.yaw=angLerp(a.yaw,Math.atan2(t.pos.x-a.pos.x,t.pos.z-a.pos.z),1-Math.exp(-6*dt));a.shootT-=dt;if(a.shootT<=0&&d2(a.pos,t.pos)<60){a.shootT=rand(1,1.8);allyShoot(a,t);}}
   else a.yaw=angLerp(a.yaw,a.guardYaw||0,1-Math.exp(-2*dt));
   a.h.g.position.copy(a.pos);a.h.g.rotation.y=a.yaw;if(d2(a.pos,P.pos)<120)animHuman(a.h,0,dt,!!t);}
+// outfits: swap the player's whole look; bought once, worn any time
+const OUTFITS_P={
+  drifter:{name:'Drifter (your old clothes)',price:0,o:{shirt:'#b8a888',vest:'#4a3020',coat:'#6a4a2e',pants:'#3a342c',hat:'#2a1c12',beard:'#3a2414'}},
+  gunslinger:{name:'Gunslinger in black',price:40,o:{shirt:'#2a2a2a',vest:'#111',coat:'#1a1a1a',pants:'#1a1a1a',hat:'#111',bandana:'#7a1010',beard:'#2a1a10'}},
+  vaquero:{name:'Vaquero',price:45,o:{shirt:'#e8dcc0',vest:'#7a2a1a',pants:'#3a2a1a',hat:'#8a6a3a',bandana:'#a03020',beard:'#2a1a10'}},
+  gambler:{name:'Riverboat gambler',price:55,o:{shirt:'#e8e0d0',vest:'#6a1a2a',coat:'#2a2030',pants:'#2a2a2a',hat:'#222',bowler:true}},
+  lawman:{name:'Lawman\'s duster (with a tin star)',price:50,o:{shirt:'#c8b898',vest:'#4a3a2a',coat:'#8a6a4a',pants:'#3a342c',hat:'#5a4030',badge:true,beard:'#3a2414'}},
+  mountain:{name:'Mountain man buckskins',price:35,o:{shirt:'#8a6a42',coat:'#6a4a26',pants:'#5a4028',hat:'#3a2a1a',beard:'#5a3a20'}},
+  rancher:{name:'Rancher\'s plaid and denim',price:30,o:{shirt:'#8a3a3a',pants:'#3a4a6a',hat:'#a08060',beard:'#4a3020'}},
+  undertaker:{name:'Undertaker\'s black',price:45,o:{shirt:'#eee',vest:'#111',coat:'#0e0e0e',pants:'#111',hat:'#111',bowler:true}},
+  cavalry:{name:'Cavalry blues',price:60,o:{shirt:'#2a3a6a',pants:'#3a4a7a',hat:'#2a2a3a',bandana:'#e3b14f',beard:'#3a2414'}},
+  bandit:{name:'Desert bandit, masked',price:35,o:{shirt:'#7a6a50',vest:'#3a2a1a',pants:'#4a3a2a',hat:'#5a4535',bandana:'#5a1a10'}},
+  don:{name:'The Don\'s finery (Don of the Territory)',price:150,rank:4,o:{shirt:'#eee',vest:'#e3b14f',coat:'#3a0a1a',pants:'#1a1a1a',hat:'#1a1a1a',beard:'#2a1a10'}}};
+const STYLE={outfit:'drifter',owned:{drifter:1},stable:[]};
+function wearOutfit(k){const O=OUTFITS_P[k];if(!O)return;STYLE.outfit=k;const o={...O.o,skin:'#c08a68'};if(k==='don')o.bandana=EMP.color;
+  const nh=makeHuman(o),vis={gun:PH.gun.visible,rifle:PH.rifle.visible,shotgun:PH.shotgun.visible,head:PH.head.visible};
+  while(PH.g.children.length)PH.g.remove(PH.g.children[0]);while(nh.g.children.length)PH.g.add(nh.g.children[0]);
+  for(const key of ['legL','legR','armL','armR','torso','head','gun','gunTip','rifle','rifleTip','shotgun','shotTip'])PH[key]=nh[key];
+  PH.gun.visible=vis.gun;PH.rifle.visible=vis.rifle;PH.shotgun.visible=vis.shotgun;PH.head.visible=vis.head;PH.g.traverse(m=>{if(m.isMesh)m.castShadow=true;});}
+function openWardrobe(){openCustom(`Wardrobe · wearing: ${OUTFITS_P[STYLE.outfit].name}`,Object.entries(OUTFITS_P).map(([k,O])=>{const own=!!STYLE.owned[k],locked=O.rank&&rankInfo().idx<O.rank;
+  return {label:STYLE.outfit===k?`${O.name} (wearing)`:own?`Put on: ${O.name}`:locked?`${O.name} (for a Don of the Territory)`:`Buy and wear: ${O.name}`,price:own?0:O.price,noMult:true,note:own?(STYLE.outfit===k?'✓':'owned'):undefined,
+    off:()=>STYLE.outfit===k||(!own&&locked),act:()=>{STYLE.owned[k]=1;wearOutfit(k);closeMenu();toast('New look',O.name);save();}};}));}
+// horses: breeds with their own pace and wind, and coats you can choose
+const BREEDS={mustang:{name:'Mustang',gal:19,trot:9,endur:1,price:0,desc:'hardy and honest'},
+  morgan:{name:'Morgan',gal:21,trot:10,endur:0.9,price:80,desc:'gallop 21, a little more wind'},
+  appaloosa:{name:'Appaloosa',gal:22.5,trot:10.5,endur:0.8,price:150,desc:'gallop 22, tires slower'},
+  shire:{name:'Shire',gal:17,trot:9,endur:0.35,price:120,desc:'slow, but gallops nearly forever'},
+  arabian:{name:'Arabian',gal:25,trot:11.5,endur:0.75,price:280,desc:'gallop 25, quick and light'},
+  thoroughbred:{name:'Thoroughbred',gal:28,trot:12,endur:0.7,price:420,desc:'gallop 28, the fastest in the territory'}};
+const COATS=[['Bay','#8a5a34','#2a1a10'],['Black','#1e1a18','#0a0808'],['White','#e8e2d6','#b8b0a0'],['Chestnut','#a0522d','#5a2a10'],['Palomino','#d8b060','#f0e0b0'],
+  ['Dapple grey','#8a8a88','#3a3a3a'],['Buckskin','#c8a060','#1a1008'],['Pinto','#e0d8c8','#4a2a1a'],['Liver chestnut','#5a2a18','#2a1008'],['Blue roan','#5a6070','#1a1a22']];
+const HORSE_NAMES=['Dusty','Comet','Sable','Juniper','Rowdy','Maverick','Pepper','Shiloh','Whiskey','Cinder','Ghost','Trouble','Duchess','Bandit'];
+function applyBreed(h,b){const B=BREEDS[b]||BREEDS.mustang;h.breed=b;h.gal=B.gal;h.trot=B.trot;h.endur=B.endur;}
+function recoatHorse(h,ci){const c=COATS[ci]||COATS[0];h.coat=ci;const old=h.q.g,q=makeQuad({scale:1,color:c[1],dark:c[2],mane:c[2],tailC:c[2],tailLen:1.1,saddle:true});
+  q.g.position.copy(old.position);q.g.rotation.copy(old.rotation);scene.remove(old);scene.add(q.g);h.q=q;
+  if(P.mounted&&HORSE===h){q.g.add(PH.g);PH.g.position.set(0,1.05,0.05);PH.g.rotation.set(0,0,0);}if(HORSE===h)showPrisoner();}
+const LIVERY_SPOT={x:-46,z:16};
+function buyHorse(b){closeMenu();if(P.mounted)dismount();const old=HORSE;
+  STYLE.stable.push({name:old.name,breed:old.breed||'mustang',coat:old.coat??0});const i=horses.indexOf(old);if(i>=0)horses.splice(i,1);scene.remove(old.q.g);
+  const used=new Set([...STYLE.stable.map(s=>s.name),old.name]),name=HORSE_NAMES.find(n=>!used.has(n))||'Horse';
+  const ci=b==='appaloosa'?7:b==='arabian'?2:b==='thoroughbred'?3:b==='shire'?1:b==='morgan'?8:0;
+  const h=makeHorse(LIVERY_SPOT.x,LIVERY_SPOT.z,Math.PI,[COATS[ci][1],COATS[ci][2]],name,true);h.coat=ci;applyBreed(h,b);HORSE=h;showPrisoner();
+  banner('A new horse',`${name} the ${BREEDS[b].name}`,true);toast('Your new horse',`${name} waits by the livery rail. ${old.name} is stabled here; switch back any time.`);save();}
+function switchHorse(i){closeMenu();if(P.mounted)dismount();const s=STYLE.stable.splice(i,1)[0],old=HORSE;
+  STYLE.stable.push({name:old.name,breed:old.breed||'mustang',coat:old.coat??0});const j=horses.indexOf(old);if(j>=0)horses.splice(j,1);scene.remove(old.q.g);
+  const c=COATS[s.coat]||COATS[0],h=makeHorse(LIVERY_SPOT.x,LIVERY_SPOT.z,Math.PI,[c[1],c[2]],s.name,true);h.coat=s.coat;applyBreed(h,s.breed);HORSE=h;showPrisoner();
+  toast('Saddled up',`${s.name} the ${BREEDS[s.breed].name} is ready at the rail. ${old.name} is stabled.`);save();}
+function openStableSwitch(){openCustom('Your stabled horses',STYLE.stable.length?STYLE.stable.map((s,i)=>({label:`Ride ${s.name} the ${BREEDS[s.breed].name} (${COATS[s.coat]?.[0]||'Bay'})`,price:0,note:'',act:()=>switchHorse(i)})).slice(0,12)
+  :[{label:'No other horses stabled here yet',price:0,note:'',off:()=>true,act:()=>{}}]);}
+function openCoats(){openCustom(`Groom and dye ${HORSE.name}'s coat`,COATS.map(([n],i)=>({label:`${n}${HORSE.coat===i?' (current)':''}`,price:HORSE.coat===i?0:10,noMult:true,off:()=>HORSE.coat===i,
+  act:()=>{closeMenu();recoatHorse(HORSE,i);toast('Fresh coat',`${HORSE.name} is ${n.toLowerCase()} now.`);save();}})));}
+// waiting: let the hours roll by while the gang, the stills and the land make money
+var quiet=false;
+function canWait(){if(WANTED.active)return 'Not with the law on your tail.';if(RAID.active||HANG.active)return 'Not now.';
+  if(outlaws.some(e=>!e.dead&&e.alerted&&d2(e.pos,P.pos)<120))return 'Not with enemies this close.';if(P.mounted&&HORSE.speed>2)return 'Stop your horse first.';return null;}
+function waitHours(h){closeMenu();const why=canWait();if(why){toast('You can\'t wait here',why);return;}
+  const m0=P.money,d0=P.day,f=$('fade');f.textContent='';f.style.opacity=1;
+  setTimeout(()=>{quiet=true;try{for(let i=0;i<h;i++){advanceHours(1);updateCamps(40);workHour();P.hp=Math.min(100,P.hp+15);updateHangEvent();}}finally{quiet=false;}
+    WORK.t=0;P.stamina=100;f.style.opacity=0;const got=P.money-m0,days=P.day-d0;
+    banner(`${h} hour${h>1?'s':''} pass`,`${got>=0?'+':'−'}$${Math.abs(got)}${days?` · ${days} new day${days>1?'s':''}`:''}`,true);
+    toast('While you waited',`You ${got>=0?'made':'lost'} $${Math.abs(got)}. Camps hold ${EMP.camps.reduce((s,c)=>s+c.stock,0)} crates.`);save();},700);}
+function openWait(){const why=canWait();if(why){toast('You can\'t wait here',why);return;}
+  const until=t=>{const d=(t-gameHour+24)%24;return Math.max(1,Math.round(d||24));};
+  openCustom(`Wait · it is ${String(Math.floor(gameHour)).padStart(2,'0')}:${String(Math.floor(gameHour%1*60)).padStart(2,'0')} on day ${P.day}`,[
+    {label:'Wait 1 hour',price:0,note:'',act:()=>waitHours(1)},{label:'Wait 3 hours',price:0,note:'',act:()=>waitHours(3)},{label:'Wait 6 hours',price:0,note:'',act:()=>waitHours(6)},
+    {label:'Wait until morning (7:00)',price:0,note:`${until(7)} h`,act:()=>waitHours(until(7))},{label:'Wait until noon',price:0,note:`${until(12)} h`,act:()=>waitHours(until(12))},
+    {label:'Wait until evening (19:00)',price:0,note:`${until(19)} h`,act:()=>waitHours(until(19))},
+    {label:'Wait a full day',price:0,note:'24 h',act:()=>waitHours(24)},{label:'Wait three days',price:0,note:'72 h',act:()=>waitHours(72)},
+    {label:'Wait a week',price:0,note:'168 h',act:()=>waitHours(168)}]);}
+function styleInit(){if(STYLE.outfit!=='drifter')wearOutfit(STYLE.outfit);const hs=STYLE.horse;
+  if(hs){HORSE.name=hs.name||HORSE.name;applyBreed(HORSE,hs.breed||'mustang');if(hs.coat!=null&&hs.coat!==0)recoatHorse(HORSE,hs.coat);else HORSE.coat=hs.coat??0;}
+  else{applyBreed(HORSE,'mustang');HORSE.coat=0;}}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
@@ -2238,8 +2321,8 @@ function updatePlayer(dt){
   if(P.mounted){
     // reins: W/S for pace, A/D steer the horse itself, so riding doesn't depend on where the camera points
     const fwd=busy?0:(K.KeyW?1:0)-(K.KeyS?1:0),turn=busy?0:(K.KeyA?1:0)-(K.KeyD?1:0);
-    const gallop=K.ShiftLeft&&HORSE.stamina>2&&fwd>0,target=fwd>0?(gallop?19:9):fwd<0?(HORSE.speed>1.5?0:-2.2):0;
-    HORSE.speed=lerp(HORSE.speed,target,1-Math.exp(-(Math.abs(target)>Math.abs(HORSE.speed)?1.4:2.6)*dt));if(gallop)HORSE.stamina-=9*dt*(P.saddle?0.5:1);
+    const gallop=K.ShiftLeft&&HORSE.stamina>2&&fwd>0,target=fwd>0?(gallop?(HORSE.gal||19):(HORSE.trot||9)):fwd<0?(HORSE.speed>1.5?0:-2.2):0;
+    HORSE.speed=lerp(HORSE.speed,target,1-Math.exp(-(Math.abs(target)>Math.abs(HORSE.speed)?1.4:2.6)*dt));if(gallop)HORSE.stamina-=9*dt*(P.saddle?0.5:1)*(HORSE.endur||1);
     HORSE.yaw+=turn*(HORSE.speed>12?1.5:HORSE.speed>3?2.1:2.6)*dt;
     if(HORSE.speed>2&&!P.aiming&&clock.elapsedTime-lastMouseT>1.2){cam.yaw=angLerp(cam.yaw,HORSE.yaw+Math.PI,1-Math.exp(-2.2*dt));cam.pitch=lerp(cam.pitch,0.2,1-Math.exp(-1.5*dt));}
     const st=HORSE.speed*dt;if(!tryMove(HORSE.pos,Math.sin(HORSE.yaw)*st,Math.cos(HORSE.yaw)*st,1.1,1.0))HORSE.speed*=0.6;
@@ -2615,6 +2698,7 @@ addEventListener('keydown',e=>{if(!running)return;if(['Space','Tab','KeyQ'].incl
     case 'KeyG':if(!liveGang().length)toast('No gang yet','Build a camp (B), then recruit townsfolk or hire guns at the camp.');else setOrder(EMP.order==='hold'?'follow':'hold');break;
     case 'KeyK':openModal('empire');break;
     case 'KeyN':if(menu)closeMenu();else openJobs();break;
+    case 'KeyZ':if(menu)closeMenu();else openWait();break;
     case 'KeyC':setFirstPerson(!firstPerson);break;
     case 'KeyT':aimAssist=!aimAssist;saveSettings();toast('Aim assist',aimAssist?'On':'Off');break;
     case 'BracketLeft':case 'BracketRight':{const v=clamp(Math.round(sens/0.0005)+(e.code==='BracketRight'?1:-1),1,20);sens=v*0.0005;saveSettings();toast('Mouse sensitivity',`${v} / 20`);break;}

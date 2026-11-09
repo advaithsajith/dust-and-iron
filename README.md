@@ -60,7 +60,7 @@ The game needs a **keyboard and mouse**. Click the game to capture the mouse; **
 | **J** | Journal | **M** | Map |
 | **K** | Your empire | **B** | Pitch a camp (out in the desert) |
 | **G** | Gang: follow me / hold here | **T** | Aim assist on or off |
-| **N** | Gang work: assign jobs | | |
+| **N** | Gang work: assign jobs | **Z** | Wait: let hours or days pass |
 
 ### Four ways to play
 
@@ -105,6 +105,12 @@ Eight plots of land across the territory are for sale. Buy a deed at the bank's 
 Each business expands to level 3, adding income and workers who live on the land. You can now run six camps instead of three. The empire screen (**K**) shows your **territory control**: hold Coppervale, its church, both Vance hideouts, the mine and all eight plots to become **Lord of the Arroyo**.
 
 Coppervale is busier too: more townsfolk, and children who run and play in the street. Children can't be harmed.
+
+### Horses, outfits and waiting
+
+- **Horses.** Gus the Stablemaster at the livery sells five breeds: Morgan ($80), Appaloosa ($150), Shire ($120, slow but nearly tireless), Arabian ($280) and Thoroughbred ($420, gallops at 28 against Biscuit's 19). Your old horse stays stabled there, and you can switch back any time. He'll also groom and dye your horse's coat in ten colours for $10, and he buys stolen horses.
+- **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
+- **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
 ### Gang work
 

@@ -1,4 +1,4 @@
-// Land deeds, every business type, kids that bullets pass, more camps, territory control, and the save round-trip.
+﻿// Land deeds, every business type, kids that bullets pass, more camps, territory control, and the save round-trip.
 import { installGlobals, makeClock, FakeRenderer, buildGameModule } from './env.mjs';
 installGlobals();
 globalThis.__SIM = { FakeRenderer, clock: makeClock(), errors: [] };
@@ -11,7 +11,7 @@ const items = () => api.menu.custom?.items || api.menu.items;
 const pickItem = s => items().findIndex(x => x.label.startsWith(s));
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 P.money = 20000;
-ok(LAND.plots.length === 8, 'plots: ' + LAND.plots.map(p => `${p.name} (${Math.round(p.x)},${Math.round(p.z)}) $${p.price}`).join(' · '));
+ok(LAND.plots.length === 8, 'plots: ' + LAND.plots.map(p => `${p.name} (${Math.round(p.x)},${Math.round(p.z)}) $${p.price}`).join(' Â· '));
 const near = []; for (const p of LAND.plots) for (const b of api.boxes) if (p.x > b.minX - 20 && p.x < b.maxX + 20 && p.z > b.minZ - 20 && p.z < b.maxZ + 20) near.push(p.name);
 ok(near.length === 0, 'no plot overlaps existing buildings ' + near.join(','));
 const kids = api.npcs.filter(n => n.kid), adults = api.npcs.filter(n => !n.important && !n.kid && !n.area);
@@ -30,11 +30,11 @@ ok(api.boxes.length > boxes0 && api.npcs.length > n0, `+${api.boxes.length - box
 const parlor = LAND.plots.find(p => api.plotOf(p).type === 'parlor'); const madam = api.npcs.find(n => n.landBoss === parlor);
 api.talkTo(madam); ok(api.menu?.custom?.title.includes('Parlor house'), `madam ${madam?.name} opens: ${api.menu?.custom?.title}`);
 api.buy(pickItem('Expand to level 2')); flush(); ok(api.plotOf(parlor).level === 2, 'parlor house expanded');
-const L = api.dailyLedger(); ok(L.l > 300, `land pays $${L.l} a day · gang cap ${api.gangCap()}`);
+const L = api.dailyLedger(); ok(L.l > 300, `land pays $${L.l} a day Â· gang cap ${api.gangCap()}`);
 // control
 const miss = api.holdings().filter(h => !h.h).map(h => h.n); ok(true, `control ${Math.round(api.territoryControl() * 100)}%, missing: ${miss.join(', ')}`);
 api.EMP.town = true; api.CH.held = true; api.LATE.mine = true; api.LATE.rivals.seized.creek = true; api.LATE.rivals.seized.hollow = true;
-P.day++; api.onNewDay(); step(3); ok(api.territoryControl() === 1 && api.rankInfo().name === 'Lord of the Arroyo', `full control: ${api.rankInfo().name}`);
+step(3); ok(api.territoryControl() === 1 && api.rankInfo().name === 'Lord of the Arroyo', `full control: ${api.rankInfo().name}`);
 // workers stay on their land
 step(30); const strays = api.npcs.filter(n => n.area && Math.hypot(n.pos.x - n.area.x, n.pos.z - n.area.z) > n.area.r + 8);
 ok(strays.length === 0, `plot folk stay home (${strays.length} strays)`);
