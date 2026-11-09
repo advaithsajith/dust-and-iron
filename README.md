@@ -105,6 +105,17 @@ Each business expands to level 3, adding income and workers who live on the land
 
 Coppervale is busier too: more townsfolk, and children who run and play in the street. Children can't be harmed.
 
+### Haggling, prisoners and the gallows
+
+- **Haggle.** Every shop has **Haggle over prices** and a pushier **Lean on them** option, once a day. A deal takes 10–35% off what you buy and adds as much to what you sell; a failed push raises that shop's prices for the day. Rank, rackets and riders at your side help. Peddlers in town and at the Trading Post sell odds and ends, and expect you to make an offer.
+- **Take outlaws alive.** Wound an outlaw to half health or less, aim at him and press **E** to demand his surrender. Then press **E** to tie him over your saddle. Bounty targets are worth more alive.
+- **The gallows** stand at the west end of Coppervale. With a prisoner, turn him over to the law for his bounty and some honor, or, once the town is yours, hang him: the town gathers to watch, the crowd throws coins, and hanging a Vance man stops their raids for three days.
+- **The town hangs a condemned man most days at noon.** If Coppervale is yours, you can pardon him at the gallows beforehand, and he joins your gang for free.
+
+### Courtship
+
+Nine people can be courted: Clara Bright (schoolteacher), Mateo Ruiz (livery), June Harrow and Eli Barlow (Delgado Ranch), Rosa Alvarez (seamstress), Ivy Calloway (singer at the Rusty Spur), Nora Quinn (by the telegraph office), Tom Whitlock (Trading Post) and Hazel Moon (fortune teller in Dry Bones).
+
 ### The church
 
 Talk to **Reverend Amos Pike** at the church door, east of the main street. Endow the church for $400, or lean on him with three of your gang (free if you already own the town). Then pass laws from the pulpit:

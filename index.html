@@ -773,7 +773,8 @@ function spawnPeople(){
   spawnNPC(null,'Doc Hargrove',-28,7.6,{shirt:'#ddd',coat:'#2a2a2a',pants:'#2a2a2a',bowler:true,hat:'#222',beard:'#bbb',shop:'doctor',yaw:Math.PI});
   const outfits=[{shirt:'#7a6a50',pants:'#4a4038'},{shirt:'#a05a3a',pants:'#3a3530',vest:'#3a2a1a'},{shirt:'#5a6a7a',pants:'#3a3a3a',coat:'#5a4535'},
     {shirt:'#c8b898',dress:'#7a5a3a',hair:'#3a2010'},{shirt:'#8a8a6a',pants:'#5a4a3a',beard:'#5a3a20'},{shirt:'#6a3a3a',dress:'#4a2a3a',hair:'#1a1008'}];
-  OUTFITS=outfits;for(let i=0;i<16;i++)spawnCivilian(rand(-70,60),rand(-6,6));for(let i=0;i<6;i++)spawnKid(rand(-60,50),rand(-5,5));
+  OUTFITS=outfits;for(let i=0;i<16;i++)spawnCivilian(rand(-70,60),rand(-6,6));for(let i=0;i<6;i++)spawnKid(rand(-60,50),rand(-5,5));for(let i=0;i<2;i++)spawnPeddler(rand(-50,40),rand(-4,4));
+  {const rot=Math.atan2(13,-17);spawnPeddler(-252+Math.sin(rot)*12,-98+Math.cos(rot)*12,{x:-252+Math.sin(rot)*14,z:-98+Math.cos(rot)*14,r:8});}
   spawnNPC(null,'Clerk Tibbs',12,7.6,{shirt:'#cfc6b0',vest:'#2a3a4a',pants:'#2a2a2a',bowler:true,hat:'#333',shop:'telegraph',yaw:Math.PI});
   spawnNPC(null,'Hank the Outfitter',34,7.6,{shirt:'#a08a6a',vest:'#3a2a1a',pants:'#3a342c',hat:'#4a3a28',beard:'#8a7a6a',shop:'outfitter',yaw:Math.PI});
   {const rot=Math.atan2(13,-17),x=-252+Math.sin(rot)*6.4,z=-98+Math.cos(rot)*6.4;spawnNPC(null,'Ezra at the Trading Post',x,z,{shirt:'#c8b898',vest:'#5a3a22',hat:'#8a7050',beard:'#5a4a3a',shop:'trading',yaw:rot});}
@@ -782,6 +783,12 @@ function spawnPeople(){
   spawnNPC('clara','Clara Bright',-5,3,{shirt:'#e6dcc8',dress:'#4a5a6a',hat:'#8a6a5a',hair:'#6a3a1a',skin:'#d9a585',wander:true}).suitor=true;
   spawnNPC('mateo','Mateo Ruiz',-52,7.8,{shirt:'#c8b08a',vest:'#5a3a22',pants:'#3a342c',hat:'#6a5038',skin:'#a8714f',yaw:Math.PI}).suitor=true;
   spawnNPC('june','June Harrow',SITES.ranch.x+9,SITES.ranch.z+5,{shirt:'#8a5a4a',pants:'#4a4038',hat:'#9a7a50',hair:'#c8a060',skin:'#e0b090',yaw:0.4}).suitor=true;
+  spawnNPC('rosa','Rosa Alvarez',26,-6.5,{shirt:'#e8d0c0',dress:'#8a3a4a',hair:'#1a1008',skin:'#b07a55'}).suitor=true;
+  spawnNPC('ivy','Ivy Calloway',-27,-6.8,{shirt:'#d8c0d8',dress:'#4a1a3a',hair:'#c8a060',skin:'#e0b090'}).suitor=true;
+  spawnNPC('nora','Nora Quinn',8,5,{shirt:'#d8d8c8',dress:'#3a4a5a',hair:'#8a3a1a',skin:'#e8c0a0',wander:true}).suitor=true;
+  spawnNPC('eli','Eli Barlow',SITES.ranch.x-7,SITES.ranch.z+9,{shirt:'#6a8a9a',vest:'#4a3424',pants:'#3a342c',hat:'#7a5a3a',skin:'#c88a65',yaw:-0.6}).suitor=true;
+  {const rot=Math.atan2(13,-17);spawnNPC('tom','Tom Whitlock',-252+Math.sin(rot)*9+3,-98+Math.cos(rot)*9+2,{shirt:'#7a6a50',coat:'#5a4030',pants:'#3a342c',hat:'#4a3a28',beard:'#5a3a20',skin:'#d9a585',yaw:rot}).suitor=true;}
+  spawnNPC('hazel','Hazel Moon',-24,-312,{shirt:'#5a3a6a',dress:'#2a1a3a',hair:'#1a1008',hat:'#3a2a4a',skin:'#d0a080'}).suitor=true;
 }
 let OUTFITS=[];
 function spawnCivilian(x,z){return spawnNPC(null,pick(['Townsman','Miner','Rancher','Drifter','Shopper','Local']),x,z,
@@ -792,7 +799,7 @@ function spawnOutlaw(x,z,tag,o={}){
   h.gun.visible=true;scene.add(h.g);
   const e={kind:'outlaw',h,pos:new V3(x,groundY(x,z),z),anchor:new V3(x,0,z),hp:o.hp||100,tag,alerted:false,dead:false,shootT:rand(1.2,2.4),moveT:0,
     target:new V3(x,0,z),walking:false,yaw:rand(0,TAU),boss:!!o.boss,acc:o.acc||1,looted:false,name:o.name,fallT:0,losT:0,los:false,strafeT:0,speed:0,
-    mounted:false,hq:null,flinchT:0,crimeHit:false};
+    mounted:false,hq:null,flinchT:0,crimeHit:false,hp0:o.hp||100,surrender:false};
   h.g.position.copy(e.pos);outlaws.push(e);return e;
 }
 // deputies ride in on horseback, then dismount to fight
@@ -944,16 +951,16 @@ const SHOPS={
       act:()=>{P.bounty=0;P.honor=clamp(P.honor+5,-100,100);toast('Bounty paid','Your name is clear in Arroyo Territory.');}},
     {label:'Wire a donation to the widows\' fund (+honor)',price:10,noMult:true,act:()=>{P.honor=clamp(P.honor+8,-100,100);toast('Donation sent','Honor improved.');}}]},
 };
-const priceOf=it=>it.noMult||it.price<=0?it.price:Math.round(it.price*priceMult());
+const priceOf=it=>it.price<=0?it.price:Math.max(1,Math.round(it.price*(it.noMult?1:priceMult())*(menu&&menu.k?hagMult(menu.k):1)));
 function openShop(k){menu={k};renderMenu();}
 // long menus run past 9 items, so 0, - and = pick items 10 to 12
 const MENU_KEYS=['1','2','3','4','5','6','7','8','9','0','-','='],MENU_CODES=['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal'];
 function renderMenu(){$('menu').hidden=!menu;if(!menu)return;const s=menu.custom||SHOPS[menu.k];
-  let items=typeof s.items==='function'?s.items():s.items;if(menu.k)items=items.concat(underworldItems(menu.k));menu.items=items;
-  $('menu').innerHTML=`<h3></h3>${items.map((it,i)=>`<div class="row${it.off?.()?' off':''}"><span><span class="k">${MENU_KEYS[i]||''}</span> ${it.label}</span><span>${it.note!==undefined?it.note:it.sell?`+$${it.price<0?-it.price:3} each (${P.pelts})`:it.price?'$'+priceOf(it):'free'}</span></div>`).join('')}<div class="foot">Press a number to choose · <span class="k">E</span> to leave · You have $${P.money}${priceMult()>1?' · prices raised for your reputation':priceMult()<1?' · friendly discount':''}</div>`;
+  let items=typeof s.items==='function'?s.items():s.items;if(menu.k)items=items.concat(underworldItems(menu.k),haggleItems(menu.k)).slice(0,12);menu.items=items;
+  $('menu').innerHTML=`<h3></h3>${items.map((it,i)=>`<div class="row${it.off?.()?' off':''}"><span><span class="k">${MENU_KEYS[i]||''}</span> ${it.label}</span><span>${it.note!==undefined?it.note:it.sell?`+$${Math.round((it.price<0?-it.price:3)*hagSell(menu.k))} each (${P.pelts})`:it.price?'$'+priceOf(it):'free'}</span></div>`).join('')}<div class="foot">Press a number to choose · <span class="k">E</span> to leave · You have $${P.money}${priceMult()>1?' · prices raised for your reputation':priceMult()<1?' · friendly discount':''}</div>`;
   $('menu').querySelector('h3').textContent=s.title;}
 function buy(i){const it=menu.items[i];if(!it||it.off?.())return;
-  if(it.sell){const v=P.pelts*(it.price<0?-it.price:3);P.money+=v;P.pelts=0;sfx.coin();toast('Sold',`Hides for $${v}`);renderMenu();return;}
+  if(it.sell){const v=Math.round(P.pelts*(it.price<0?-it.price:3)*hagSell(menu.k));P.money+=v;P.pelts=0;sfx.coin();toast('Sold',`Hides for $${v}`);renderMenu();return;}
   const pr=priceOf(it);if(P.money<pr){toast('Not enough money',`You need $${pr}`);return;}P.money-=pr;it.act();if(pr)sfx.coin();renderMenu();save();}
 function sleepTo(h){const fade=$('fade');fade.textContent='';fade.style.opacity=1;menu=null;renderMenu();setTimeout(()=>{const nd=h<=gameHour;if(nd)P.day++;gameHour=h;if(nd)onNewDay();P.hp=100;P.stamina=100;fade.style.opacity=0;toast('Rested',h===7?'Morning in Coppervale.':'Evening falls.');save();},900);}
 function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dailyLedger(),esc=s=>String(s).replace(/[<>&]/g,'');
@@ -1379,7 +1386,7 @@ const RAID={active:false,wave:0,next:0};
 const liveGang=()=>EMP.gang.filter(a=>!a.dead);
 const gangCap=()=>2+EMP.camps.length*2+(EMP.town?4:0)+ROM.spouses.length*3+(hb('bunk')?4:0)+LAND.plots.reduce((s,p)=>{const o=plotOf(p);return s+(o&&o.type==='outpost'?1+o.level*2:0);},0);
 function influence(){return liveGang().length*10+EMP.camps.length*15+EMP.camps.reduce((s,c)=>s+c.still*10,0)+Object.keys(EMP.rackets).length*10+Object.keys(EMP.blackmail).length*12+(EMP.town?60:0)
-  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0);}
+  +ROM.spouses.length*15+ROM.children.length*8+(CH.held?40:0)+Object.keys(CH.laws).length*5+Object.values(LAND.owned).reduce((s,o)=>s+12+(o.type?8*o.level:0),0)+Math.min(40,(LATE.hanged||0)*4);}
 function rankInfo(){const inf=influence();let idx=0;RANKS.forEach((r,i)=>{if(inf>=r[0])idx=i;});return {inf,idx,name:(LAND.lord||territoryControl()>=1)?'Lord of the Arroyo':RANKS[idx][1],next:RANKS[idx+1]};}
 function dailyLedger(){const r=Object.keys(EMP.rackets).length*10,b=Object.keys(EMP.blackmail).length*15,t=EMP.town?40:0,w=liveGang().filter(a=>!a.kin).length*3,
   f=(hb('barn')?35:0)+(hb('ranch')?25:0),o=Object.values(LATE.rivals.seized).filter(Boolean).length*40,m=LATE.mine?40:0,c=churchIncome(),l=landIncome();return {r,b,t,w,f,o,m,c,l,net:r+b+t+f+o+m+c+l-w};}
@@ -1400,7 +1407,7 @@ function recruit(n){closeMenu();ensureGangName(()=>{const i=npcs.indexOf(n);if(i
 function hireAtCamp(c){closeMenu();ensureGangName(()=>{const a=spawnAlly(c.x+rand(-4,4),c.z+rand(-4,4));toast(`${a.name} joins ${EMP.name}`,'They\'ll ride with you.');save();});}
 function nearestAlly(p,r){let b=null,bd=r;for(const a of EMP.gang){if(a.dead)continue;const d=d2(a.pos,p);if(d<bd){bd=d;b=a;}}return b;}
 function pickAllyTarget(a){let best=null,bd=55;
-  for(const e of outlaws){if(e.dead)continue;const d=d2(e.pos,a.pos);
+  for(const e of outlaws){if(e.dead||e.surrender)continue;const d=d2(e.pos,a.pos);
     if(e.tag==='law'?!(WANTED.active||RAID.active):!(e.alerted||d<30))continue;if(d<bd){bd=d;best=e;}}
   for(const w of animals)if(w.kind==='wolf'&&!w.dead&&w.alerted){const d=d2(w.pos,a.pos);if(d<bd){bd=d;best=w;}}
   return best;}
@@ -1486,7 +1493,7 @@ function openCampMenu(c){const up=[0,25,60,120][c.still+1]||0;
     {label:`Hire a gun (${liveGang().length}/${gangCap()} riders)`,price:25,noMult:true,off:()=>liveGang().length>=gangCap(),act:()=>hireAtCamp(c)},
     {label:EMP.order==='hold'?'Gang is holding position: call them to ride with you':'Gang rides with you: order them to hold here',price:0,note:'G',act:()=>{setOrder(EMP.order==='hold'?'follow':'hold');closeMenu();}}]);}
 function updateCamps(dt){for(const c of EMP.camps)if(c.still){c.stockT+=dt*24/960;const per=1/(c.still*(ROM.spouses.length&&c===EMP.camps[0]?1.5:1));while(c.stockT>=per){c.stockT-=per;if(c.stock<12)c.stock++;}}}
-function sellShine(){closeMenu();const n=P.crates,m=n*(hasLaw('spirits')?17:12);P.money+=m;P.crates=0;sfx.coin();toast('Lou counts out the money',`${n} crates of moonshine for $${m}.`);
+function sellShine(){const hs=hagSell('saloon');closeMenu();const n=P.crates,m=Math.round(n*(hasLaw('spirits')?17:12)*hs);P.money+=m;P.crates=0;sfx.coin();toast('Lou counts out the money',`${n} crates of moonshine for $${m}.`);
   if(!EMP.town&&Math.random()<0.15)setTimeout(()=>{toast('A deputy saw the deal','Bootlegging is a crime in Coppervale.');commitCrime('bootlegging',P.pos,null,true);},800);}
 function buyDirt(){closeMenu();const left=Object.keys(SECRETS).filter(k=>!EMP.dirt[k]);if(!left.length){dialog('Lou the Barkeep',['I\'ve told you every secret in this town. Even mine.']);return;}
   const k=pick(left);EMP.dirt[k]=true;dialog('Lou the Barkeep',['Lean in. You didn\'t hear this from me.',SECRETS[k].line,`Mention it to ${SECRETS[k].who} sometime. Quietly.`]);}
@@ -1538,8 +1545,20 @@ const SUITORS={
   mateo:{blurb:'the livery stablehand',chat:['Your horse likes you. Horses are honest about these things.','I break mustangs for a living. You remind me of one.','Some nights I ride out past the mesas just to see the stars.'],
     gift:'Flowers for a man who smells of hay. You have a sense of humour.',locket:'I\'ll wear it under my shirt. Close to the heart, as they say.'},
   june:{blurb:'a hand at the Delgado Ranch',chat:['Ma Delgado says I work like two men. I say I work like one woman.','I can rope a calf at forty feet. Want to see?','This ranch is the first place that ever felt like mine.'],
-    gift:'Prettier than anything that grows on this ranch.',locket:'Nobody ever gave me something meant to keep. I\'ll keep it.'}};
-const ROM={aff:{clara:0,mateo:0,june:0},chatDay:{},spouse:null,spouses:[],wedDay:0,children:[]};
+    gift:'Prettier than anything that grows on this ranch.',locket:'Nobody ever gave me something meant to keep. I\'ll keep it.'},
+  rosa:{blurb:'the seamstress',chat:['Hold still. Your collar is a disgrace. There.','I sew wedding dresses for half this town. Nobody ever sews one for me.','I could make you a coat that would turn every head in the territory.'],
+    gift:'Wildflowers! I\'ll stitch them into a pattern.',locket:'Silver, and real. You have better taste than your shirts suggest.'},
+  ivy:{blurb:'the singer at the Rusty Spur',chat:['I sing the sad songs early. The drunks like to cry before they fight.','Lou pays me in whiskey and promises. I keep the whiskey.','Sit up front tonight. I\'ll sing one just for you, and pretend I didn\'t.'],
+    gift:'Flowers from a gunslinger. Now there\'s a song.',locket:'I\'ll wear it on stage. Let the whole room wonder who gave it to me.'},
+  tom:{blurb:'a trapper at the Trading Post',chat:['Three winters in the high country. You learn to like your own company. Mostly.','Beaver\'s near gone. Wolf pelts are the money now.','You ride like you\'re running from something. I used to do that.'],
+    gift:'Nobody\'s given me flowers. Not once in thirty years.',locket:'I\'ll keep it in my coat with my good knife. That\'s where the precious things go.'},
+  nora:{blurb:'the telegraph clerk\'s niece',chat:['I read every message that comes over the wire. Don\'t tell my uncle.','A man in Fort Ashby wired a proposal to a woman in Denver. She said no. By telegram!','Someday I\'ll take the train east and see the ocean.'],
+    gift:'Flowers! I\'ll press them in the telegraph log.',locket:'I\'ll wire my mother about this. Just kidding. Maybe.'},
+  eli:{blurb:'a cowhand at the Delgado Ranch',chat:['Ma Delgado took me in when I was fourteen. Never asked where I came from.','I can sit a bronc longer than any man in the territory. Ask anybody.','Stars are better out here than anywhere. I\'d show you, some night.'],
+    gift:'Flowers for a cowhand. The boys will never let me hear the end of it.',locket:'I don\'t own much worth keeping. I do now.'},
+  hazel:{blurb:'the fortune teller in Dry Bones',chat:['I read your palm while you weren\'t looking. Long life. Lots of trouble.','Dry Bones is quiet. The dead don\'t argue about the price of a reading.','The cards say a stranger will change my fortune. You\'re a stranger.'],
+    gift:'The cards told me you\'d bring flowers. They didn\'t say they\'d be this pretty.',locket:'Silver keeps away bad spirits. And you keep away the lonely ones.'}};
+const ROM={aff:{clara:0,mateo:0,june:0,rosa:0,ivy:0,tom:0,nora:0,eli:0,hazel:0},chatDay:{},spouse:null,spouses:[],wedDay:0,children:[]};
 const KIN_FIRST=['Amos','Bette','Clem','Dora','Ezra','Faye','Gus','Hettie','Ike','Josie','Levi','Maude'];
 const CHILD_NAMES=['Eliza','Samuel','Hattie','Otto','Nell','Caleb','Lucy','Wren','Jonah','Pearl','Tobias','Rose'];
 const family=[];
@@ -1781,23 +1800,23 @@ function updateCows(dt){for(const c of LATE.herd){c.t-=dt;if(c.t<=0){c.t=rand(4,
     if(c.speed)tryMove(c.pos,Math.sin(c.yaw)*c.speed*dt,Math.cos(c.yaw)*c.speed*dt,0.7,1.2);c.pos.y=groundY(c.pos.x,c.pos.z);}
   for(const c of [...LATE.herd,...LATE.cows]){if(d2(c.pos,P.pos)>180)continue;c.q.g.position.copy(c.pos);c.q.g.rotation.y=c.yaw;animQuad(c.q,c.speed,dt,!c.speed);}}
 let lateT=0,smokeT=0;
-function updateLate(dt){updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
-  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();
+function updateLate(dt){updateHanging(dt);updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
+  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();
   if(!LATE.rivals.started&&QS.hollow.state==='done'){LATE.startT-=1;if(LATE.startT<=0)startRivals();}
   const c=home();if(c&&c.smokeAt&&d2(c,P.pos)<150&&(smokeT=(smokeT+1)%2)===0)puff(c.smokeAt,0x9a9590,2,0.6,1.4);}
-function lateNewDay(){churchNewDay();checkControl();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
-  if(LATE.rivals.started&&home()&&Math.random()<(Object.values(LATE.rivals.held).some(Boolean)?0.45:0.15))setTimeout(homeRaid,2500);}
+function lateNewDay(){churchNewDay();checkControl();scheduleHanging();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
+  if(LATE.rivals.started&&home()&&!((LATE.rivalShaken||0)>P.day)&&Math.random()<(Object.values(LATE.rivals.held).some(Boolean)?0.45:0.15))setTimeout(homeRaid,2500);}
 function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   for(const k in LATE.rivals.held)if(LATE.rivals.held[k]&&!LATE.rivals.seized[k])spawnRivals(k);for(const k in LATE.rivals.seized)if(LATE.rivals.seized[k])plantFlag(SITES[k]);
   if(LATE.bounty)LATE.bounty.spawned=false;
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
-  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();}
+  if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();showPrisoner();}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord}});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
-  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}}
+  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});}
 
 // the church: take the pulpit, then pass laws from it
 const CH={held:false,how:'',laws:{},expand:0,settlers:0,kids:0,sermonDay:-1,confessDay:-1};
@@ -1954,12 +1973,114 @@ function checkControl(){if(territoryControl()>=1&&!LAND.lord){LAND.lord=true;ban
 function openLandOffice(){openCustom(`Land office · ${Object.keys(LAND.owned).length} of ${LAND.plots.length} deeds yours`,LAND.plots.map(p=>{const o=plotOf(p);
   return o?{label:`${p.name}: ${o.type?`${LAND_TYPES[o.type].name}, level ${o.level}`:'yours, nothing built yet'} (set waypoint)`,price:0,note:'✓',act:()=>{WP={x:p.x,z:p.z,label:p.name};closeMenu();toast('Waypoint set',`${p.name}. Press E at the stake to build or expand.`);}}
     :{label:`Buy the deed to ${p.name}, ${Math.round(Math.hypot(p.x,p.z))} m from town`,price:p.price,noMult:true,act:()=>{buyPlot(p);WP={x:p.x,z:p.z,label:p.name};}};}));}
+// haggling: every shopkeeper will dicker once a day, politely or under pressure
+const HAG={};
+const hagMult=k=>HAG[k]&&HAG[k].day===P.day?HAG[k].m:1;
+const hagSell=k=>2-hagMult(k);
+function haggleChance(k,hard){return clamp(0.3+rankInfo().idx*0.08+(EMP.rackets[k]?0.25:0)+(EMP.town?0.1:0)+(P.honor>=30&&!hard?0.15:0)+(hard?0.15+Math.min(3,ridersNear(15))*0.08:0),0.15,0.95);}
+function haggle(k,hard){const n=businessNPC(k)||{name:SHOPS[k].title},ok=Math.random()<haggleChance(k,hard);
+  if(hard)P.honor=clamp((P.honor||0)-2,-100,100);
+  if(ok){const m=hard?rand(0.65,0.8):rand(0.8,0.9);HAG[k]={day:P.day,m};const pct=Math.round((1-m)*100);
+    toast('Deal',`${pct}% off what you buy here today, and ${pct}% more for what you sell.`);
+    dialog(n.name,[hard?pick(['All right, all right! Take it at that. Just keep your boys off my porch.','Fine. Fine! You drive a hard bargain, and a harder fist.']):pick(['You talk like a horse trader. Done, then.','Ha! My wife will have my hide. Shake on it.','For a regular customer? I suppose I can sharpen my pencil.'])]);}
+  else{HAG[k]={day:P.day,m:hard?1.15:1};
+    dialog(n.name,[hard?pick(['Threaten me in my own store? Prices just went up, friend.','Go ahead and glare. Prices went up while you were doing it.']):pick(['That\'s my price. Take it or leave it.','I got a family to feed. No deal.','You must think I was born yesterday.'])]);
+    if(hard)toast('Haggling failed','Prices here are 15% higher for the rest of the day.');}
+  renderMenu();save();}
+function haggleItems(k){if(!SHOPS[k]||k==='telegraph')return [];const h=HAG[k];
+  if(h&&h.day===P.day)return [{label:h.m<1?`You haggled today: ${Math.round((1-h.m)*100)}% off, ${Math.round((1-h.m)*100)}% more on sales`:h.m>1?'They\'re sore at you: prices 15% higher today':'They wouldn\'t budge today',price:0,note:'',off:()=>true,act:()=>{}}];
+  return [{label:'Haggle over prices',price:0,note:`${Math.round(haggleChance(k,false)*100)}% chance`,act:()=>haggle(k,false)},
+    {label:'Lean on them for a better price (−2 honor)',price:0,note:`${Math.round(haggleChance(k,true)*100)}% chance`,act:()=>haggle(k,true)}];}
+// peddlers walk the street with a few goods and a price they expect you to argue with
+const PEDDLER_GOODS=[{n:'Health tonic',p:8,g:()=>P.tonics++},{n:'Box of 12 revolver rounds',p:6,g:()=>WEAPONS[0].reserve+=12},
+  {n:'Box of 10 rifle rounds',p:8,g:()=>WEAPONS[1].reserve+=10,need:()=>WEAPONS[1].owned},{n:'Bunch of wildflowers',p:5,g:()=>P.gifts.flowers++},
+  {n:'Silver locket',p:20,g:()=>P.gifts.locket++},{n:'Gold ring, "barely used"',p:50,g:()=>P.gifts.ring++},
+  {n:'Fine Havana cigar (full Focus)',p:7,g:()=>{P.focus=100;}},{n:'Snake oil (heals you, mostly)',p:5,g:()=>{P.hp=Math.min(100,P.hp+40);}},
+  {n:'Smuggled shotgun shells (8)',p:7,g:()=>WEAPONS[2].reserve+=8,need:()=>WEAPONS[2].owned}];
+function peddlerStock(n){if(n.stockDay!==P.day){n.stockDay=P.day;const pool=PEDDLER_GOODS.filter(g=>!g.need||g.need());n.stock=[];
+  while(n.stock.length<3&&pool.length){const g=pool.splice(Math.floor(Math.random()*pool.length),1)[0];n.stock.push({g,ask:Math.round(g.p*rand(1.1,1.5)),tries:0,sold:false});}}return n.stock;}
+function peddlerMenu(n){const st=peddlerStock(n);
+  openCustom(`${n.name} · "Everything's negotiable"`,st.flatMap(s=>s.sold?[{label:`${s.g.n} (sold)`,price:0,note:'',off:()=>true,act:()=>{}}]:[
+    {label:`${s.g.n}: pay the asking price`,price:s.ask,noMult:true,act:()=>{s.sold=true;s.g.g();closeMenu();toast('Bought',s.g.n);}},
+    {label:`Offer $${Math.max(1,Math.round(s.ask*(s.tries?0.75:0.6)))} for the ${s.g.n.toLowerCase().split(' (')[0]}`,price:0,note:s.tries>=2?'he\'s done haggling':`${s.tries?'60':'40'}% chance`,off:()=>s.tries>=2,act:()=>offerPeddler(n,s)}]).slice(0,12));}
+function offerPeddler(n,s){const offer=Math.max(1,Math.round(s.ask*(s.tries?0.75:0.6)));s.tries++;closeMenu();
+  if(P.money<offer){toast('Not enough money',`You need $${offer}`);return;}
+  if(Math.random()<(s.tries===1?0.4:0.6)+(EMP.town?0.1:0)){P.money-=offer;s.sold=true;s.g.g();sfx.coin();dialog(n.name,[pick(['Robbery! Daylight robbery. ...Done.','You\'ll put me in the poorhouse. Here, take it.','Only because you have an honest face. Mostly honest.'])]);toast('Haggled',`${s.g.n} for $${offer} (asked $${s.ask})`);}
+  else{s.ask=Math.round(s.ask*(s.tries>=2?1.1:0.95));dialog(n.name,[s.tries>=2?'Now you\'re insulting me. The price went up.':`Can't do it. I'll come down to $${s.ask}, and that's robbing myself.`]);}
+  save();}
+function spawnPeddler(x,z,area){const used=new Set(npcs.map(q=>q.name)),nm=['Peddler Finch','Peddler Mo','Old Haskins the Peddler','Peddler Greta','Abe the Tinker'].find(q=>!used.has(q))||'Peddler';const n=spawnNPC(null,nm,x,z,
+  {shirt:'#8a7a5a',vest:'#5a3a52',pants:'#3a342c',hat:'#4a3a5a',beard:Math.random()<0.6?'#7a6a5a':null,skin:pick(SKINS),wander:true});n.peddler=true;if(area)n.area=area;return n;}
+
+// justice: take outlaws alive, then hang them at the Coppervale gallows
+const GALLOWS={x:-82,z:-17};
+const HANG={active:false,t:0,body:null,name:'',kind:'',trap:null,crowd:[]};
+function canDemand(e){return e&&!e.dead&&!e.surrender&&!e.mounted&&e.tag!=='law'&&e.tag!=='marshal'&&!(e.tag==='coach')&&e.hp<=(e.hp0||100)*0.5;}
+function demandSurrender(e){const chance=clamp((1-e.hp/(e.hp0||100))*0.9+0.15,0,0.95)*(e.boss?0.6:1)*(ridersNear(20)>=2?1.2:1);
+  if(Math.random()<chance){e.surrender=true;e.alerted=false;e.speed=0;toast(`${e.name||'The outlaw'} gives up`,'Hands up. Press E to tie him up and sling him over your horse.');sfx.click();}
+  else{e.alerted=true;e.shootT=0;toast('He won\'t come quietly','Wound him more and try again.');}}
+function hogtie(e){if(P.prisoner){toast('Your horse is loaded','You already have a prisoner. Hang him or turn him in first.');return;}
+  const i=outlaws.indexOf(e);if(i>=0)outlaws.splice(i,1);scene.remove(e.h.g);if(e.hq)scene.remove(e.hq.g);
+  const bty=LATE.bounty&&LATE.bounty.name===e.name?LATE.bounty.reward:0;
+  P.prisoner={name:e.name||pick(['Rustler','Road agent','Horse thief','Bandit'])+' '+pick(['Jack','Lem','Cole','Hob','Wes','Pike','Dutch','Earl']),tag:e.tag,boss:!!e.boss,bounty:bty};
+  if(bty){LATE.bounty=null;if(WP&&WP.label===e.name)WP=null;}
+  toast('Prisoner taken',`${P.prisoner.name} is tied over your saddle. ${EMP.town?'Hang him at the Coppervale gallows':'Turn him in to the sheriff, or take the town and hang him yourself'}.`);
+  WP={x:GALLOWS.x,z:GALLOWS.z+4,label:'The gallows'};showPrisoner();save();}
+let prisonerModel=null;
+function showPrisoner(){if(prisonerModel){prisonerModel.parent?.remove(prisonerModel);prisonerModel=null;}if(!P.prisoner)return;
+  const h=makeHuman({shirt:'#5a3a2a',pants:'#2a2622',hat:null,bandana:'#7d1f1a',skin:pick(SKINS)});h.g.rotation.set(0,Math.PI/2,Math.PI/2);h.g.position.set(0.3,1.55,-0.75);
+  h.armL.rotation.set(-2.4,0,0);h.armR.rotation.set(-2.4,0,0);h.legL.rotation.set(0.9,0,0);h.legR.rotation.set(0.9,0,0);prisonerModel=h.g;HORSE.q.g.add(h.g);}
+function turnIn(){const p=P.prisoner;if(!p)return;const pay=p.bounty?Math.round(p.bounty*1.25):p.boss?60:25;P.money+=pay;P.stats.earned+=pay;P.honor=clamp((P.honor||0)+5,-100,100);
+  banner('Justice served',`${p.name} handed to the law · +$${pay}`,true);sfx.coin();P.prisoner=null;showPrisoner();save();}
+function buildGallows(){const g=new THREE.Group(),y=groundY(GALLOWS.x,GALLOWS.z);g.position.set(GALLOWS.x,y,GALLOWS.z);scene.add(g);
+  for(const a of [-2,2])for(const b of [-2,2])bx(0.3,2.6,0.3,'#4a3424',a,1.3,b,g);bx(4.6,0.25,4.6,'#6b4f35',0,2.6,0,g);
+  for(let i=0;i<6;i++)bx(1.4,0.2,0.5,'#5a4030',0,0.25+i*0.42,2.6+i*0.0+0.45*i,g);
+  bx(0.3,4.2,0.3,'#4a3424',-1.6,4.7,0,g);bx(0.3,4.2,0.3,'#4a3424',1.6,4.7,0,g);bx(3.8,0.3,0.3,'#4a3424',0,6.7,0,g);
+  bx(0.05,1.5,0.05,'#c8b088',0,5.85,0,g);const noose=mesh(new THREE.TorusGeometry(0.2,0.04,6,12),'#c8b088',0,5.0,0,g);
+  const trap=bx(1.4,0.26,1.4,'#7a5a3a',0,2.62,0,g);HANG.trap=trap;HANG.g=g;
+  const sg=new THREE.Mesh(new THREE.PlaneGeometry(2.2,0.55),new THREE.MeshLambertMaterial({map:signTex('GALLOWS','#e8dcc0','#3a1a10'),side:THREE.DoubleSide}));sg.position.set(0,3.3,2.35);g.add(sg);
+  addCol(GALLOWS.x,GALLOWS.z,2.6);}
+const CONDEMNED_CRIMES=['horse theft','cattle rustling','robbing the stage','murder','claim jumping','cheating at cards (and then the shooting)'];
+function startHanging(name,kind,player){if(HANG.active)return;HANG.active=true;HANG.t=0;HANG.name=name;HANG.kind=kind;HANG.player=player;
+  const h=makeHuman({shirt:'#8a7a6a',pants:'#3a342c',hat:null,bandana:null,skin:pick(SKINS)});h.g.position.set(0,2.75,0);h.armL.rotation.set(0,0,0.15);h.armR.rotation.set(0,0,-0.15);HANG.g.add(h.g);HANG.body=h;
+  HANG.crowd=[];for(const n of npcs)if(!n.dead&&!n.important&&!n.area&&!n.kid&&d2(n.pos,GALLOWS)<160){const a=rand(-1.1,1.1)+Math.PI/2,r=rand(6,10);
+    n.target=new V3(GALLOWS.x+Math.cos(a)*r*0.6,0,GALLOWS.z+Math.sin(a)*r);n.waitT=40;n.watch=true;HANG.crowd.push(n);}
+  for(const n of npcs)if(n.kid&&d2(n.pos,GALLOWS)<80){n.target=new V3(rand(20,50),0,rand(-5,5));}
+  banner('A hanging in Coppervale',`${name} · ${kind}`,false);}
+function updateHanging(dt){if(!HANG.active)return;HANG.t+=dt;const h=HANG.body;
+  for(const n of HANG.crowd)if(!n.dead&&n.watch&&d2(n.pos,n.target)<1)n.yaw=angLerp(n.yaw,Math.atan2(GALLOWS.x-n.pos.x,GALLOWS.z-n.pos.z),0.1);
+  if(HANG.t>15&&!HANG.dropped){HANG.dropped=true;HANG.trap.rotation.z=1.4;HANG.trap.position.x=-0.6;h.g.position.y=1.15;sfx.click&&sfx.click();
+    const isPlayer=HANG.player;let line=`${HANG.name} is dead.`;
+    if(isPlayer){const p=isPlayer;LATE.hanged=(LATE.hanged||0)+1;const tips=Math.round(rand(10,30))+(p.boss?40:0)+(p.bounty?Math.round(p.bounty*1.5):0);P.money+=tips;P.stats.earned+=tips;
+      P.honor=clamp((P.honor||0)-3,-100,100);if(p.tag&&p.tag.startsWith('rival'))LATE.rivalShaken=P.day+3;
+      line=p.bounty?`Bounty paid at half again: +$${tips}`:p.tag&&p.tag.startsWith('rival')?`The Vance Syndicate is shaken: no raids for three days · +$${tips}`:`The crowd throws coins · +$${tips}`;sfx.coin();}
+    toast('The trap drops',line);}
+  if(HANG.dropped){h.g.rotation.z=Math.sin(HANG.t*1.3)*0.06*Math.max(0,1-(HANG.t-15)/30);h.g.rotation.y+=dt*0.15;}
+  if(HANG.t>28)for(const n of HANG.crowd){if(n.watch){n.watch=false;n.waitT=rand(1,4);n.target=null;}}
+  if(HANG.t>90){HANG.g.remove(h.g);HANG.trap.rotation.z=0;HANG.trap.position.x=0;HANG.active=false;HANG.dropped=false;HANG.body=null;HANG.player=null;}}
+function hangPrisoner(){const p=P.prisoner;if(!p)return;closeMenu();P.prisoner=null;showPrisoner();startHanging(p.name,'by order of '+(EMP.name||'the new boss'),p);save();}
+// the town hangs a condemned man most days; if Coppervale is yours, you can pardon him
+function scheduleHanging(){if(Math.random()<0.6){LATE.hangEvent={day:P.day,name:pick(['Wes','Cole','Dutch','Earl','Lem','Silas','Hob','Ned'])+' '+pick(['Tolliver','Maddox','Rourke','Greer','Bascom','Pruett','Calhoun']),
+  crime:pick(CONDEMNED_CRIMES),done:false};toast('A hanging at noon',`${LATE.hangEvent.name}, for ${LATE.hangEvent.crime}. At the Coppervale gallows.${EMP.town?' As boss of the town, you can pardon him.':''}`);}else LATE.hangEvent=null;}
+function updateHangEvent(){const h=LATE.hangEvent;if(!h||h.done||h.day!==P.day||gameHour<11.6)return;h.done=true;
+  if(d2(P.pos,GALLOWS)<220)startHanging(h.name,`for ${h.crime}`,null);else toast('Word from Coppervale',`${h.name} was hanged at noon for ${h.crime}.`);}
+function pardon(){const h=LATE.hangEvent;if(!h)return;closeMenu();h.done=true;P.honor=clamp((P.honor||0)+6,-100,100);
+  if(liveGang().length<gangCap()){ensureGangName(()=>{const a=spawnAlly(GALLOWS.x+3,GALLOWS.z+5,{name:h.name});a.kin=true;toast('Pardoned',`${h.name} owes you his neck. He rides with ${EMP.name} for no wages.`);save();});}
+  else toast('Pardoned',`${h.name} kisses your boots and lights out for Mexico. Your gang is full.`);
+  dialog(h.name,['You... you\'re letting me go? I won\'t forget this. Not ever.']);}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
     return canRaid()?{label:'Seize Coppervale (starts a raid)',act:startRaid}:{label:'Seize Coppervale (bring 3 gang members)',act:()=>toast('Not enough guns','Bring at least 3 of your gang within 40 m.')};
   if(!P.mounted)for(const cp of EMP.camps)c(Math.hypot(cp.x-P.pos.x,cp.z-P.pos.z),5,'Camp ledger',()=>openCampMenu(cp));
   c(Math.hypot(P.pos.x+64.5,P.pos.z+7.6),3.2,'Read the bounty board',openBoard);
+  if(P.aiming){let t=null,td=11;for(const e of outlaws)if(canDemand(e)){const d=d2(e.pos,P.pos);if(d<td){td=d;t=e;}}if(t)return {label:`Demand ${t.name||'the outlaw'} surrender`,act:()=>demandSurrender(t)};}
+  if(!P.mounted)for(const e of outlaws)if(e.surrender&&!e.dead)c(d2(e.pos,P.pos),3,`Tie up ${e.name||'the outlaw'}`,()=>hogtie(e));
+  {const gd=Math.hypot(P.pos.x-GALLOWS.x,P.pos.z-GALLOWS.z),he=LATE.hangEvent;
+    if(P.prisoner&&EMP.town&&!HANG.active)c(gd,7,`Hang ${P.prisoner.name} at the gallows`,hangPrisoner);
+    else if(P.prisoner&&!EMP.town&&!LATE.sheriffDead)c(gd,7,`Turn ${P.prisoner.name} over to the law`,turnIn);
+    else if(P.prisoner)c(gd,7,'The gallows (take Coppervale to hang prisoners yourself)',()=>toast('Not your town','Raid Coppervale or seize the jailhouse first.'));
+    else if(EMP.town&&he&&he.day===P.day&&!he.done)c(gd,7,`Pardon ${he.name} (hanging at noon)`,pardon);}
+  if(P.prisoner&&!EMP.town&&!LATE.sheriffDead)c(Math.hypot(P.pos.x+58,P.pos.z+9),4,`Turn ${P.prisoner.name} over to the law`,turnIn);
   if(!P.mounted)for(const p of LAND.plots){const o=plotOf(p);c(Math.hypot(P.pos.x-p.x,P.pos.z-p.z),o?.type?7:4,o?o.type?`${p.name}: ${LAND_TYPES[o.type].name} (level ${o.level})`:`${p.name}: build a business on your land`:`Land for sale: ${p.name} ($${p.price})`,()=>landMenu(p));}
   if(LATE.sheriffDead&&!EMP.town&&!RAID.active)c(Math.hypot(P.pos.x+58,P.pos.z+9),4,canRaid()?'Seize the jailhouse (starts a raid)':'Seize the jailhouse (bring 3 gang members)',
     ()=>canRaid()?startRaid():toast('Not enough guns','Bring at least 3 of your gang within 40 m.'));
@@ -1985,6 +2106,7 @@ function talkTo(n){
   if(n.church){churchMenu(n);return;}
   if(n.landBoss){landMenu(n.landBoss);return;}
   if(n.kid){dialog(n.name,[pick(KID_LINES)]);return;}
+  if(n.peddler){peddlerMenu(n);return;}
   if(n.area){dialog(n.name,[pick(n.lines||AMBIENT)]);return;}
   if(n.shop){if(n.robbedDay===P.day){dialog(n.name,['You! Get out of my sight before I fetch the deputies.']);return;}openShop(n.shop);return;}
   if(!n.important){const full=liveGang().length>=gangCap();
@@ -2104,7 +2226,7 @@ function updateNPCs(dt){
     else if(n.talkT>0){n.talkT-=dt;n.yaw=angLerp(n.yaw,Math.atan2(P.pos.x-n.pos.x,P.pos.z-n.pos.z),1-Math.exp(-6*dt));n.speed=0;}
     else if(n.wander){
       if(!n.target||d2(n.pos,n.target)<0.6){n.speed=0;n.waitT-=dt;if(n.waitT<=0){const A=n.area;n.target=A?new V3(A.x+rand(-A.r,A.r),0,A.z+rand(-A.r,A.r)):new V3(rand(-72,62+(CH.expand||0)*30),0,rand(-6.5,6.5));n.waitT=n.kid?rand(0.5,2.5):rand(2,7);}}
-      else{const ty=Math.atan2(n.target.x-n.pos.x,n.target.z-n.pos.z);n.yaw=angLerp(n.yaw,ty,1-Math.exp(-5*dt));n.speed=n.kid?2.6:1.3;
+      else{const ty=Math.atan2(n.target.x-n.pos.x,n.target.z-n.pos.z);n.yaw=angLerp(n.yaw,ty,1-Math.exp(-5*dt));n.speed=n.kid?2.6:n.watch?3.6:1.3;
         if(!tryMove(n.pos,Math.sin(n.yaw)*n.speed*dt,Math.cos(n.yaw)*n.speed*dt,0.4,1.4))n.target=null;}
     }else{n.yaw=angLerp(n.yaw,n.baseYaw,1-Math.exp(-2*dt));n.speed=0;}
     n.pos.y=groundY(n.pos.x,n.pos.z);n.h.g.position.copy(n.pos);n.h.g.rotation.y=n.yaw;
@@ -2133,6 +2255,7 @@ function updateOutlaws(dt){
       if(e.mounted){e.hq.g.position.copy(e.pos);e.hq.g.rotation.y=e.yaw;if(d<200)animQuad(e.hq,e.speed,dt,false);e.h.g.rotation.y=0;e.h.armR.rotation.set(-0.6,0,0);}
       else{e.h.g.position.copy(e.pos);e.h.g.rotation.y=e.yaw;animHuman(e.h,e.speed,dt,false);}
       continue;}
+    if(e.surrender&&!e.dead){e.h.armL.rotation.set(-Math.PI+0.25,0,0.2);e.h.armR.rotation.set(-Math.PI+0.25,0,-0.2);e.yaw=angLerp(e.yaw,Math.atan2(P.pos.x-e.pos.x,P.pos.z-e.pos.z),1-Math.exp(-4*dt));e.h.g.rotation.y=e.yaw;continue;}
     if(e.dead){if(e.fallT<1){e.fallT=Math.min(1,e.fallT+dt*2.5);e.h.g.rotation.x=-Math.PI/2*e.fallT;e.h.g.position.y=e.pos.y+0.15*e.fallT;}continue;}
     if(d>350)continue;
     if(e.tag==='law')e.alerted=WANTED.active;
@@ -2451,7 +2574,7 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();placePlots();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();placePlots();
   freezeStatic();mergeStatic();
   spawnPeople();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);
