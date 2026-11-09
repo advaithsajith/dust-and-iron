@@ -43,7 +43,7 @@ const watchers = api.HANG.crowd.filter(n => api.d2(n.pos, g) < 20).length; ok(wa
 step(90); ok(!api.HANG.active, 'gallows cleared afterwards');
 // the town's own hanging and a pardon
 { const d0 = P.day; while (P.day === d0 || api.gameHour < 7) step(20); } api.scheduleHanging(); let tries2 = 0; while (!api.LATE.hangEvent && tries2++ < 20) api.scheduleHanging();
-const he = api.LATE.hangEvent; P.pos.set(g.x + 2, 0, g.z + 5); step(0.3); const fp = api.findInteract(); ok(fp && fp.label.startsWith('Pardon'), `pardon prompt: "${fp?.label}"`);
+const he = api.LATE.hangEvent; api.EMP.town = true; P.pos.set(g.x + 2, 0, g.z + 5); step(0.3); const fp = api.findInteract(); ok(fp && fp.label.startsWith('Pardon'), `pardon prompt: "${fp?.label}"`);
 const gang0 = api.liveGang().length; fp.act(); flush(); step(1); ok(api.liveGang().length === gang0 + 1, `${he.name} pardoned and rides with you`);
 api.scheduleHanging(); while (!api.LATE.hangEvent) api.scheduleHanging(); while (api.gameHour < 11.8) step(5); ok(api.LATE.hangEvent.done, 'noon hanging happened');
 // suitors

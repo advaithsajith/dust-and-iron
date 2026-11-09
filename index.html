@@ -1075,6 +1075,7 @@ function showEmpire(){const sh=$('empireSheet'),r=rankInfo(),g=liveGang(),L=dail
     <div>${ROM.children.length?'Children: '+ROM.children.join(', '):ROM.spouses.length?'No children yet.':''}${liveGang().some(a=>a.kin)?' · Kin riding with you: '+liveGang().filter(a=>a.kin).map(a=>esc(a.name)).join(', '):''}</div></div>
   <div class="q"><b>Homestead</b><div>${home()?`${HOME_BUILDS.filter(b=>hb(b.k)).map(b=>b.name).join(', ')||'Nothing built yet. Open the camp ledger and choose Build on the homestead.'} · Defense ${homeDefense()}`:'Pitch a camp first; your first camp becomes your homestead.'}</div><div>Farm +$${L.f} · Outposts +$${L.o} · Mine +$${L.m}${LATE.mine?' (yours: dig there for more gold)':''}</div></div>
   <div class="q"><b>Rivals and the law</b><div>${LATE.rivals.started?Object.keys(RIVAL_SITES).map(k=>`${RIVAL_SITES[k]}: ${LATE.rivals.seized[k]?'your outpost':LATE.rivals.held[k]?'held by the Vance Syndicate':'empty'}`).join(' · '):'No rival gangs in the territory yet.'}</div><div>${LAW.forever?'Marshal Crowe is dead. The law will not come back.':LATE.marshal.state==='coming'||LATE.marshal.state==='hunting'?'A U.S. Marshal is coming for you.':LATE.sheriffDead?'The sheriff is dead.':'Sheriff Hale keeps the peace.'}${LATE.bounty?` · Bounty job: ${esc(LATE.bounty.name)} near ${esc(placeName(LATE.bounty))} ($${LATE.bounty.reward})`:''}</div></div>
+  <div class="q"><b>Blood on the sand</b><div>${P.stats.kills} downed in all · ${LATE.hideoutsCleared||0} hideouts cleared · ${LATE.encounters||0} road ambushes survived · ${LATE.duelsWon||0} duels won</div><div>Bandit hideouts holding out: ${HIDEOUTS.filter(h=>P.day>=hidState(h.k).cleared+2).map(h=>h.name).join(', ')||'none right now'}</div></div>
   <div class="q"><b>Towns and the army</b><div>${Object.keys(TOWNS).map(k=>`${TOWNS[k].name}: ${TW.owned[k]?`yours, $${tributeOf(k)} a day, garrison ${garrisonOf(k).length}`:'not yours'}`).join(' · ')}</div><div>Army: ${mercs().length}/${armyCap()} mercenaries · war room at the jailhouse or town hall${TW.siege?` · <b>Siege of ${TOWNS[TW.siege.k].name}: wave ${TW.siege.wave+1}</b>`:''}</div></div>
   <div class="q"><b>Money put away</b><div>Bank account $${BANK.bal} (${Math.round(bankRate()*100)}% a day${BANK.earned?`, $${BANK.earned} interest so far`:''})${BANK.own?' · You own the bank: +$'+bankFees()+' a day in fees':''} · Gang stash $${STASH.money}</div><div>${LATE.plot&&LATE.plot.warned?`Someone wants you dead: ${LATE.plot.by} hired ${LATE.plot.leader}.`:LATE.plotsSurvived?`You have survived ${LATE.plotsSurvived} attempt${LATE.plotsSurvived>1?'s':''} on your life.`:''}</div></div>
   <div class="q"><b>Gang work · press N</b><div>${Object.keys(JOBS).filter(k=>onJob(k).length).map(k=>`${JOBS[k].name}: ${onJob(k).length}`).join(' · ')||'Everyone rides with you. Press N to put riders on jobs that earn while you\'re away.'}</div><div>${WORK.day===P.day&&Object.keys(WORK.today).length?'Earned today: '+Object.entries(WORK.today).map(([k,v])=>`${JOBS[k].name}s $${v}`).join(' · '):''}${WORK.auto?` · Auto-expand on (reserve $${WORK.reserve})`:''}</div></div>
@@ -1168,7 +1169,8 @@ function mapPOIs(){const L=[];
   for(const p of LAND.plots){const o=plotOf(p);L.push({x:p.x,z:p.z,kind:'dot',color:o?EMP.color||'#3f7f35':'#c8b088',always:true,
     label:o?o.type?`${p.name} (${LAND_TYPES[o.type].name})`:`${p.name} (your land)`:`Land for sale: ${p.name}`,
     desc:o?o.type?`Level ${o.level} · pays $${LAND_TYPES[o.type].pay*o.level} a day`:'Ride here and press E at the stake to build':`Deed $${p.price} at the bank's land office, or at the stake`,travel:!!o,free:true,tx:p.x+3,tz:p.z+3});}
-  for(const m of LANDMARKS)if(fogAt(m.x,m.z))L.push({...m,label:m.name,kind:'landmark',always:true});
+  for(const h of HIDEOUTS)if(h.x!==undefined){const st=hidState(h.k),live=P.day>=st.cleared+2;L.push({x:h.x,z:h.z,kind:'dot',color:live?'#a0261c':'#7a6a5a',always:true,label:h.name,desc:live?`${h.gang} hold it, led by ${h.boss}. Clear it for their stash.`:'Cleared. Another gang moves in soon.'});}
+  for(const m of LANDMARKS)if(fogAt(m.x,m.z)&&!HIDEOUTS.some(h=>h.name===m.name))L.push({...m,label:m.name,kind:'landmark',always:true});
   for(const k in RIVAL_SITES){const s=SITES[k];if(LATE.rivals.seized[k])L.push({x:s.x+6,z:s.z+6,kind:'dot',color:EMP.color,label:'Your outpost',desc:`${RIVAL_SITES[k]} pays you $40 a day`,always:true});
     else if(LATE.rivals.held[k])L.push({x:s.x+6,z:s.z+6,kind:'dot',color:'#a0261c',label:'Vance hideout',desc:'Kill every Vance man here to seize it',always:true});}
   if(LATE.coach&&!LATE.coach.robbed)L.push({x:LATE.coach.pos.x,z:LATE.coach.pos.z,kind:'dot',color:'#c79a3a',label:'Stagecoach',desc:'Two mounted guards. Stop it and take the strongbox.',always:true});
@@ -1894,7 +1896,7 @@ function updateCows(dt){for(const c of LATE.herd){c.t-=dt;if(c.t<=0){c.t=rand(4,
   for(const c of [...LATE.herd,...LATE.cows]){if(d2(c.pos,P.pos)>180)continue;c.q.g.position.copy(c.pos);c.q.g.rotation.y=c.yaw;animQuad(c.q,c.speed,dt,!c.speed);}}
 let lateT=0,smokeT=0;
 function updateLate(dt){updateSkyLife(dt);updateHanging(dt);updateWorkers(dt);updateAssassins(dt);updateCoach(dt);updateMarshal(dt);updateGuards(dt);updateCows(dt);
-  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();
+  lateT-=dt;if(lateT>0)return;lateT=1;updateBounty();updateRivals();updateRaidHome();checkControl();updateHangEvent();updatePlot();updateSiege();updateCrowds();updateHideouts();updateEncounters();updateDuels();
   if(!LATE.rivals.started&&QS.hollow.state==='done'){LATE.startT-=1;if(LATE.startT<=0)startRivals();}
   const c=home();if(c&&c.smokeAt&&d2(c,P.pos)<150&&(smokeT=(smokeT+1)%2)===0)puff(c.smokeAt,0x9a9590,2,0.6,1.4);}
 function lateNewDay(){townsNewDay();for(const p of (LATE.jailed||[]))p.days--;LATE.jailed=(LATE.jailed||[]).filter(p=>p.days>0);bankNewDay();plotNewDay();workDay();churchNewDay();checkControl();scheduleHanging();if(hb('smoke')){P.tonics++;toast('Smokehouse','A cured tonic is waiting at home.');}growChildren();
@@ -1905,11 +1907,12 @@ function lateInit(){applyUpgrades();spawnLegends();spawnHerd();
   if(LATE.sheriffDead){const n=NPC.sheriff;n.dead=true;n.koT=0;scene.remove(n.h.g);if(n.marker)n.marker.visible=false;}
   if(LATE.marshal.state==='hunting')LATE.marshal.nextT=90;churchInit();landInit();styleInit();townsInit();buildSkyLife();showPrisoner();for(const a of EMP.gang)if(a.loadJob){setJob(a,a.loadJob);delete a.loadJob;}}
 const lateSave=()=>({up:LATE.up,mine:LATE.mine,mineDugAt:LATE.mineDugAt,driveDay:LATE.driveDay,legends:LATE.legends,rivals:LATE.rivals,
-  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
+  marshal:{state:LATE.marshal.state,due:LATE.marshal.due},sheriffDead:LATE.sheriffDead,born:LATE.born,grown:LATE.grown,bounty:LATE.bounty&&{...LATE.bounty,spawned:false},board:LATE.board,boardDay:LATE.boardDay,church:CH,land:{owned:LAND.owned,lord:!!LAND.lord},hanged:LATE.hanged||0,hangEvent:LATE.hangEvent||null,rivalShaken:LATE.rivalShaken||0,prisoner:P.prisoner||null,hag:HAG,work:{auto:WORK.auto,reserve:WORK.reserve},towns:{owned:TW.owned,tax:TOWN.tax},hid:Object.fromEntries(Object.entries(HID).map(([k,v])=>[k,{cleared:v.cleared,count:v.count||0}])),fights:{h:LATE.hideoutsCleared||0,d:LATE.duelsWon||0,e:LATE.encounters||0},jailed:LATE.jailed||[],bank:BANK,stash:STASH,plot:LATE.plot?{...LATE.plot,sprung:false}:null,hangQueue:LATE.hangQueue||[],plotsSurvived:LATE.plotsSurvived||0,style:{shaven:!!STYLE.shaven,outfit:STYLE.outfit,owned:STYLE.owned,stable:STYLE.stable,horse:{name:HORSE.name,breed:HORSE.breed||'mustang',coat:HORSE.coat??0}}});
 function lateLoad(s){if(!s)return;Object.assign(LATE.up,s.up||{});LATE.mine=!!s.mine;LATE.mineDugAt=s.mineDugAt??-99;LATE.driveDay=s.driveDay??-1;Object.assign(LATE.legends,s.legends||{});
   if(s.rivals){LATE.rivals.started=!!s.rivals.started;Object.assign(LATE.rivals.held,s.rivals.held||{});Object.assign(LATE.rivals.seized,s.rivals.seized||{});}
   if(s.marshal)Object.assign(LATE.marshal,s.marshal);LATE.sheriffDead=!!s.sheriffDead;Object.assign(LATE.born,s.born||{});LATE.grown.push(...(s.grown||[]));
-  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;}LATE.jailed=s.jailed||[];if(s.bank)Object.assign(BANK,s.bank);if(s.stash)Object.assign(STASH,s.stash);LATE.plot=s.plot||null;LATE.hangQueue=s.hangQueue||[];LATE.plotsSurvived=s.plotsSurvived||0;
+  LATE.bounty=s.bounty||null;LATE.board=s.board||[];LATE.boardDay=s.boardDay??-1;if(s.church){Object.assign(CH,s.church);CH.laws={...(s.church.laws||{})};}if(s.land){Object.assign(LAND.owned,s.land.owned||{});LAND.lord=!!s.land.lord;}LATE.hanged=s.hanged||0;LATE.hangEvent=s.hangEvent||null;LATE.rivalShaken=s.rivalShaken||0;P.prisoner=s.prisoner||null;Object.assign(HAG,s.hag||{});if(s.work){WORK.auto=!!s.work.auto;WORK.reserve=s.work.reserve||500;}if(s.hid)for(const k in s.hid)HID[k]={...s.hid[k],spawned:false};if(s.fights){LATE.hideoutsCleared=s.fights.h;LATE.duelsWon=s.fights.d;LATE.encounters=s.fights.e;}
+  if(s.towns){Object.assign(TW.owned,s.towns.owned||{});TOWN.tax=s.towns.tax||0;}LATE.jailed=s.jailed||[];if(s.bank)Object.assign(BANK,s.bank);if(s.stash)Object.assign(STASH,s.stash);LATE.plot=s.plot||null;LATE.hangQueue=s.hangQueue||[];LATE.plotsSurvived=s.plotsSurvived||0;
   if(s.style){STYLE.outfit=s.style.outfit||'drifter';Object.assign(STYLE.owned,s.style.owned||{});STYLE.stable=s.style.stable||[];STYLE.horse=s.style.horse||null;STYLE.shaven=!!s.style.shaven;}}
 
 // the church: take the pulpit, then pass laws from it
@@ -2571,6 +2574,59 @@ function spawnSideNPCs(){
   {const t=TOWNS.redrock;const q=spawnNPC('quack','Professor Quackenbush',t.x+12,t.z+5,{shirt:'#e8e0d0',coat:'#4a2a4a',hat:'#222',bowler:true,beard:'#8a6a4a',yaw:-Math.PI/2});q.lines=['Step right up!'];prop('wagon',t.x+15,t.z+7,0.3);}
   {const k=spawnNPC('lostkid','Tommy Fenn',-4,3,{shirt:'#8a6a8a',pants:'#4a4038',hat:'#8a7050',skin:'#e0b090',scale:0.58,wander:true});k.kid=true;}
   spawnNPC('sharp','Gentleman Jack Bly',-29,-5.5,{shirt:'#eee',vest:'#8a1a2a',coat:'#2a1a3a',hat:'#111',yaw:0}).lines=['Care for a hand, friend?'];}
+// ---- more people to fight ----
+// bandit hideouts: six gangs in the wilds; clear one and it's back in two days with new faces
+const HIDEOUTS=[
+  {k:'rattle',name:'Rattlesnake Gulch',gang:'the Rattlers',boss:'Rattlesnake Jim Coyle',seed:[-620,120],n:7,o:{bandana:'#5a6a2a',shirt:'#6a5a3a'}},
+  {k:'bone',name:'Bone Canyon',gang:'the Bone Canyon crew',boss:'"Skull" McGraw',seed:[260,-420],n:6,o:{bandana:'#d8d0c0',shirt:'#3a3a3a'}},
+  {k:'widow',name:'Widow\'s Peak camp',gang:'the Black Widows',boss:'Black Widow Sal',seed:[-260,-560],n:6,o:{bandana:'#1a1a1a',shirt:'#2a1a2a'}},
+  {k:'coyote',name:'Coyote Hole',gang:'the Coyotes',boss:'Coyote Bill Tanner',seed:[620,-300],n:7,o:{bandana:'#a06a2a',shirt:'#7a5a3a'}},
+  {k:'blackmesa',name:'Black Mesa camp',gang:'the Mesa Dogs',boss:'Dutch Van Horn',seed:[-120,600],n:8,o:{bandana:'#7a1a1a',shirt:'#4a2a1a'}},
+  {k:'deadman',name:'Dead Man\'s Draw',gang:'the Draw Boys',boss:'Jubal "Hangman" Pryce',seed:[560,600],n:7,o:{bandana:'#2a4a6a',shirt:'#3a3a4a'}}];
+const HID={};
+function placeHideouts(){for(const h of HIDEOUTS){const s=sqSpotNear(h.seed[0],h.seed[1]);h.x=s.x;h.z=s.z;
+  for(let i=0;i<4;i++){const a=i/4*TAU+0.3;prop('tent',h.x+Math.cos(a)*11,h.z+Math.sin(a)*11,a);}prop('fire',h.x,h.z);
+  for(let i=0;i<5;i++)prop(i%2?'barrel':'crate',h.x+rand(-14,14),h.z+rand(-14,14));prop('wagon',h.x+15,h.z-6,1.1);
+  const g=new THREE.Group();g.position.set(h.x-6,groundY(h.x-6,h.z+6),h.z+6);scene.add(g);bx(0.15,4.5,0.15,'#4a3424',0,2.25,0,g);bx(1.4,0.9,0.04,h.o.bandana,0.7,3.9,0,g);
+  LANDMARKS.push({x:h.x,z:h.z,name:h.name,desc:''});}}
+const hidState=k=>HID[k]||(HID[k]={cleared:-99,spawned:false,count:0});
+function updateHideouts(){for(const h of HIDEOUTS){const st=hidState(h.k),d=Math.hypot(P.pos.x-h.x,P.pos.z-h.z),tag='hid_'+h.k;
+  if(!st.spawned){if(d<230&&P.day>=st.cleared+2){st.spawned=true;spawnGang({x:h.x,z:h.z},h.n,tag,16);const b=spawnOutlaw(h.x+3,h.z-3,tag,{...h.o,name:h.boss,hp:240,acc:1.35,boss:false,coat:'#2a2420'});b.hidBoss=true;}
+    continue;}
+  const alive=outlaws.filter(e=>e.tag===tag&&!e.dead&&!e.surrender);
+  if(!alive.length){st.spawned=false;st.cleared=P.day;st.count=(st.count||0)+1;LATE.hideoutsCleared=(LATE.hideoutsCleared||0)+1;
+    const m=Math.round(rand(60,140));P.money+=m;P.stats.earned+=m;WEAPONS[0].reserve+=18;if(WEAPONS[1].owned)WEAPONS[1].reserve+=10;
+    banner(`${h.name} cleared`,`${h.gang} are finished · +$${m} from their stash`,true);sfx.coin();toast('They\'ll be back','Another gang will move into the hideout in a couple of days.');save();continue;}
+  if(d>420){for(const e of outlaws.filter(e=>e.tag===tag)){const i=outlaws.indexOf(e);scene.remove(e.h.g);outlaws.splice(i,1);}st.spawned=false;}}}
+// road encounters: highwaymen, robbers at work, and bounty hunters when your bounty is high
+const ENC={t:120,active:false};
+const ENC_NAMES=['Highwayman','Road agent','Bandit','Desperado','Cutthroat'];
+function inAnyTown(){if(inTown(P.pos))return true;for(const k in TOWNS){const t=TOWNS[k];if(Math.hypot(P.pos.x-t.x,P.pos.z-t.z)<110)return true;}return false;}
+function updateEncounters(){
+  const left=outlaws.filter(e=>e.tag==='enc'&&!e.dead);
+  if(ENC.active){if(!left.length){ENC.active=false;ENC.t=rand(120,240);LATE.encounters=(LATE.encounters||0)+1;toast('The road is quiet again','Loot the bodies before the vultures do.');}
+    else if(left.every(e=>d2(e.pos,P.pos)>300)){for(const e of left){const i=outlaws.indexOf(e);scene.remove(e.h.g);outlaws.splice(i,1);}ENC.active=false;ENC.t=rand(120,240);}return;}
+  if(!P.alive||inAnyTown()||TW.siege||HANG.active||RAID.active||WANTED.active||menu||dlg)return;
+  ENC.t-=P.mounted&&HORSE.speed>4?1.4:1;if(ENC.t>0)return;
+  const fwd=P.mounted?HORSE.yaw:P.yaw,cx=P.pos.x+Math.sin(fwd)*65,cz=P.pos.z+Math.cos(fwd)*65;if(Math.abs(cx)>680||Math.abs(cz)>680){ENC.t=30;return;}
+  const roll=Math.random();ENC.active=true;
+  if(P.bounty>=100&&roll<0.35){const n=Math.min(5,2+Math.floor(P.bounty/150));for(let i=0;i<n;i++){const a=fwd+rand(-1.2,1.2);const e=spawnOutlaw(P.pos.x+Math.sin(a)*60,P.pos.z+Math.cos(a)*60,'enc',{name:'Bounty hunter',shirt:'#5a5040',coat:'#4a3a2a',hat:'#3a2a1a',bandana:null,acc:1.3,hp:130});e.alerted=true;}
+    banner('Bounty hunters',`They want the $${P.bounty} on your head`,false);return;}
+  if(roll<0.7){const n=Math.round(rand(3,5));for(let i=0;i<n;i++){const a=fwd+Math.PI/2+(i/(n-1)-0.5)*2;const e=spawnOutlaw(cx+Math.sin(a)*rand(8,16),cz+Math.cos(a)*rand(8,16),'enc',{name:pick(ENC_NAMES)});e.alerted=true;e.shootT=rand(0.6,1.8);}
+    banner('Highwaymen','"Your money or your life!"',false);return;}
+  // robbers at a wagon: they don't see you coming
+  prop('wagon',cx,cz,fwd+1.2);const n=Math.round(rand(3,4));for(let i=0;i<n;i++){const a=rand(0,TAU);spawnOutlaw(cx+Math.cos(a)*6,cz+Math.sin(a)*6,'enc',{name:'Wagon robber'});}
+  toast('Trouble ahead','Bandits are robbing a wagon up the road. They haven\'t seen you yet.');}
+// town duels: now and then a gunman calls you out in the street
+const DUEL={t:300,on:null};
+const DUELISTS=['"Quick" Eddie Marlowe','Johnny Ringgold','Big Swede Larsen','Cherokee Bill Haskell','Two-Bit Tommy Royce','"Doc" Holloway','Lefty Gutierrez','Wild Bill Thorne'];
+function updateDuels(){if(DUEL.on){const e=DUEL.on;if(e.dead){DUEL.on=null;DUEL.t=rand(300,600);const m=Math.round(rand(20,60));P.money+=m;LATE.duelsWon=(LATE.duelsWon||0)+1;banner('You win the duel',`${e.name} lies in the street · +$${m} in side bets`,true);sfx.coin();save();}
+    else if(DUEL.drawAt&&clock.elapsedTime>=DUEL.drawAt&&!e.alerted){e.alerted=true;e.shootT=0.25;}return;}
+  if(!P.alive||P.mounted||menu||dlg||WANTED.active||RAID.active||HANG.active)return;
+  if(!inAnyTown())return;DUEL.t-=1;if(DUEL.t>0)return;
+  const a=P.yaw+rand(-0.5,0.5),x=P.pos.x+Math.sin(a)*16,z=P.pos.z+Math.cos(a)*16;
+  const e=spawnOutlaw(x,z,'duel',{name:pick(DUELISTS),hp:150,acc:1.6,coat:pick(['#2a1a1a','#3a2a1e','#1a1a2a']),bandana:null,hat:'#111'});e.alerted=false;e.yaw=Math.atan2(P.pos.x-x,P.pos.z-z);
+  DUEL.on=e;DUEL.drawAt=clock.elapsedTime+5;banner('A challenge',`${e.name} calls you out`,false);toast('Duel','"Count of five, stranger." Draw first, or aim at him with Q and fire.');}
 // ---------------- interactions ----------------
 function findInteract(){let best=null,bd=1e9;const c=(d,r,label,act)=>{if(d<r&&d<bd){bd=d;best={label,act};}};
   if(P.aiming&&aimedNPC&&aimedNPC.id==='sheriff'&&!EMP.town&&!RAID.active)
@@ -2768,7 +2824,7 @@ function updateOutlaws(dt){
     e.losT-=dt;if(e.losT<=0){e.losT=0.5;const a=e.pos.clone();a.y+=e.mounted?2.6:1.6;const b=P.pos.clone();b.y+=P.mounted?2.4:1.4;e.los=terrainLOS(a,b);}
     let spd=0;const toP=Math.atan2(P.pos.x-e.pos.x,P.pos.z-e.pos.z);
     if(!e.alerted){
-      if(e.tag!=='law'&&d<(P.mounted?45:34)&&e.los){for(const o of outlaws)if(o.tag===e.tag&&!o.dead&&d2(o.pos,e.pos)<60)o.alerted=true;}
+      if(e.tag!=='law'&&e.tag!=='duel'&&d<(P.mounted?45:34)&&e.los){for(const o of outlaws)if(o.tag===e.tag&&!o.dead&&d2(o.pos,e.pos)<60)o.alerted=true;}
       if(e.mounted)e.speed=lerp(e.speed,0,1-Math.exp(-2*dt));
       else{e.moveT-=dt;if(e.moveT<=0){e.moveT=rand(3,7);e.target.set(e.anchor.x+rand(-10,10),0,e.anchor.z+rand(-10,10));e.walking=Math.random()<0.5;}
         if(e.walking&&d2(e.pos,e.target)>0.8){e.yaw=angLerp(e.yaw,Math.atan2(e.target.x-e.pos.x,e.target.z-e.pos.z),1-Math.exp(-4*dt));spd=1.5;}}
@@ -3082,7 +3138,7 @@ function showEnding(){paused=true;document.exitPointerLock?.();$('endStats').tex
 let built=false;
 async function build(){
   try{await Promise.race([document.fonts.load('64px Sancreek'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
-  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();placePlots();placeSideQuests();
+  buildTerrain();buildRoads();buildTown();buildRanch();buildCamp(SITES.creek,false);buildCamp(SITES.hollow,true);buildCamp(SITES.ridge,false);buildWreck();scatter();buildAmbient();buildLandmarks();buildGallows();buildTowns();placePlots();placeSideQuests();placeHideouts();
   freezeStatic();mergeStatic();
   spawnPeople();spawnTownFolk();spawnSideNPCs();spawnDeerHerds();buildMap();buildCompass();
   P.pos.y=groundY(P.pos.x,P.pos.z);HORSE.pos.y=groundY(HORSE.pos.x,HORSE.pos.z);PH.g.position.copy(P.pos);

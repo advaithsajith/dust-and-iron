@@ -112,6 +112,11 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### More people to fight
+
+- **Six bandit hideouts** across the map: Rattlesnake Gulch, Bone Canyon, Widow's Peak, Coyote Hole, Black Mesa and Dead Man's Draw. Each holds 6–8 outlaws and a named leader, and shows on the map as a red dot. Clear one for the gang's stash and ammunition; two days later a new gang moves in.
+- **Road encounters.** Ride the open desert and you'll run into highwaymen ("Your money or your life!"), bandits robbing a wagon who haven't seen you yet, or, with a bounty of $100 or more, bounty hunters riding to collect it.
+- **Duels.** Now and then a gunman calls you out in a town street and counts to five. Draw first. A fair duel puts no bounty on you, and you win the side bets.
 ### Side quests
 
 Eight side quests are open from the start. Look for the gold **!** over the person offering one, and track them in the journal (**J**).
