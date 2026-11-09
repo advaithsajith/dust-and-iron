@@ -112,6 +112,20 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### Banking, the stash and a growing town
+
+- **Bank account.** Talk to Pruitt at the bank to deposit or withdraw. Your balance earns 1% a day (up to $250), and it's safe when you die; only the cash in your pocket is at risk.
+- **Your own bank.** Once Coppervale is yours, buy Pruitt out for $2,500. Your account then earns 2% a day (up to $600), every townsperson pays you $3 a day in fees, and you can finance new blocks of town from the bank.
+- **Coppervale grows to five stages.** Through the church or your bank, the main street fills with a boarding house, schoolhouse, bakery, town hall, gunsmith, opera house, newspaper, bathhouse, cafe and more, each stage bringing new families.
+- **The gang stash.** Put money in the stash from your camp or the gang work menu (**N**), and choose whether gang earnings go to your pocket or the stash. With **Foremen build on their own** switched on, land foremen spend the stash on deeds, new businesses, upgrades, irrigation and the homestead, cheapest first, without touching your pocket.
+- **Irrigation, orchards and distilleries.** Farms, orchards and ranches can dig a reservoir and ditches ($250) to double their harvest. Two new businesses: an **Orchard** ($40 a day) and a **Distillery** ($35 a day, plus $15 for every moonshine runner on the job).
+
+### Enemies of the Don
+
+- **Your bounty hunters bring some catches back alive.** While you own Coppervale, they're hanged at noon at the gallows for 1.5× the bounty, whether you watch or not.
+- **Assassination plots.** Once you're a Gang Boss, someone (the Vance Syndicate, a shopkeeper you squeezed, a deputy's widow, a cattle baron) may hire a killer. You might ride into an **ambush** of hired guns on the open road, or a lone **gunman** may walk up to you in town and draw. Take the killer alive and he'll name who paid him.
+- **Bodyguards** (a gang job) ride beside you, hear about plots before they strike, and thin out every ambush.
+
 ### Gang work
 
 Press **N** (or use the camp ledger) to put riders on jobs that run on their own while you're elsewhere:
@@ -120,11 +134,12 @@ Press **N** (or use the camp ledger) to put riders on jobs that run on their own
 |---|---|
 | Moonshine runner | Hauls crates from every camp and sells them: $10 a crate, $15 with Blessed spirits |
 | Bounty hunter | About one contract a day each, for 80% of the reward. Sometimes comes back wounded |
-| Land foreman | +10% land income each (up to three). With **auto-expand** on, buys deeds, builds and upgrades businesses and the homestead with money above a reserve you set |
+| Land foreman | +10% land income each (up to three). With **Foremen build on their own** switched on, spends the gang stash on deeds, businesses, upgrades, irrigation and the homestead |
 | Racketeer | Signs up one unprotected business a day, and every racket pays $5 more |
 | Hunter | Sells hides, about $30 a day each |
 | Recruiter | Brings in a new rider most days, while there's room |
 | Homestead guard | Stands guard at home: +2 defense each, and shoots raiders |
+| Bodyguard | Rides with you, warns you of plots, and makes ambushes smaller |
 | Stagecoach robber | About $100 a day each, but your bounty creeps up |
 
 Workers still draw wages and count toward your gang size; call them back at any time. Every few hours a note tells you what they earned.
@@ -149,7 +164,7 @@ Talk to **Reverend Amos Pike** at the church door, east of the main street. Endo
 | **Be fruitful and multiply** | New families settle in town every morning, your spouses bear up to five children each, and children grow up in two days |
 | **A day's labour for the homestead** | Homestead buildings cost 30% less, and the town's labour pays $3 a head each day (up to $60) |
 | **The tithe** | $2 a day for every townsperson |
-| **Expand Coppervale** | Two stages of three new buildings each, with four new families each time |
+| **Expand Coppervale** | Up to five stages of new buildings, with four new families each time; each stage costs more |
 | **Blessed spirits** | Lou pays $17 a crate for moonshine instead of $12 |
 | **Absolution** | Confess once a day to wipe up to $200 of bounty |
 | **The flock takes up arms** | Once a day, up to two townsfolk join your gang for free |

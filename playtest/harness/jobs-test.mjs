@@ -42,7 +42,7 @@ ok((today.runner || 0) > 0 && (today.hunter || 0) > 0, 'runner and hunter earned
 ok(Object.keys(EMP.rackets).length > r0, `racketeer added rackets: ${r0} -> ${Object.keys(EMP.rackets).length}`);
 ok(api.liveGang().length >= 10, `recruiter kept the gang growing: ${api.liveGang().length}`);
 // auto-expand: give money, toggle on, new day
-api.LAND.plots; P.money = 4000; api.WORK.auto = true; api.WORK.reserve = 500; const own0 = Object.keys(api.LAND.owned).length + Object.keys(camp.build).length;
+api.LAND.plots; api.STASH.money = 4000; api.WORK.auto = true; api.WORK.reserve = 500; const own0 = Object.keys(api.LAND.owned).length + Object.keys(camp.build).length;
 P.day++; api.onNewDay(); step(2);
 { const own1 = Object.keys(api.LAND.owned).length + Object.keys(camp.build).length; ok(own1 >= own0 + 2 && P.money >= 500, `foremen expanded holdings: ${own0} -> ${own1} (homestead: ${Object.keys(camp.build).join(',')}; deeds ${Object.keys(api.LAND.owned).length}), money $${P.money}`); }
 // call everyone back
