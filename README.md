@@ -112,6 +112,19 @@ Coppervale is busier too: more townsfolk, and children who run and play in the s
 - **Outfits.** Hank's Outfitters has a wardrobe of eleven looks, from a gunslinger in black and a vaquero to cavalry blues and, for a Don of the Territory, the Don's finery. Change clothes at the shop or at your camp.
 - **Waiting.** Press **Z** to let 1, 3 or 6 hours pass, or wait until morning, noon or evening, or for a day, three days or a week. Your stills brew, your gang works, and the ledger pays out every dawn while you wait. You can't wait while wanted or with enemies nearby.
 
+### War: conquering the territory's towns
+
+Three towns lie beyond Coppervale: **Red Rock** (a copper boom town on the east road, held by Copper Company guards), **San Lázaro** (an adobe mission town to the west, guarded by rurales) and **Fort Ashby** (the federal fort in the south-east, behind a log palisade).
+
+1. **Raise an army.** Once Coppervale is yours, open the **war room** at the jailhouse or the town hall and hire mercenaries ($60 each, $5 a day). They don't count toward your gang limit; you can field 8, plus 4 for Coppervale and 4 for each town you take.
+2. **March on a town** with at least four soldiers or riders beside you, and talk to whoever runs it. **Demand surrender** (the bigger your army, the likelier they give in), or **lay siege**: fight off two or three waves of defenders, then their leader.
+3. **Hold it.** Each conquered town pays daily tribute ($75–150). Station soldiers there from the war room; an unguarded town may rise up. Taking Fort Ashby ends the law in the territory for good.
+
+### Coppervale's new buildings
+
+Every building the expansions add has a keeper and regulars, and does something: the boarding house rents beds, Feed & Seed sells oats and a seed contract for your farms, the schoolhouse makes your children grow up sooner, the bakery and cafe heal you, the assay office raises your gold, the barber shaves you, the **town hall** sets taxes and holds the war room, the general store sells ammo by the crate, the gunsmith upgrades your guns, the **opera house** puts on a show every evening (and the town turns out for it), the newspaper prints your headlines or buries your crimes, the bathhouse restores you, the stage line makes fast travel free, the dressmaker keeps your wardrobe, and the jail annex holds prisoners for ransom. Every building also adds $10 a day to the town's takings. On school days the town's children gather at the schoolhouse.
+
+The desert itself is busier too: grass, wildflowers, ocotillo and prickly pear, vultures circling overhead, dust devils crossing the plains, and smoke over the new towns.
 ### Banking, the stash and a growing town
 
 - **Bank account.** Talk to Pruitt at the bank to deposit or withdraw. Your balance earns 1% a day (up to $250), and it's safe when you die; only the cash in your pocket is at risk.
