@@ -35,7 +35,7 @@ It's 1889 in the Arroyo Territory. You arrive in **Coppervale**, a copper town t
 
 ## How to play
 
-The game needs a **keyboard and mouse**. Click the game to capture the mouse; **P** or **Esc** pauses it and opens the settings, including sensitivity, invert look, first person and graphics quality.
+The game needs a **keyboard and mouse**. Click the game to capture the mouse; **P** or **Esc** pauses it and opens the settings, including sensitivity, volume (with a separate slider for wind and ambience, and a mute box), invert look, first person and graphics quality.
 
 ### Your first ten minutes
 

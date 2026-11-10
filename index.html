@@ -193,6 +193,11 @@ button.ghost{background:transparent;border-color:var(--paper-dim)}
     <div class="settings">
       <label for="optSens">Mouse sensitivity <output id="optSensVal"></output></label>
       <input type="range" id="optSens" min="1" max="20" step="1">
+      <label for="optVol">Volume <output id="optVolVal"></output></label>
+      <input type="range" id="optVol" min="0" max="100" step="5">
+      <label for="optAmb">Wind and ambience <output id="optAmbVal"></output></label>
+      <input type="range" id="optAmb" min="0" max="100" step="5">
+      <label class="chk" for="optMute"><input type="checkbox" id="optMute"> Mute all sound</label>
       <label class="chk" for="optInvert"><input type="checkbox" id="optInvert"> Invert vertical look</label>
       <label class="chk" for="optAssist"><input type="checkbox" id="optAssist"> Aim assist (snaps onto a target when you aim)</label>
       <label class="chk" for="optFP"><input type="checkbox" id="optFP"> First-person view (or press C)</label>
@@ -746,7 +751,7 @@ function animQuad(q,speed,dt,graze){
 
 // ---------------- audio ----------------
 const AU={};
-function initAudio(){if(AU.ctx)return;try{const c=new (window.AudioContext||window.webkitAudioContext)();AU.ctx=c;AU.master=c.createGain();AU.master.gain.value=0.7;AU.master.connect(c.destination);
+function initAudio(){if(AU.ctx)return;try{const c=new (window.AudioContext||window.webkitAudioContext)();AU.ctx=c;AU.master=c.createGain();AU.master.gain.value=muted?0:volume/100;AU.master.connect(c.destination);
   const len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;AU.noise=b;
   const w=c.createBufferSource();w.buffer=b;w.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=420;f.Q.value=0.7;const g=c.createGain();g.gain.value=0.03;
   w.connect(f).connect(g).connect(AU.master);w.start();AU.wind=g;}catch(e){}}
@@ -784,11 +789,13 @@ const cam={yaw:Math.PI/2,pitch:0.22,dist:4.6,fov:62,shake:0};
 let gameHour=9,timeScale=1,focusOn=false,running=false,paused=false,modal=null,dlg=null,menu=null,tracked=null,visited=new Set();
 const K={},mouse={left:false,right:false};
 let aimedNPC=null,hostileAimed=false,aimAssist=false,lastGunfireCrime=-99,civT=10;
+let volume=70,ambVol=100,muted=false;
+function applyVolume(){if(AU.master)AU.master.gain.value=muted?0:volume/100;}
 let sens=0.0035,invertY=false,lastClientX=-1,lastMouseT=0;
 const SETTINGS_KEY='dust-iron-settings';
 let savedFP=false;
-function loadSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(s){sens=s.sens??sens;invertY=!!s.invertY;aimAssist=!!s.aimAssist;quality=s.quality||'auto';savedFP=!!s.firstPerson;}}catch(e){}}
-function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({sens,invertY,aimAssist,quality,firstPerson}));}catch(e){}}
+function loadSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(s){sens=s.sens??sens;invertY=!!s.invertY;aimAssist=!!s.aimAssist;quality=s.quality||'auto';savedFP=!!s.firstPerson;volume=s.volume??70;ambVol=s.ambVol??100;muted=!!s.muted;}}catch(e){}}
+function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({sens,invertY,aimAssist,quality,firstPerson,volume,ambVol,muted}));}catch(e){}}
 loadSettings();
 
 // ---------------- spawning ----------------
@@ -3420,7 +3427,7 @@ function updateSky(dt){
   hemi.intensity=lerp(0.28,1.05,dayF);hemi.color.copy(_c1).lerp(new THREE.Color('#cfe0ff'),0.5);
   stars.material.opacity=smooth(0.3,0.9,night);
   windowMat.emissive.setRGB(1.0*night,0.55*night,0.18*night);
-  AU.wind&&(AU.wind.gain.value=0.025+Math.sin(clock.elapsedTime*0.2)*0.012);
+  AU.wind&&(AU.wind.gain.value=(0.025+Math.sin(clock.elapsedTime*0.2)*0.012)*ambVol/100);
 }
 
 // ---------------- camera ----------------
@@ -3561,11 +3568,14 @@ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockEl
   if(locked){hadLock=true;lockFailed=false;paused=false;$('pause').hidden=true;}
   else{mouse.left=mouse.right=false;if(hadLock&&running&&!modal&&$('ending').hidden)showPause();}});
 function showPause(){paused=true;syncSettingsUI();$('saveNote').textContent='';save();$('pause').hidden=false;}
-function syncSettingsUI(){const v=Math.round(sens/0.0005);$('optSens').value=v;$('optSensVal').textContent=v;$('optInvert').checked=invertY;$('optAssist').checked=aimAssist;
+function syncSettingsUI(){$('optVol').value=volume;$('optVolVal').textContent=muted?'muted':volume+'%';$('optAmb').value=ambVol;$('optAmbVal').textContent=ambVol+'%';$('optMute').checked=muted;const v=Math.round(sens/0.0005);$('optSens').value=v;$('optSensVal').textContent=v;$('optInvert').checked=invertY;$('optAssist').checked=aimAssist;
   $('optFP').checked=firstPerson;$('optQuality').value=quality;$('optFps').textContent=`${Math.round(1/frameEMA)} fps`;}
 $('optFP').addEventListener('change',e=>setFirstPerson(e.target.checked));
 $('optQuality').addEventListener('change',e=>{quality=e.target.value;dynPR=Math.min(devicePixelRatio,1.5);applyQuality();saveSettings();});
 $('optSens').addEventListener('input',e=>{sens=+e.target.value*0.0005;syncSettingsUI();saveSettings();});
+$('optVol').addEventListener('input',e=>{volume=+e.target.value;if(volume>0)muted=false;applyVolume();syncSettingsUI();saveSettings();});
+$('optAmb').addEventListener('input',e=>{ambVol=+e.target.value;syncSettingsUI();saveSettings();});
+$('optMute').addEventListener('change',e=>{muted=e.target.checked;applyVolume();syncSettingsUI();saveSettings();});
 $('optInvert').addEventListener('change',e=>{invertY=e.target.checked;saveSettings();});
 $('optAssist').addEventListener('change',e=>{aimAssist=e.target.checked;saveSettings();});
 document.addEventListener('mousemove',e=>{lastClientX=e.clientX;if(!running||paused||modal)return;if(!locked&&!lockFailed&&!(e.buttons&2))return;
