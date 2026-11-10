@@ -51,7 +51,7 @@ while (api.gameHour < 12.2) { api.EMP.town = true; step(10); } ok(!!api.ELEC.may
 P.money = 30000; api.openGrand(); for (let i = 0; i < 5; i++) { api.openGrand(); const k = items().findIndex(x => !x.off()); if (k >= 0) api.buy(k); flush(); }
 ok(Object.keys(api.GRAND).length === 5 && api.rankInfo().name === 'Governor of the Arroyo', `built: ${Object.keys(api.GRAND).join(', ')} · rank ${api.rankInfo().name}`);
 const L = api.dailyLedger(); ok(L.g >= 290, `grand projects pay $${L.g} a day`);
-const croupier = api.npcs.find(n => n.casino); api.talkTo(croupier); const m2 = P.money; for (let i = 0; i < 20; i++) api.buy(0); ok(P.money !== m2, `20 hands of blackjack: ${P.money - m2 >= 0 ? '+' : '−'}$${Math.abs(P.money - m2)}`); api.closeMenu();
+const croupier = api.npcs.find(n => n.casino); api.talkTo(croupier); const m2 = P.money; let moved = false; for (let i = 0; i < 20; i++) { const a = P.money; api.buy(0); if (P.money !== a) moved = true; } ok(moved, `20 hands of blackjack:${P.money - m2 >= 0 ? '+' : '−'}$${Math.abs(P.money - m2)}`); api.closeMenu();
 // puppet mayor in a conquered town
 api.TW.owned.redrock = { day: P.day }; const rr = api.TOWNS.redrock; api.talkTo(rr.L); api.buy(pickItem('Install a puppet')); flush();
 ok(!!api.TW.owned.redrock.puppet, `puppet in Red Rock: ${api.TW.owned.redrock.puppet} · tribute $${api.tributeTotal()}`);
